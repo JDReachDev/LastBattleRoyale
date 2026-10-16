@@ -1,0 +1,6 @@
+*.gma
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+publish/out/

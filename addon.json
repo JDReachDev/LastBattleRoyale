@@ -1,0 +1,13 @@
+{
+	"title": "Last Battle Royale",
+	"type": "gamemode",
+	"tags": [ "fun", "realism" ],
+	"ignore": [
+		"*.md",
+		"docs/*",
+		"publish/*",
+		".git*",
+		"addon.json",
+		"LICENSE"
+	]
+}

@@ -1,0 +1,64 @@
+[h1]Last Battle Royale[/h1]
+Battle Royale Gamemode.
+This addon is based on LAST STAND by Kanade. But extremely modified.
+
+[b]Source code (open source):[/b] [url=https://github.com/JDReachDev/LastBattleRoyale]github.com/JDReachDev/LastBattleRoyale[/url]
+
+[h2]Keys[/h2]
+[list]
+[*]TAB - show players alive
+[*]F3 - open class menu
+[*]F4 - open team menu (F6 Decline squad / F7 Accept squad)
+[*]Q - drop your active weapon
+[*]E - pick up a weapon from the ground
+[*]E (Hold) + Left Click - throw grenades (if you have one CW weapon)
+[/list]
+
+[h2]Supported maps[/h2]
+[olist]
+[*]rp_pripyat_cop (Best imho, and for lot of player)
+[*]rp_city17_build210
+[*]gm_marsh
+[*]rp_wasteland
+[*]gm_fork (Heavy Map - lower fps)
+[*]gm_valley (Heavy Map - lower fps)
+[*]rp_ineu_pass_v1e
+[/olist]
+
+[h2]Changes applied[/h2]
+[list]
+[*]added many weapons
+[*]changed the hud
+[*]added many supported maps
+[*]added outline to objects to see them better in the dark
+[*]removed OP ksg
+[*]removed old safe
+[*]added modern safe like FORTNITE (known bug, the safe is seen to pass also in the background)
+[*]rebalanced some maps
+[*]now you know the safe position
+[*]added some classes
+[*]no nuke by default
+[*]hidden the health of the players to make the game more competitive
+[*]increased damage from the safe
+[*]life regenerates faster up to 20
+[*]added "Zone Quality" var
+[*]more
+[/list]
+
+[h2]Zone quality (lst_zonequality)[/h2]
+3. High + Texture
+2. Medium
+1. Low
+0. Invisible
+
+If you have all the attachments at the spawn, write this in the console: [b]cw_disable_all_attachments_on_spawn 1[/b] (for servers)
+
+If you have PROBLEMS, ERRORS or LAG: disable outline, disable all the addons except those necessary, delete the folders of files downloaded from public servers:
+[list]
+[*]GarrysMod\garrysmod\downloads\server\
+[*]GarrysMod\garrysmod\download\
+[/list]
+
+For a better experience, disable nukes and implosion, imho.
+
+All server settings and how to add new maps: see the documentation on GitHub.
