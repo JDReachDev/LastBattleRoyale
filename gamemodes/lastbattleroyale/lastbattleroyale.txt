@@ -1,0 +1,115 @@
+"laststand"
+{
+	"base"		"base"
+	"title"		"Last Battle Royale"
+	"maps"		"^lst"
+	"menusystem"	"1"
+	
+	"settings"
+	{
+		1
+		{
+			"name"		"lst_minimumplayers"
+			"text"		"Minimum Players"
+			"help"		"Set minimum players to start the round"
+			"type"		"Numeric"
+			"default"	"2"
+		}
+		2
+		{
+			"name"		"lst_time_preparing"
+			"text"		"Preparing time"
+			"help"		"Set preparing time"
+			"type"		"Numeric"
+			"default"	"30"
+		}
+		3
+		{
+			"name"		"lst_time_actionpreparing"
+			"text"		"Action Preparing time"
+			"help"		"Set action preparing time"
+			"type"		"Numeric"
+			"default"	"30"
+		}
+		4
+		{
+			"name"		"lst_time_postround"
+			"text"		"Post time"
+			"help"		"Set post time"
+			"type"		"Numeric"
+			"default"	"15"
+		}
+		5
+		{
+			"name"		"lst_healhealth"
+			"text"		"Heal in zone"
+			"help"		"Heal players health after 5 seconds"
+			"type"		"Numeric"
+			"default"	"1"
+		}
+		6
+		{
+			"name"		"lst_zonespeed"
+			"text"		"Zone Speed"
+			"help"		"Set zone speed"
+			"type"		"Numeric"
+			"default"	"0.75"
+		}
+		7
+		{
+			"name"		"lst_usecssarmor"
+			"text"		"CS:Source armor"
+			"help"		"If you dont have CS:Source installed then turn it to 0"
+			"type"		"Numeric"
+			"default"	"1"
+		}
+		8
+		{
+			"name"		"lst_event_enablenuke"
+			"text"		"Enable nuke event"
+			"help"		"If you dont want to have nuke event, set it to 0"
+			"type"		"Numeric"
+			"default"	"0"
+		}
+		9
+		{
+			"name"		"lst_enableimplosion"
+			"text"		"Enable implosion"
+			"help"		"Enable implosion bomb at the end"
+			"type"		"Numeric"
+			"default"	"0"
+		}
+		10
+		{
+			"name"		"lst_enableimplosion"
+			"text"		"Enable implosion"
+			"help"		"Enable implosion bomb at the end"
+			"type"		"Numeric"
+			"default"	"0"
+		}
+		11
+		{
+			"name"		"lst_expscale"
+			"text"		"Exp scale"
+			"help"		"Set exp scale"
+			"type"		"Numeric"
+			"default"	"1"
+		}
+		12
+		{
+			"name"		"lst_zonequality"
+			"text"		"Zone Quality (0-1-2-3)"
+			"help"		"3)high+texture 2)medium 1)low 0)invisible"
+			"type"		"Numeric"
+			"default"	"3"
+		}
+		13
+		{
+			"name"		"lst_objoutline"
+			"text"		"Objects outline"
+			"help"		"0-no, 1-yes"
+			"type"		"Numeric"
+			"default"	"1"
+		}
+	}
+}
