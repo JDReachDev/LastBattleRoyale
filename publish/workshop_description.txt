@@ -31,6 +31,23 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Optimized for big maps[/b] (gm_fork, gm_valley): far loot and vehicles are not sent / drawn, lighter zone and outlines
 [/list]
 
+[h2]How to play[/h2]
+[olist]
+[*][b]Lobby[/b]: everyone waits in the lobby until there are enough players (2 by default). Use this time to pick your class (F3) and make a squad (F4)
+[*][b]Preparing[/b]: a countdown starts (30 s), then all players are spread around the map
+[*][b]Loot[/b]: weapons can't be used for the first 30 s: run, find weapons, armor, medkits and vehicles
+[*][b]Zone[/b]: the safe zone shrinks over time. Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right
+[*][b]Win[/b]: the last player (or the last squad) alive wins the round. After a few seconds everyone goes back to the lobby for the next round
+[/olist]
+Kills and wins give EXP to the class you are using. Level up classes to unlock new ones (F3 shows what each class needs). Dead players can spectate the others.
+
+[h2]How to start a server[/h2]
+[list]
+[*][b]Listen server[/b]: subscribe to this addon and to all the required items, open Garry's Mod, choose the [b]Last Battle Royale[/b] gamemode (bottom right of the main menu), pick one of the supported maps and start with 2+ player slots. The settings are in the Start New Game menu
+[*][b]Dedicated server[/b]: use [b]+gamemode lastbattleroyale[/b] and a Workshop collection with this addon, the required items and your maps ([b]+host_workshop_collection[/b])
+[*][b]Other maps[/b]: configure them in game with the map editor (F8), see below
+[/list]
+
 [h2]Keys[/h2]
 [list]
 [*][b]TAB[/b] - scoreboard (click for the mouse, right click a player to mute or open the profile)
