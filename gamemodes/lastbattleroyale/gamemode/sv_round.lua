@@ -242,12 +242,8 @@ function RoundRestart()
 			pl:Spawn()
 			pl:SetActivePlayer()
 			if #spawns > 0 then
-				local spawn = spawns[ ( ( i - 1 ) % #spawns ) + 1 ]
-				if i > #spawns then
-					// more players than spawns: spread them around the same point
-					spawn = spawn + Vector( math.random( -48, 48 ), math.random( -48, 48 ), 4 )
-				end
-				pl:SetPos( spawn )
+				// more players than spawns: PlacePlayer spreads them around the same point
+				LBR.PlacePlayer( pl, spawns[ ( ( i - 1 ) % #spawns ) + 1 ] )
 			end
 		end
 		net.Start("LST_RoundStart")
@@ -306,7 +302,7 @@ function SpawnAllVehicles()
 	for _, spawn in ipairs( CatList( "vehiclepositions" ) ) do
 		local car = ents.Create( VEHICLES[math.random( #VEHICLES )] )
 		if IsValid( car ) then
-			car:SetPos( spawn )
+			car:SetPos( LBR.VehicleSpawnPos( spawn, 30 ) )
 			car:Spawn()
 		end
 	end
@@ -355,6 +351,7 @@ function NewSpawnAllItems()
 			if IsValid( it ) then
 				it:SetPos( spawns[index] )
 				it:Spawn()
+				LBR.PlaceOnFloor( it, spawns[index] )
 				it.kanadelootable = true
 			end
 		end
@@ -367,7 +364,7 @@ function SpawnAllFlyingVehicles()
 		if pool and #pool > 0 then
 			local vehicle = ents.Create( pool[math.random( #pool )] )
 			if IsValid( vehicle ) then
-				vehicle:SetPos( spawn )
+				vehicle:SetPos( LBR.VehicleSpawnPos( spawn, 40 ) )
 				vehicle:Spawn()
 			end
 		end

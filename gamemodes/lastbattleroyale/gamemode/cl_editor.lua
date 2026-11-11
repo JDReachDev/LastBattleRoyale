@@ -152,12 +152,20 @@ end
 // where a new point would go, nil if nothing is aimed
 function ED.PlacementPos()
 	local cat = curCat()
+	local pos
+	ED.placeOk = true
 	if isEyeMode( cat ) then
-		return LocalPlayer():GetPos()
+		pos = LocalPlayer():GetPos()
+	else
+		local tr = aimTrace()
+		if not tr.Hit or tr.HitSky then return nil end
+		pos = tr.HitPos + Vector( 0, 0, cat.offset or 0 )
 	end
-	local tr = aimTrace()
-	if not tr.Hit or tr.HitSky then return nil end
-	return tr.HitPos + Vector( 0, 0, cat.offset or 0 )
+	// player points snap to a spot where a player fits (no more stuck in floor / walls)
+	if cat.hull == "player" and not cat.eye then
+		pos, ED.placeOk = LBR.FindSafePos( pos, nil, nil, MASK_PLAYERSOLID, LocalPlayer() )
+	end
+	return pos
 end
 
 // point of the current category closest to the crosshair ray
@@ -189,6 +197,10 @@ function ED.Add()
 	local l = list()
 	if #l >= LBR.MaxPointsPerCategory then
 		ED.Status( "Too many points in this category", colErr )
+		return
+	end
+	if not ED.placeOk then
+		ED.Status( "No room for a player here: move the point away from walls", colErr )
 		return
 	end
 	l[#l + 1] = pos
@@ -341,7 +353,8 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_EditorDraw", function( depth, s
 		local cat = curCat()
 		local hull = hulls[cat.hull] or hulls.small
 		local a = 120 + math.sin( CurTime() * 6 ) * 80
-		render.DrawWireframeBox( pos, angle_zero, hull[1], hull[2], Color( cat.color.r, cat.color.g, cat.color.b, a ), true )
+		local c = ED.placeOk and cat.color or Color( 255, 40, 40 )
+		render.DrawWireframeBox( pos, angle_zero, hull[1], hull[2], Color( c.r, c.g, c.b, a ), true )
 	end
 end )
 
