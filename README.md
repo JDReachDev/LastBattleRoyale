@@ -39,6 +39,7 @@ add maps/weapons and run it on their own server.
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
 | `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
+| `!start` / `TAB` → *START NOW* | Admin: start the round now with the players already in (even below `lbr_min_players`) |
 
 ## Requirements
 

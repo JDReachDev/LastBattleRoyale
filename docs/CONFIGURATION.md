@@ -48,6 +48,7 @@ New ConVars / commands:
 | `lbr_cull_loot_distance` | server | `4000` | Loot farther than this from a player is not sent to (nor drawn by) that player; `0` = off |
 | `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
+| `lbr_start` | command | — | Admin: start the round now with the players already in, even below `lbr_min_players` (also `!start` in chat or *START NOW* in the `TAB` scoreboard) |
 | `lbr_editor` | command | — | Open / close the map editor (same as `F8`) |
 | `lbr_map_reload` | command | — | Superadmin: reload `data/lastbattleroyale/maps/<map>.txt` and respawn loot points |
 | `lbr_loot_reload` | command | — | Superadmin: reload `data/lastbattleroyale/loot.txt` (see *Loot editor* below) |

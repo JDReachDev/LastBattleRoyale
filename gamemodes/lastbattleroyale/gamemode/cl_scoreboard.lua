@@ -234,7 +234,7 @@ local function createBoard()
 		UI.Box( 0, 0, pw, ph, C.bg )
 		UI.Box( 0, 0, pw, S( 3 ), C.accent )
 
-		UI.Text( UI.Fit( GetHostName(), "LBR_UI_Title", pw * 0.6 ), "LBR_UI_Title", S( 20 ), S( 16 ), C.text )
+		UI.Text( UI.Fit( GetHostName(), "LBR_UI_Title", pw * 0.38 ), "LBR_UI_Title", S( 20 ), S( 16 ), C.text )
 		UI.Text( string.upper( game.GetMap() ), "LBR_UI_Small", S( 20 ), S( 52 ), C.dim )
 
 		// right side: state + alive
@@ -265,6 +265,21 @@ local function createBoard()
 		local hint = self:IsMouseInputEnabled() and "Right click a player: mute / profile" or "Click to use the mouse"
 		UI.Text( "F3 Classes   F4 Squad   Q Drop weapon", "LBR_UI_Tiny", S( 20 ), ph - S( 18 ), C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 		UI.Text( hint, "LBR_UI_Tiny", pw - S( 20 ), ph - S( 18 ), C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+	end
+
+	// admins: start the round now with the players already in
+	local start = UI.Button( f, "START NOW", C.good, function()
+		net.Start( "LBR_ForceStart" )
+		net.SendToServer()
+	end )
+	start:SetSize( S( 130 ), S( 30 ) )
+	start:SetTooltip( "Start the round with the players already in, even if the minimum is not reached" )
+	start.Think = function( self )
+		local lp = LocalPlayer()
+		local show = IsValid( lp ) and lp:IsAdmin() and GetGlobalInt( "state", 1 ) == 1
+			and GetGlobalBool( "LBR_MapReady", true ) and team.NumPlayers( TEAM_PLAYER or 1 ) >= 2
+		if self:IsVisible() ~= show then self:SetVisible( show ) end
+		self:SetPos( math.floor( ( f:GetWide() - self:GetWide() ) / 2 ), S( 24 ) )
 	end
 
 	local list = UI.Scroll( f )

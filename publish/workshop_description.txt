@@ -28,7 +28,6 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
 [*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
 [*][b]9 classes[/b] unlocked by levelling up
-[*][b]Fortnite-style HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, alive players, squad panel
 [*][b]Optimized for big maps[/b] (gm_fork, gm_valley): far loot and vehicles are not sent / drawn, lighter zone and outlines
 [/list]
 
@@ -60,6 +59,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
 [*][b]F8[/b] - [i]admins:[/i] map editor
+[*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now with the players already in
 [/list]
 
 [h2]Supported maps[/h2]

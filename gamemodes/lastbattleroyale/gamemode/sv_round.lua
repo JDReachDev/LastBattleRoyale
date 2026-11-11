@@ -251,6 +251,40 @@ function RoundRestart()
 	end)
 end
 
+// Admin "start now": start the round with the players already in, even if
+// lbr_min_players is not reached (e.g. minimum 8 but only 6 joined).
+// Console: lbr_start - chat: !start - scoreboard (TAB): START NOW button
+util.AddNetworkString( "LBR_ForceStart" )
+
+function LBR.ForceStart( ply )
+	local function reply( msg )
+		if IsValid( ply ) then ply:ChatPrint( msg ) else print( msg ) end
+	end
+	if IsValid( ply ) and not ply:IsAdmin() then return reply( "Only admins can start the round." ) end
+	if GetState() ~= STATE_NONE then return reply( "A round is already starting or running." ) end
+	if not LBR.IsMapReady() then return reply( "This map is not configured yet (F8 to open the map editor)." ) end
+	if LBR.AnyEditing() then return reply( "Someone is using the map editor: close it first." ) end
+	if #team.GetPlayers( TEAM_PLAYER ) < 2 then return reply( "At least 2 players are needed to start." ) end
+	PrintMessage( HUD_PRINTTALK, ( IsValid( ply ) and ply:Nick() or "The server" ) .. " started the round with " .. #team.GetPlayers( TEAM_PLAYER ) .. " players." )
+	RoundRestart()
+end
+
+concommand.Add( "lbr_start", function( ply ) LBR.ForceStart( ply ) end )
+
+net.Receive( "LBR_ForceStart", function( len, ply )
+	if ( ply.LBR_NextForceStart or 0 ) > CurTime() then return end
+	ply.LBR_NextForceStart = CurTime() + 1
+	LBR.ForceStart( ply )
+end )
+
+hook.Add( "PlayerSay", "LBR_ForceStart", function( ply, text )
+	local cmd = string.lower( string.Trim( text ) )
+	if cmd == "!start" or cmd == "/start" then
+		LBR.ForceStart( ply )
+		return ""
+	end
+end )
+
 ////////////// ROUND SYSTEM //////////////
 
 function SetupZone()
