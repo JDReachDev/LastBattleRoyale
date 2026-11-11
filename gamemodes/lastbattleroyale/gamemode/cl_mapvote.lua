@@ -167,7 +167,7 @@ local function buildMapMenu( list )
 			end
 		end
 		local b = UI.Button( r, ok and "PLAY" or "CONFIGURE", ok and C.good or C.accent, function()
-			Derma_Query( ok and ( "Change map to " .. m.map .. " now? The current match ends." )
+			LBR.UI.Query( ok and ( "Change map to " .. m.map .. " now? The current match ends." )
 				or ( "Change map to " .. m.map .. "? It is not ready yet: press F8 there to configure it." ),
 				"Change map", "Yes", function()
 					net.Start( "LBR_ChangeMap" )

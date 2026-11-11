@@ -71,7 +71,7 @@ end
 function ply:ResetStats()
 	self:SetLevel(0)
 	self:SetEXP(0)
-	self:PrintMessage(HUD_PRINTTALK, "Your stats were reseted.")
+	LBR.Chat( self, "Your stats were reset." )
 end
 
 function ply:LevelUpdate()
@@ -92,7 +92,7 @@ end
 
 function ply:PrintStats()
 	local class = player_manager.RunClass( self, "ReturnStat", "DisplayName" )
-	self:PrintMessage(HUD_PRINTTALK, "Class: " .. class .. "   Level: " .. self:GetLevel() .. "   EXP: " .. self:GetEXP())
+	LBR.Chat( self, "Class: " .. class .. "   Level: " .. self:GetLevel() .. "   EXP: " .. self:GetEXP() )
 end
 
 
@@ -102,7 +102,7 @@ end
 
 function ply:ChangeClass(class)
 	if CLASSES == nil then
-		self:PrintMessage(HUD_PRINTTALK, "CLASSES table is invalid.")
+		LBR.Chat( self, "CLASSES table is invalid.", "bad" )
 		return
 	end
 	local getclass = nil
@@ -119,27 +119,27 @@ function ply:ChangeClass(class)
 		end
 	end
 	if getclass == nil then
-		self:PrintMessage(HUD_PRINTTALK, "Invalid class.")
+		LBR.Chat( self, "Invalid class.", "bad" )
 		return
 	end
 	if getclass["premium"] then
 		print("premium")
 		print(self.Premium)
 		if self.Premium == false then
-			self:PrintMessage(HUD_PRINTTALK, "This class is for donators only.")
+			LBR.Chat( self, "This class is for donators only.", "bad" )
 			return
 		end
 	end
 	if getclass["class"] == self.class then
-		self:PrintMessage(HUD_PRINTTALK, "You have this class already.")
+		LBR.Chat( self, "You have this class already.", "bad" )
 		return
 	end
 	if getclass["customcheck"] != nil then
 		if getclass["customcheck"](self) == false then
 			if getclass["customcheckfailmsg"] != nil then
-				self:PrintMessage(HUD_PRINTTALK, getclass["customcheckfailmsg"])
+				LBR.Chat( self, getclass["customcheckfailmsg"] )
 			else
-				self:PrintMessage(HUD_PRINTTALK, "You can't use this class.")
+				LBR.Chat( self, "You can't use this class.", "bad" )
 			end
 			return
 		end
@@ -153,12 +153,12 @@ function ply:ChangeClass(class)
 			if self.class == v["class"] then
 				if self:GetLevel() < v["level"] then
 					canuse = false
-					self:PrintMessage(HUD_PRINTTALK, "You need to have " .. v["level"] .. " on class " .. bclass["DisplayName"] .. " to use this class")
+					LBR.Chat( self, "You need to have " .. v["level"] .. " on class " .. bclass["DisplayName"] .. " to use this class", "bad" )
 				end
 			else
 				if tonumber(lvl) < v["level"] then
 					canuse = false
-					self:PrintMessage(HUD_PRINTTALK, "You need to have " .. v["level"] .. " on class " .. bclass["DisplayName"] .. " to use this class")
+					LBR.Chat( self, "You need to have " .. v["level"] .. " on class " .. bclass["DisplayName"] .. " to use this class", "bad" )
 				end
 			end
 		end
@@ -166,7 +166,7 @@ function ply:ChangeClass(class)
 	if canuse == false then return end
 	self.shouldchangeclass = true
 	self.class = getclass["class"]
-	self:PrintMessage(HUD_PRINTTALK, "You have sucefully changed your class to " .. baseclass.Get( getclass["class"] )["DisplayName"])
+	LBR.Chat( self, "You successfully changed your class to " .. baseclass.Get( getclass["class"] )["DisplayName"] )
 end
 
 function UpdateAllTeamers()

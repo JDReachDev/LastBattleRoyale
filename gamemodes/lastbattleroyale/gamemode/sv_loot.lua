@@ -125,5 +125,5 @@ concommand.Add( "lbr_loot_reload", function( ply )
 	if IsValid( ply ) and not ply:IsSuperAdmin() then return end
 	LBR.LoadLoot()
 	local msg = "[LBR] Loot tables reloaded (" .. LBR.LootSource .. ")"
-	if IsValid( ply ) then ply:ChatPrint( msg ) else print( msg ) end
+	if IsValid( ply ) then LBR.Chat( ply, msg ) else print( msg ) end
 end )

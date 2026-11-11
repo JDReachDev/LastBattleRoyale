@@ -308,7 +308,7 @@ function L.Open()
 	local baseClose = fr.Close
 	fr.Close = function( self )
 		if L.dirty then
-			Derma_Query( "You have unsaved loot changes.", "Loot and vehicles",
+			LBR.UI.Query( "You have unsaved loot changes.", "Loot and vehicles",
 				"Save and close", function() save() baseClose( self ) end,
 				"Close without saving", function() L.dirty = false baseClose( self ) end,
 				"Cancel" )
@@ -333,7 +333,7 @@ function L.Open()
 	saveBtn:SetWide( S( 150 ) )
 
 	local resetBtn = UI.Button( bottom, "RESET TO DEFAULT", C.bad, function()
-		Derma_Query( "Delete data/" .. LBR.LootFile .. " and go back to the loot of config.lua?", "Reset loot", "Reset", function()
+		LBR.UI.Query( "Delete data/" .. LBR.LootFile .. " and go back to the loot of config.lua?", "Reset loot", "Reset", function()
 			net.Start( "LBR_Loot_Reset" )
 			net.SendToServer()
 		end, "Cancel" )

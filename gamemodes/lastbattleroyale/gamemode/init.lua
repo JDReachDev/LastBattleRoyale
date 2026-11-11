@@ -10,6 +10,7 @@ AddCSLuaFile( "sh_mapconfig.lua" )
 AddCSLuaFile( "sh_zone.lua" )
 AddCSLuaFile( "sh_spawn.lua" )
 AddCSLuaFile( "sh_loot.lua" )
+AddCSLuaFile( "sh_notify.lua" )
 AddCSLuaFile( "cl_hud.lua" )
 AddCSLuaFile( "cl_zone.lua" )
 AddCSLuaFile( "cl_editor.lua" )
@@ -108,7 +109,7 @@ if timer.Exists("checkrequeststick") == false then
 					if curtime > val["requestedlast"] then
 						local target = val["requestedplayer"]
 						if IsValid(target) then
-							v:PrintMessage(HUD_PRINTTALK, target:Nick() .. " didn't answer team-up request in time")
+							LBR.Chat( v, target:Nick() .. " didn't answer team-up request in time", "squad" )
 							target.sentteaming = nil
 						end
 						table.remove(reqs, i)
@@ -133,7 +134,7 @@ net.Receive( "SendTeamRequestBTS", function( len, ply )
 	end
 	
 	if getbool == false then
-		selectedplayer:PrintMessage(HUD_PRINTTALK, ply:Nick() .. " declined the request.")
+		LBR.Chat( selectedplayer, ply:Nick() .. " declined the request.", "squad" )
 		return
 	end
 	
@@ -194,7 +195,7 @@ net.Receive( "SendTeamRequest", function( len, ply )
 	local gotplayer = nil
 	
 	if #player.GetAll() == 2 then
-		ply:PrintMessage(HUD_PRINTTALK, "You cannot send request now.")
+		LBR.Chat( ply, "You cannot send request now.", "bad" )
 		return
 	end
 	
@@ -217,15 +218,15 @@ net.Receive( "SendTeamRequest", function( len, ply )
 		end
 		if maymay == nil then
 			table.ForceInsert(ply.wantstoleave, gotplayer)
-			gotplayer:PrintMessage(HUD_PRINTTALK, ply:Nick() .. " will leave your team in the next round")
-			ply:PrintMessage(HUD_PRINTTALK, gotplayer:Nick() .. " will leave your team in the next round")
+			LBR.Chat( gotplayer, ply:Nick() .. " will leave your team in the next round", "squad" )
+			LBR.Chat( ply, gotplayer:Nick() .. " will leave your team in the next round", "squad" )
 		end
 		return
 	end
 	
 	if gotplayer.sentteaming != nil then
 		print("fefe000")
-		ply:PrintMessage(HUD_PRINTTALK, gotplayer:Nick() .. " cannot receive request now.")
+		LBR.Chat( ply, gotplayer:Nick() .. " cannot receive request now.", "squad" )
 		return
 	end
 	if gotplayer:Team() == TEAM_SPEC then return end
@@ -239,30 +240,30 @@ net.Receive( "SendTeamRequest", function( len, ply )
 		end
 		if #cnt == 3 then
 			if IsInTeam3(cnt[1], cnt[2]) then
-				ply:PrintMessage(HUD_PRINTTALK, "You cannot send request now.")
+				LBR.Chat( ply, "You cannot send request now.", "bad" )
 				return
 			end
 		end
 		if #cnt == 2 then
-			ply:PrintMessage(HUD_PRINTTALK, "You cannot send request now.")
+			LBR.Chat( ply, "You cannot send request now.", "bad" )
 			return
 		end
 	end
 	
 	if GetState() == STATE_LIVE then
 		if canattack then
-			ply:PrintMessage(HUD_PRINTTALK, "You cannot send request after preparation phase.")
+			LBR.Chat( ply, "You cannot send request after preparation phase.", "bad" )
 			return
 		end
 	end
 	
 	if #gotplayer.TeamingPlayers > 0 then
-		ply:PrintMessage(HUD_PRINTTALK, gotplayer:Nick() .. " already has a team")
+		LBR.Chat( ply, gotplayer:Nick() .. " already has a team", "squad" )
 		return
 	end
 	
 	if #ply.REQUESTINFO > 2 then
-		ply:PrintMessage(HUD_PRINTTALK, "You can only invite 3 people.")
+		LBR.Chat( ply, "You can only invite 3 people.", "squad" )
 		return
 	end
 	for k,v in pairs(ply.TeamingPlayers) do
@@ -272,7 +273,7 @@ net.Receive( "SendTeamRequest", function( len, ply )
 		end
 	end
 	if #ply.TeamingPlayers > 2 then
-		ply:PrintMessage(HUD_PRINTTALK, "You can not have any more teammates")
+		LBR.Chat( ply, "You can not have any more teammates", "bad" )
 		return
 	end
 	for k,v in pairs(gotplayer.TeamingPlayers) do
@@ -469,9 +470,9 @@ end
 function GM:PlayerAuthed( ply, steamid, uniqueid )
 	local st = GetState()
 	if st == STATE_LIVE then
-		ply:PrintMessage(HUD_PRINTTALK, "Game is currently live, wait for the next round to play.")
+		LBR.Chat( ply, "Game is currently live, wait for the next round to play." )
 	elseif st == STATE_NONE then
-		ply:PrintMessage(HUD_PRINTTALK, "Not enough players to start the round")
+		LBR.Chat( ply, "Not enough players to start the round" )
 	end
 end
 
@@ -514,7 +515,7 @@ function playerdeath( victim, inflictor, attacker )
 		local num = #alive
 		if num == 1 then
 			local ply = alive[1]
-			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. ply:Nick() .. " is the winner!" )
+			LBR.Chat( nil, victim:Nick() .. " died! " .. ply:Nick() .. " is the winner!", "good" )
 			ply:AddFrags(5)
 			local exp = 30 * EXPScale()
 			if (ply.roundkills or 0) >= 5 then
@@ -527,29 +528,29 @@ function playerdeath( victim, inflictor, attacker )
 				ply:PlayerMsg(Color(255,255,0), "You have earned " .. (exp * 2.5) .. " exp for winning the round!")
 			end
 			player_manager.RunClass( ply, "SaveStats" )
-			ply:PrintMessage(HUD_PRINTCENTER, "You won!")
+			LBR.Notify( ply, "You won!", "good" )
 			victim.nextspawn = math.huge
 			SetGlobalString( "LBR_Winner", ply:Nick() )
 			EndRound()
 		elseif num == 2 and IsInTeam(alive[1], alive[2]) then
-			PrintMessage(HUD_PRINTTALK, alive[1]:Nick() .. " and " .. alive[2]:Nick() .. " won!" )
+			LBR.Chat( nil, alive[1]:Nick() .. " and " .. alive[2]:Nick() .. " won!", "good" )
 			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. " & " .. alive[2]:Nick() )
 			EndRound()
 		elseif num == 3 and IsInTeam3(alive[1], alive[2], alive[3]) then
-			PrintMessage(HUD_PRINTTALK, alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " and " .. alive[3]:Nick() .. " won!" )
+			LBR.Chat( nil, alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " and " .. alive[3]:Nick() .. " won!", "good" )
 			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " & " .. alive[3]:Nick() )
 			EndRound()
 		elseif num == 0 then
 			// nobody left (a round started alone to test, or the last ones died together)
-			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! Nobody is left, round over." )
+			LBR.Chat( nil, victim:Nick() .. " died! Nobody is left, round over." )
 			SetGlobalString( "LBR_Winner", "" )
 			EndRound()
 		elseif num == 2 then
-			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. alive[1]:Nick() .. " versus " .. alive[2]:Nick() )
+			LBR.Chat( nil, victim:Nick() .. " died! " .. alive[1]:Nick() .. " versus " .. alive[2]:Nick() )
 		else
-			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. num .. " players left." )
+			LBR.Chat( nil, victim:Nick() .. " died! " .. num .. " players left." )
 		end
-		victim:PrintMessage(HUD_PRINTTALK, "You will spawn as spectator in 10 seconds.")
+		LBR.Chat( victim, "You will spawn as spectator in 10 seconds." )
 		victim.goingtobespec = true
 		victim.goingtowait = false
 		local pos = victim:GetPos()
@@ -578,7 +579,7 @@ function playerdeath( victim, inflictor, attacker )
 			attacker:SetEXP(attacker:GetEXP() + exp)
 			attacker:LevelUpdate()
 			player_manager.RunClass( attacker, "SaveStats" )
-			attacker:PrintMessage(HUD_PRINTCENTER, "You have earned " .. exp .. " exp! Your current exp: " .. attacker:GetEXP())
+			LBR.Notify( attacker, "You have earned " .. exp .. " exp! Your current exp: " .. attacker:GetEXP(), "good" )
 		end
 	end
 end
@@ -625,7 +626,7 @@ function GM:PlayerDisconnected( ply )
 	if pls == 1 then
 		for _, winner in ipairs(team.GetPlayers(TEAM_CONT)) do
 			if winner != ply then
-				winner:PrintMessage(HUD_PRINTTALK, ply:Nick() .. " disconnected, " .. winner:Nick() .. " won!" )
+				LBR.Chat( winner, ply:Nick() .. " disconnected, " .. winner:Nick() .. " won!", "good" )
 				SetGlobalString( "LBR_Winner", winner:Nick() )
 			end
 		end

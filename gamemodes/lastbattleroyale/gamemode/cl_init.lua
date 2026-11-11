@@ -119,7 +119,7 @@ hook.Add("Tick", "checktime_teamup", function()
 	if answeredcall != nil then
 		if CurTime() > lastcalltime then
 			answeredcall = nil
-			LocalPlayer():PrintMessage(HUD_PRINTTALK, "You didn't accept the request in time")
+			LBR.ChatLocal( "You didn't accept the request in time", "squad" )
 		end
 	end
 end)

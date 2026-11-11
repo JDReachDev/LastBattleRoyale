@@ -147,6 +147,70 @@ function UI.Scroll( parent )
 	return sp
 end
 
+// Splits text into lines that fit in w (keeps the \n of the text)
+function UI.Wrap( str, font, w )
+	surface.SetFont( font )
+	local out = {}
+	for _, para in ipairs( string.Explode( "\n", str ) ) do
+		local cur = ""
+		for word in string.gmatch( para, "%S+" ) do
+			local try = cur == "" and word or ( cur .. " " .. word )
+			if cur ~= "" and surface.GetTextSize( try ) > w then
+				out[#out + 1] = cur
+				cur = word
+			else
+				cur = try
+			end
+		end
+		out[#out + 1] = cur
+	end
+	return out
+end
+
+// Styled replacement of Derma_Query / Derma_Message:
+// UI.Query( "text", "title", "Button 1", fn1, "Button 2", fn2, "Button 3", fn3 )
+// The first button is the main one (gold), the others are grey. Functions may be nil.
+function UI.Query( text, title, ... )
+	local args = { ... }
+	local btns = {}
+	for i = 1, select( "#", ... ), 2 do
+		if args[i] then btns[#btns + 1] = { label = args[i], fn = args[i + 1] } end
+	end
+	if #btns == 0 then btns[1] = { label = "OK" } end
+
+	local w = S( 480 )
+	local lines = UI.Wrap( text or "", "LBR_UI_Text", w - S( 40 ) )
+	local lh = draw.GetFontHeight( "LBR_UI_Text" ) + S( 2 )
+	local f = UI.Frame( w, S( 72 ) + #lines * lh + S( 70 ), title or "", nil )
+	f:SetKeyboardInputEnabled( false )
+	f:DoModal()
+
+	local body = vgui.Create( "DPanel", f )
+	body:Dock( FILL )
+	body.Paint = function( self, bw, bh )
+		for i, l in ipairs( lines ) do
+			UI.Text( l, "LBR_UI_Text", 0, ( i - 1 ) * lh, C.text )
+		end
+	end
+
+	local bar = vgui.Create( "DPanel", f )
+	bar:Dock( BOTTOM )
+	bar:SetTall( S( 32 ) )
+	bar.Paint = nil
+	for i = #btns, 1, -1 do
+		local bt = btns[i]
+		local b = UI.Button( bar, string.upper( bt.label ), i == 1 and C.accent or C.dim, function()
+			f:Close()
+			if bt.fn then bt.fn() end
+		end )
+		surface.SetFont( "LBR_UI_Small" )
+		b:SetWide( math.max( S( 90 ), surface.GetTextSize( string.upper( bt.label ) ) + S( 30 ) ) )
+		b:Dock( RIGHT )
+		b:DockMargin( S( 8 ), 0, 0, 0 )
+	end
+	return f
+end
+
 // Section title with a line
 function UI.Section( parent, label, countFn, col )
 	local p = vgui.Create( "DPanel", parent )

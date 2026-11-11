@@ -23,14 +23,10 @@ ED.gotoIndex = ED.gotoIndex or {}
 
 local cats = LBR.MapCategories
 local colWhite = Color( 255, 255, 255 )
-local colBg = Color( 10, 14, 24, 215 )
 local colErr = Color( 255, 90, 80 )
 local colWarn = Color( 255, 200, 80 )
 local colOk = Color( 120, 255, 150 )
 
-surface.CreateFont( "LBR_ED_Title", { font = "Roboto", size = 22, weight = 900, antialias = true } )
-surface.CreateFont( "LBR_ED_Text",  { font = "Roboto", size = 16, weight = 600, antialias = true } )
-surface.CreateFont( "LBR_ED_Small", { font = "Roboto", size = 14, weight = 500, antialias = true } )
 surface.CreateFont( "LBR_ED_3D",    { font = "Roboto", size = 15, weight = 800, antialias = true, outline = true } )
 
 local hulls = {
@@ -117,7 +113,7 @@ end
 // close, asking first when there are unsaved changes
 function ED.RequestClose()
 	if not ED.dirty then ED.Toggle() return end
-	Derma_Query( "You have unsaved changes.", "Close map editor",
+	LBR.UI.Query( "You have unsaved changes.", "Close map editor",
 		"Save and close", function() ED.Save() timer.Simple( 0.3, ED.Toggle ) end,
 		"Close without saving", function() ED.Toggle() end,
 		"Cancel" )
@@ -362,13 +358,31 @@ end )
 // HUD
 ------------------------------------------------------------------------
 
+// same look as the menus (cl_ui.lua): dark flat panels, gold accent, white text
 local function line( txt, font, x, y, col )
-	draw.SimpleTextOutlined( txt, font, x, y, col or colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, 1, Color( 0, 0, 0, 200 ) )
-	return y + draw.GetFontHeight( font ) + 2
+	draw.SimpleText( txt, font, x, y, col or colWhite )
+	return y + draw.GetFontHeight( font ) + LBR.UI.S( 2 )
+end
+
+// key chip: [KEY] label
+local function keyHint( key, label, x, y )
+	local UI, S = LBR.UI, LBR.UI.S
+	surface.SetFont( "LBR_UI_Tiny" )
+	local kw = math.max( surface.GetTextSize( key ) + S( 12 ), S( 22 ) )
+	local h = S( 20 )
+	UI.Box( x, y, kw, h, Color( 255, 255, 255, 30 ) )
+	surface.SetDrawColor( 255, 255, 255, 70 )
+	surface.DrawOutlinedRect( x, y, kw, h )
+	UI.Text( key, "LBR_UI_Tiny", x + kw / 2, y + h / 2, colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+	surface.SetFont( "LBR_UI_Small" )
+	local lw = surface.GetTextSize( label )
+	UI.Text( label, "LBR_UI_Small", x + kw + S( 6 ), y + h / 2, UI.col.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	return kw + S( 6 ) + lw
 end
 
 hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	if not ED.active or not ED.cfg then return end
+	local UI, S, C = LBR.UI, LBR.UI.S, LBR.UI.col
 
 	// labels on nearby points of the current category
 	local eye = EyePos()
@@ -382,60 +396,80 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	end
 
 	// panel
-	local x, y, w = 20, 20, 330
-	local h = 150 + #cats * 22 + ( #( ED.errors or {} ) + #( ED.warnings or {} ) ) * 18
-	draw.RoundedBox( 8, x, y, w, h, colBg )
-	x = x + 14
-	y = y + 10
-	y = line( "MAP EDITOR  -  " .. game.GetMap() .. ( ED.dirty and "  *" or "" ), "LBR_ED_Title", x, y, Color( 255, 210, 70 ) )
-	y = line( "Source: " .. ( ED.source or "?" ) .. ( ED.dirty and "   (unsaved changes, Q > Save)" or "" ), "LBR_ED_Small", x, y, ED.dirty and colWarn or Color( 180, 180, 180 ) )
-	y = y + 6
+	local small = draw.GetFontHeight( "LBR_UI_Small" ) + S( 2 )
+	local rowH = S( 24 )
+	local x, y, w = S( 20 ), S( 20 ), S( 360 )
+	local h = S( 24 ) + draw.GetFontHeight( "LBR_UI_Head" ) + small + S( 10 ) + #cats * rowH + S( 8 ) + small * 3 + S( 6 )
+		+ ( #( ED.errors or {} ) + #( ED.warnings or {} ) + ( #( ED.errors or {} ) == 0 and 1 or 0 ) ) * small + S( 8 )
+	UI.Box( x, y, w, h, C.bg )
+	UI.Box( x, y, w, S( 3 ), C.accent )
+	x = x + S( 14 )
+	y = y + S( 12 )
+	y = line( "MAP EDITOR  -  " .. game.GetMap() .. ( ED.dirty and "  *" or "" ), "LBR_UI_Head", x, y, C.accent )
+	y = line( "Source: " .. ( ED.source or "?" ) .. ( ED.dirty and "   (unsaved changes, Q > Save)" or "" ), "LBR_UI_Small", x, y, ED.dirty and colWarn or C.dim )
+	y = y + S( 10 )
 	for i, cat in ipairs( cats ) do
 		local n = #LBR.GetCategoryList( ED.cfg, cat )
 		local cur = i == ED.cat
-		if cur then
-			surface.SetDrawColor( cat.color.r, cat.color.g, cat.color.b, 50 )
-			surface.DrawRect( x - 6, y - 1, w - 16, 21 )
-		end
+		local rw = w - S( 28 )
+		UI.Box( x - S( 4 ), y, rw + S( 8 ), rowH - S( 2 ), cur and Color( cat.color.r, cat.color.g, cat.color.b, 45 ) or C.row )
+		if cur then UI.Accent( x - S( 4 ), y, rowH - S( 2 ), cat.color ) end
 		surface.SetDrawColor( cat.color )
-		surface.DrawRect( x, y + 4, 10, 10 )
-		draw.SimpleText( i .. "  " .. cat.name, cur and "LBR_ED_Text" or "LBR_ED_Small", x + 18, y + 1, cur and colWhite or Color( 200, 200, 200 ) )
-		draw.SimpleText( tostring( n ), "LBR_ED_Text", x + w - 40, y + 1, n > 0 and colWhite or Color( 130, 130, 130 ), TEXT_ALIGN_RIGHT )
-		y = y + 22
+		surface.DrawRect( x + S( 6 ), y + ( rowH - S( 2 ) ) / 2 - S( 4 ), S( 8 ), S( 8 ) )
+		UI.Text( i .. "  " .. cat.name, cur and "LBR_UI_Text" or "LBR_UI_Small", x + S( 22 ), y + ( rowH - S( 2 ) ) / 2, cur and colWhite or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		UI.Text( tostring( n ), "LBR_UI_Text", x + rw - S( 4 ), y + ( rowH - S( 2 ) ) / 2, n > 0 and colWhite or C.locked, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+		y = y + rowH
 	end
-	y = y + 4
+	y = y + S( 8 )
 	local cat = curCat()
-	y = line( cat.desc, "LBR_ED_Small", x, y, cat.color )
-	y = line( "Mode [R]: " .. ( isEyeMode() and "at your position" or "where you aim" ) .. "   Zone radius: " .. ( ED.cfg.zone_radius or 0 ), "LBR_ED_Small", x, y )
-	y = line( "Loot to spawn: " .. LBR.CountWeapons( ED.cfg ) .. "   Lootable spots: " .. #LBR.GetCategoryList( ED.cfg, cats[3] ), "LBR_ED_Small", x, y )
-	y = y + 4
-	for _, e in ipairs( ED.errors or {} ) do y = line( "X  " .. e, "LBR_ED_Small", x, y, colErr ) end
-	for _, wn in ipairs( ED.warnings or {} ) do y = line( "!  " .. wn, "LBR_ED_Small", x, y, colWarn ) end
-	if #( ED.errors or {} ) == 0 then line( "Map is playable", "LBR_ED_Small", x, y, colOk ) end
+	y = line( cat.desc, "LBR_UI_Small", x, y, cat.color )
+	y = line( "Mode [R]: " .. ( isEyeMode() and "at your position" or "where you aim" ) .. "   Zone radius: " .. ( ED.cfg.zone_radius or 0 ), "LBR_UI_Small", x, y, C.text )
+	y = line( "Loot to spawn: " .. LBR.CountWeapons( ED.cfg ) .. "   Lootable spots: " .. #LBR.GetCategoryList( ED.cfg, cats[3] ), "LBR_UI_Small", x, y, C.text )
+	y = y + S( 6 )
+	for _, e in ipairs( ED.errors or {} ) do y = line( "X  " .. e, "LBR_UI_Small", x, y, colErr ) end
+	for _, wn in ipairs( ED.warnings or {} ) do y = line( "!  " .. wn, "LBR_UI_Small", x, y, colWarn ) end
+	if #( ED.errors or {} ) == 0 then line( "Map is playable", "LBR_UI_Small", x, y, colOk ) end
 
 	// controls
 	local help = {
-		"LMB add   RMB remove   1-8 / wheel category",
-		"R aim/position   E next point   Z undo",
-		"Q menu (save)   F8 exit   SHIFT fly fast"
+		{ { "LMB", "add" }, { "RMB", "remove" }, { "1-8 / WHEEL", "category" } },
+		{ { "R", "aim / position" }, { "E", "next point" }, { "Z", "undo" } },
+		{ { "Q", "menu (save)" }, { "F8", "exit" }, { "SHIFT", "fly fast" } },
 	}
-	local hy = ScrH() - 20 - #help * 20
-	for _, t in ipairs( help ) do
-		draw.SimpleTextOutlined( t, "LBR_ED_Text", ScrW() / 2, hy, colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, color_black )
-		hy = hy + 20
+	local lineH = S( 26 )
+	local bw, bh = S( 520 ), #help * lineH + S( 14 )
+	local bx, by = ScrW() / 2 - bw / 2, ScrH() - S( 20 ) - bh
+	UI.Box( bx, by, bw, bh, C.bg )
+	UI.Box( bx, by, bw, S( 2 ), C.accent )
+	for li, row in ipairs( help ) do
+		local cx = bx + S( 16 )
+		for _, k in ipairs( row ) do
+			cx = cx + keyHint( k[1], k[2], cx, by + S( 9 ) + ( li - 1 ) * lineH ) + S( 18 )
+		end
 	end
 
 	// crosshair
 	local cx, cy = ScrW() / 2, ScrH() / 2
 	surface.SetDrawColor( cat.color )
-	surface.DrawRect( cx - 8, cy - 1, 16, 2 )
-	surface.DrawRect( cx - 1, cy - 8, 2, 16 )
+	surface.DrawRect( cx - S( 8 ), cy - 1, S( 16 ), 2 )
+	surface.DrawRect( cx - 1, cy - S( 8 ), 2, S( 16 ) )
 	if ED.hoverIdx then
-		draw.SimpleTextOutlined( cat.name .. " #" .. ED.hoverIdx .. "  (RMB to remove)", "LBR_ED_Small", cx, cy + 14, colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, color_black )
+		local t = cat.name .. " #" .. ED.hoverIdx .. "  (RMB to remove)"
+		surface.SetFont( "LBR_UI_Small" )
+		local tw, th = surface.GetTextSize( t )
+		UI.Box( cx - tw / 2 - S( 8 ), cy + S( 14 ), tw + S( 16 ), th + S( 6 ), C.bg )
+		UI.Text( t, "LBR_UI_Small", cx, cy + S( 17 ), colWhite, TEXT_ALIGN_CENTER )
 	end
 
 	if ED.status and CurTime() < ( ED.statusTime or 0 ) then
-		draw.SimpleTextOutlined( ED.status, "LBR_ED_Text", cx, ScrH() * 0.2, ED.statusCol or colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, color_black )
+		surface.SetFont( "LBR_UI_Head" )
+		local tw, th = surface.GetTextSize( ED.status )
+		local sw, sh = tw + S( 40 ), th + S( 14 )
+		local sx, sy = cx - sw / 2, ScrH() * 0.2 - sh / 2
+		local sc = ED.statusCol or colWhite
+		UI.Box( sx, sy, sw, sh, C.bg )
+		UI.Box( sx, sy, S( 4 ), sh, sc )
+		UI.Text( ED.status, "LBR_UI_Head", sx + S( 20 ), sy + sh / 2, colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 	end
 end )
 
@@ -443,23 +477,30 @@ end )
 // Menu (Q)
 ------------------------------------------------------------------------
 
+// dark text fields like the rest of the menus
+local function styleEntry( te )
+	local C = LBR.UI.col
+	te:SetFont( "LBR_UI_Small" )
+	te.Paint = function( self, w, h )
+		LBR.UI.Box( 0, 0, w, h, Color( 0, 0, 0, 120 ) )
+		surface.SetDrawColor( 255, 255, 255, self:HasFocus() and 70 or 25 )
+		surface.DrawOutlinedRect( 0, 0, w, h )
+		self:DrawTextEntryText( C.text, C.accent, C.text )
+	end
+end
+
 local function openImport()
-	local fr = vgui.Create( "DFrame" )
-	fr:SetSize( 520, 420 )
-	fr:Center()
-	fr:SetTitle( "Import map config (paste the content of a .txt / JSON file)" )
-	fr:MakePopup()
+	local UI, S, C = LBR.UI, LBR.UI.S, LBR.UI.col
+	local fr = UI.Frame( S( 560 ), S( 480 ), "Import map config", "Paste the content of a .txt / JSON file" )
+	fr:SetKeyboardInputEnabled( true )
 	local te = vgui.Create( "DTextEntry", fr )
 	te:Dock( FILL )
 	te:SetMultiline( true )
-	local btn = vgui.Create( "DButton", fr )
-	btn:Dock( BOTTOM )
-	btn:SetTall( 30 )
-	btn:SetText( "Import (replaces the current points, then Save to keep it)" )
-	btn.DoClick = function()
+	styleEntry( te )
+	local btn = UI.Button( fr, "IMPORT (replaces the current points, then Save to keep it)", C.good, function()
 		local cfg, map = LBR.MapConfigFromJSON( te:GetValue() )
 		if not cfg then
-			Derma_Message( "Invalid config: " .. tostring( map ), "Import", "OK" )
+			LBR.UI.Query( "Invalid config: " .. tostring( map ), "Import", "OK" )
 			return
 		end
 		ED.cfg = cfg
@@ -468,59 +509,56 @@ local function openImport()
 		ED.Status( "Imported" .. ( map and map ~= game.GetMap() and ( " (made for " .. map .. "!)" ) or "" ), map and map ~= game.GetMap() and colWarn or colOk )
 		fr:Close()
 		if IsValid( ED.menu ) then ED.menu:Remove() ED.OpenMenu() end
-	end
+	end )
+	btn:Dock( BOTTOM )
+	btn:DockMargin( 0, S( 10 ), 0, 0 )
+	btn:SetTall( S( 32 ) )
 end
 
 function ED.OpenMenu()
 	if IsValid( ED.menu ) then ED.menu:Remove() end
-	local fr = vgui.Create( "DFrame" )
+	local UI, S, C = LBR.UI, LBR.UI.S, LBR.UI.col
+	local fr = UI.Frame( S( 480 ), S( 720 ), "Map editor", game.GetMap() .. ( ED.dirty and "  -  unsaved changes" or "" ) )
+	fr:SetKeyboardInputEnabled( true ) // text fields
 	ED.menu = fr
-	fr:SetSize( 440, 600 )
-	fr:Center()
-	fr:SetTitle( "Map editor - " .. game.GetMap() )
-	fr:MakePopup()
 
-	local scroll = vgui.Create( "DScrollPanel", fr )
+	local scroll = UI.Scroll( fr )
 	scroll:Dock( FILL )
 
 	local function button( txt, fn, col )
-		local b = scroll:Add( "DButton" )
+		local b = UI.Button( scroll, txt, col or C.dim, fn )
 		b:Dock( TOP )
-		b:DockMargin( 4, 2, 4, 2 )
-		b:SetTall( 28 )
-		b:SetText( txt )
-		if col then b:SetTextColor( col ) end
-		b.DoClick = fn
+		b:DockMargin( 0, S( 3 ), S( 8 ), S( 3 ) )
+		b:SetTall( S( 30 ) )
 		return b
 	end
 	local function label( txt )
-		local l = scroll:Add( "DLabel" )
-		l:Dock( TOP )
-		l:DockMargin( 6, 10, 4, 2 )
-		l:SetText( txt )
-		l:SetFont( "LBR_ED_Text" )
-		l:SetTextColor( colWhite )
-		l:SizeToContents()
-		return l
+		return UI.Section( scroll, txt ):DockMargin( 0, S( 12 ), S( 8 ), S( 4 ) )
 	end
 
-	button( "Save to server (data/" .. LBR.MapFileName() .. ")", function() ED.Save() end, Color( 0, 120, 0 ) )
+	label( "Map" )
+	button( "Save to server (data/" .. LBR.MapFileName() .. ")", function() ED.Save() end, C.good )
 	button( "Undo", function() ED.Undo() end )
 	button( "Clear current category (" .. curCat().name .. ")", function()
-		Derma_Query( "Remove all " .. #list() .. " points of " .. curCat().name .. "? (Undo works)", "Clear", "Yes", function() ED.ClearCategory() end, "No" )
+		LBR.UI.Query( "Remove all " .. #list() .. " points of " .. curCat().name .. "? (Undo works)", "Clear", "Yes", function() ED.ClearCategory() end, "No" )
 	end )
 	local cb = scroll:Add( "DCheckBoxLabel" )
 	cb:Dock( TOP )
-	cb:DockMargin( 6, 6, 4, 2 )
+	cb:DockMargin( S( 2 ), S( 8 ), S( 8 ), S( 2 ) )
 	cb:SetText( "Show all categories (off = only the selected one)" )
+	cb:SetFont( "LBR_UI_Small" )
+	cb:SetTextColor( C.text )
 	cb:SetValue( ED.showAll )
 	cb.OnChange = function( _, v ) ED.showAll = v end
 
 	label( "Zone" )
 	local zr = scroll:Add( "DNumSlider" )
 	zr:Dock( TOP )
-	zr:DockMargin( 6, 0, 4, 0 )
+	zr:DockMargin( S( 2 ), 0, S( 8 ), 0 )
 	zr:SetText( "Start radius" )
+	zr.Label:SetFont( "LBR_UI_Small" )
+	zr.Label:SetTextColor( C.text )
+	zr:GetTextArea():SetTextColor( C.text )
 	zr:SetMinMax( 1000, 150000 )
 	zr:SetDecimals( 0 )
 	zr:SetValue( ED.cfg.zone_radius or 20000 )
@@ -533,18 +571,23 @@ function ED.OpenMenu()
 	for i, name in ipairs( LBR.WeaponCountNames ) do
 		local row = scroll:Add( "DPanel" )
 		row:Dock( TOP )
-		row:DockMargin( 6, 1, 4, 1 )
-		row:SetTall( 24 )
-		row.Paint = nil
+		row:DockMargin( 0, S( 1 ), S( 8 ), S( 1 ) )
+		row:SetTall( S( 28 ) )
+		row.Paint = function( self, w, h ) UI.Box( 0, 0, w, h, C.row ) end
 		local l = vgui.Create( "DLabel", row )
 		l:Dock( LEFT )
-		l:SetWide( 200 )
+		l:DockMargin( S( 10 ), 0, 0, 0 )
+		l:SetWide( S( 220 ) )
+		l:SetFont( "LBR_UI_Small" )
+		l:SetTextColor( C.text )
 		l:SetText( name )
 		local wang = vgui.Create( "DNumberWang", row )
-		wang:Dock( LEFT )
-		wang:SetWide( 80 )
+		wang:Dock( RIGHT )
+		wang:DockMargin( 0, S( 3 ), S( 4 ), S( 3 ) )
+		wang:SetWide( S( 90 ) )
 		wang:SetMinMax( 0, 1000 )
 		wang:SetValue( ED.cfg.weaponsc[i] or 0 )
+		styleEntry( wang )
 		wang.OnValueChanged = function( _, v )
 			ED.cfg.weaponsc[i] = math.Clamp( math.floor( tonumber( v ) or 0 ), 0, 1000 )
 			markDirty()
@@ -553,14 +596,15 @@ function ED.OpenMenu()
 
 	button( "Loot and vehicles: which weapons / items / vehicles spawn...", function()
 		if LBR.OpenLootEditor then LBR.OpenLootEditor() end
-	end, Color( 150, 110, 0 ) )
+	end, C.accent ):DockMargin( 0, S( 8 ), S( 8 ), S( 3 ) )
 
 	label( "Player models (one per line)" )
 	local pm = scroll:Add( "DTextEntry" )
 	pm:Dock( TOP )
-	pm:DockMargin( 6, 0, 4, 0 )
-	pm:SetTall( 110 )
+	pm:DockMargin( 0, 0, S( 8 ), 0 )
+	pm:SetTall( S( 110 ) )
 	pm:SetMultiline( true )
+	styleEntry( pm )
 	pm:SetValue( table.concat( ED.cfg.playermodels or {}, "\n" ) )
 	pm.OnChange = function( self )
 		local models = {}
@@ -576,24 +620,23 @@ function ED.OpenMenu()
 	button( "Copy config to clipboard", function()
 		SetClipboardText( LBR.MapConfigToJSON( ED.cfg ) )
 		ED.Status( "Copied: paste it into data/" .. LBR.MapFileName() .. " to share it", colOk )
-	end )
-	button( "Import config (paste)", openImport )
+	end, C.blue )
+	button( "Import config (paste)", openImport, C.blue )
 	button( "Reload from server (discard changes)", function()
 		net.Start( "LBR_Editor_Reload" )
 		net.SendToServer()
 	end )
 	button( "Reset: delete the saved file", function()
-		Derma_Query( "Delete data/" .. LBR.MapFileName() .. " on the server?\nBuilt-in maps go back to the original config, other maps become unconfigured.", "Reset", "Delete", function()
+		LBR.UI.Query( "Delete data/" .. LBR.MapFileName() .. " on the server?\nBuilt-in maps go back to the original config, other maps become unconfigured.", "Reset", "Delete", function()
 			net.Start( "LBR_Editor_Delete" )
 			net.SendToServer()
 		end, "Cancel" )
-	end, Color( 160, 0, 0 ) )
+	end, C.bad )
 
-	label( "" )
 	button( "Close editor (F8)", function()
 		fr:Close()
 		ED.RequestClose()
-	end )
+	end ):DockMargin( 0, S( 16 ), S( 8 ), S( 3 ) )
 end
 
 concommand.Add( "lbr_editor_menu", function() if ED.active then ED.OpenMenu() end end )

@@ -157,12 +157,12 @@ end
 
 function LBR.OpenEditor( ply )
 	if not LBR.CanEdit( ply ) then
-		ply:PrintMessage( HUD_PRINTTALK, "Only admins can use the map editor." )
+		LBR.Chat( ply, "Only admins can use the map editor.", "bad" )
 		return
 	end
 	local st = GetState()
 	if st == STATE_LIVE or st == STATE_PREPARING then
-		ply:PrintMessage( HUD_PRINTTALK, "The map editor can be opened only between rounds." )
+		LBR.Chat( ply, "The map editor can be opened only between rounds.", "bad" )
 		return
 	end
 	if not sendConfig( ply ) then return end

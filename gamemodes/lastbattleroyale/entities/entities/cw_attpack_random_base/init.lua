@@ -23,23 +23,23 @@ end
 
 function ENT:Use(activator, caller)
 	if activator:GetActiveWeapon().Primary == nil then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any attachments to this weapon")
+		LBR.Notify( activator, "You can not get any attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	if activator:GetActiveWeapon().Primary.ClipSize == nil then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any attachments to this weapon")
+		LBR.Notify( activator, "You can not get any attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	if activator:GetActiveWeapon().Primary.ClipSize < 1 then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any attachments to this weapon")
+		LBR.Notify( activator, "You can not get any attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	if activator:GetActiveWeapon().Attachments == nil then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any attachments to this weapon")
+		LBR.Notify( activator, "You can not get any attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	if #activator:GetActiveWeapon().Attachments < 1 then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any attachments to this weapon")
+		LBR.Notify( activator, "You can not get any attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	local weapon_atts = {}
@@ -51,7 +51,7 @@ function ENT:Use(activator, caller)
 		end
 	end
 	if #weapon_atts < 2 then
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any more attachments to this weapon")
+		LBR.Notify( activator, "You can not get any more attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	local needtogive = {}
@@ -63,7 +63,7 @@ function ENT:Use(activator, caller)
 	if #needtogive > 0 then
 		CustomizableWeaponry.giveAttachments(activator, needtogive)
 	else
-		activator:PrintMessage(HUD_PRINTCENTER, "You can not get any more attachments to this weapon")
+		LBR.Notify( activator, "You can not get any more attachments to this weapon", "bad", 2.5 )
 		return
 	end
 	self:Remove()

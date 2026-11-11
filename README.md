@@ -5,8 +5,8 @@
 Battle royale gamemode for Garry's Mod, published on the Steam Workshop:
 **<https://steamcommunity.com/sharedfiles/filedetails/?id=1549863126>**
 
-It is based on **Last Stand** by Kanade, heavily modified: new weapons, new HUD, a shrinking
-"Fortnite-style" safe zone, outlines on loot, supply drops, vehicles, classes with levels and more.
+It is based on **Last Stand** by Kanade, heavily modified: new weapons, new HUD, a
+shrinking safe zone, outlines on loot, supply drops, vehicles, classes with levels and more.
 
 This repository contains the full source of the Workshop addon so anyone can study it, fix it,
 add maps/weapons and run it on their own server.
@@ -25,7 +25,8 @@ add maps/weapons and run it on their own server.
 - **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
 - On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop
 - Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
-- Outline (halo) on loot to see it in the dark, custom scoreboard and HUD
+- Outline (halo) on loot to see it in the dark
+- One look for everything: HUD, menus, map vote, map editor, dialogs, messages in the middle of the screen and in chat (`[LBR]` tag)
 
 ## Controls
 
@@ -168,6 +169,7 @@ gamemodes/lastbattleroyale/
         init.lua                 server entry point, net messages, squads, death handling
         cl_init.lua              client entry point, key binds
         cl_hud.lua               HUD
+        sh_notify.lua            messages: [LBR] chat lines and notifications in the middle of the screen
         cl_zone.lua              zone wall, storm effect, loot outlines
         cl_editor.lua            in-game map editor (client)
         cl_perf.lua / sv_perf.lua  distance culling of vehicles / loot on big maps

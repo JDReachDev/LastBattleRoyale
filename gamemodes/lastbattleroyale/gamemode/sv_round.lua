@@ -74,7 +74,7 @@ function GM:Tick()
 			if not LBR.IsMapReady() then
 				if CurTime() > nextNotConfiguredMsg then
 					nextNotConfiguredMsg = CurTime() + 60
-					PrintMessage(HUD_PRINTTALK, "This map is not configured for Last Battle Royale. An admin can press F8 to open the map editor.")
+					LBR.Chat( nil, "This map is not configured for Last Battle Royale. An admin can press F8 to open the map editor." )
 				end
 			elseif not LBR.AnyEditing() then
 				RoundRestart()
@@ -107,8 +107,8 @@ function RunEvents(num)
 	if num == 1 then
 		local nuke = ents.Create( "hb_nuclear_fatman" )
 		if not IsValid( nuke ) then return end
-		PrintMessage(HUD_PRINTTALK, "Nuclear airstrike inbound")
-		PrintMessage(HUD_PRINTCENTER, "Nuclear airstrike inbound!")
+		LBR.Chat( nil, "Nuclear airstrike inbound" )
+		LBR.Notify( nil, "Nuclear airstrike inbound!", "bad", 6 )
 		nuke:SetPos( nukes[math.random( #nukes )] )
 		nuke:Spawn()
 		nuke:Arm()
@@ -117,8 +117,8 @@ function RunEvents(num)
 		if #drops == 0 then return end
 		local spawns = LBR.ShuffledCopy( drops )
 		local count = math.max( 1, #spawns - math.random( 1, 4 ) )
-		PrintMessage(HUD_PRINTTALK, tostring(count) .. " supply airdrops incoming.")
-		PrintMessage(HUD_PRINTCENTER, tostring(count) .. " supply airdrops incoming!")
+		LBR.Chat( nil, tostring(count) .. " supply airdrops incoming." )
+		LBR.Notify( nil, tostring(count) .. " supply airdrops incoming!", "event", 6 )
 		for i = 1, count do
 			local supplydrop = ents.Create( "ent_supplydrop_fix" )
 			if IsValid( supplydrop ) then
@@ -131,7 +131,7 @@ end
 
 local function RemoveFromTeam( pl, other )
 	table.RemoveByValue( pl.TeamingPlayers, other:SteamID64() )
-	pl:PrintMessage( HUD_PRINTTALK, other:Nick() .. " is no longer in your team" )
+	LBR.Chat( pl, other:Nick() .. " is no longer in your team", "squad" )
 	pl:UpdateTeamers()
 end
 
@@ -171,7 +171,7 @@ function RoundRestart()
 		if GetRoundNum() >= GetConVar("lst_maxrounds"):GetInt() then
 			hook.Run("MapChange")
 		elseif GetConVar("lst_maxrounds"):GetInt() - 1 == GetRoundNum() then
-			PrintMessage(HUD_PRINTTALK, "Map will change after this round.")
+			LBR.Chat( nil, "Map will change after this round." )
 		end
 	end
 	SetRoundNum(GetRoundNum() + 1)
@@ -185,39 +185,39 @@ function RoundRestart()
 	SetGlobalBool( "LBR_CanAttack", false )
 	SetState(STATE_PREPARING)
 	SetGlobalFloat( "LBR_PhaseEnd", CurTime() + PrepTime() )
-	PrintMessage(HUD_PRINTTALK, "Game is starting in " .. PrepTime() .. " seconds")
-	PrintMessage(HUD_PRINTCENTER, "Game is starting in " .. PrepTime() .. " seconds")
+	LBR.Chat( nil, "Game is starting in " .. PrepTime() .. " seconds" )
+	LBR.Notify( nil, "Game is starting in " .. PrepTime() .. " seconds" )
 	net.Start("LST_PrepStart")
 	net.Broadcast()
 	timer.Create("timer_prearing", PrepTime(), 1, function()
 		ProcessTeamLeaves()
 		if EveryoneInOneTeam() then
-			PrintMessage(HUD_PRINTTALK, "You cannot start the game when all players are in a team")
+			LBR.Chat( nil, "You cannot start the game when all players are in a team", "bad" )
 			SetState(STATE_NONE)
 			return
 		end
 		if not LBR.IsMapReady() then
-			PrintMessage(HUD_PRINTTALK, "Map config is not valid anymore, round cancelled.")
+			LBR.Chat( nil, "Map config is not valid anymore, round cancelled." )
 			SetState(STATE_NONE)
 			return
 		end
 		game.CleanUpMap()
-		PrintMessage(HUD_PRINTTALK, "Game is live! Players will be able to fight after " .. ActionPrepTime() .. " seconds.")
-		PrintMessage(HUD_PRINTCENTER, "Game is live!")
+		LBR.Chat( nil, "Game is live! Players will be able to fight after " .. ActionPrepTime() .. " seconds." )
+		LBR.Notify( nil, "Game is live!", "good" )
 		canattack = false
 		SetGlobalFloat( "LBR_PhaseEnd", CurTime() + ActionPrepTime() )
 		timer.Create("timer_attackdelay", ActionPrepTime(), 1, function()
 			canattack = true
 			SetGlobalBool( "LBR_CanAttack", true )
-			PrintMessage(HUD_PRINTTALK, "Action phase is live! Players are able to fight now.")
-			PrintMessage(HUD_PRINTCENTER, "Action phase is live!")
+			LBR.Chat( nil, "Action phase is live! Players are able to fight now." )
+			LBR.Notify( nil, "Action phase is live!", "good" )
 			net.Start("LST_ActionStart")
 			net.Broadcast()
 		end)
 		SetGlobalFloat( "LBR_EventTime", CurTime() + 360 )
 		timer.Create("timer_event1", 300, 1, function()
-			PrintMessage(HUD_PRINTTALK, "Random event starts in one minute")
-			PrintMessage(HUD_PRINTCENTER, "Random event starts in one minute")
+			LBR.Chat( nil, "Random event starts in one minute" )
+			LBR.Notify( nil, "Random event starts in one minute", "event" )
 			timer.Create("timer_event2", 60, 1, function()
 				SetGlobalFloat( "LBR_EventTime", 0 )
 				if cvNuke:GetInt() == 1 and math.random(1,3) == 1 then
@@ -258,7 +258,7 @@ util.AddNetworkString( "LBR_ForceStart" )
 
 function LBR.ForceStart( ply )
 	local function reply( msg )
-		if IsValid( ply ) then ply:ChatPrint( msg ) else print( msg ) end
+		if IsValid( ply ) then LBR.Chat( ply, msg ) else print( msg ) end
 	end
 	if IsValid( ply ) and not ply:IsAdmin() then return reply( "Only admins can start the round." ) end
 	if GetState() ~= STATE_NONE then return reply( "A round is already starting or running." ) end
@@ -266,7 +266,7 @@ function LBR.ForceStart( ply )
 	if LBR.AnyEditing() then return reply( "Someone is using the map editor: close it first." ) end
 	// 1 player is allowed: admins can test the map alone (the round ends when they die)
 	if #team.GetPlayers( TEAM_PLAYER ) < 1 then return reply( "Nobody is in the lobby." ) end
-	PrintMessage( HUD_PRINTTALK, ( IsValid( ply ) and ply:Nick() or "The server" ) .. " started the round with " .. #team.GetPlayers( TEAM_PLAYER ) .. " players." )
+	LBR.Chat( nil, ( IsValid( ply ) and ply:Nick() or "The server" ) .. " started the round with " .. #team.GetPlayers( TEAM_PLAYER ) .. " players." )
 	RoundRestart()
 end
 

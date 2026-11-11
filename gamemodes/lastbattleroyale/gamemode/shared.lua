@@ -5,6 +5,7 @@ include( "sh_mapconfig.lua" )
 include( "sh_zone.lua" )
 include( "sh_spawn.lua" )
 include( "sh_loot.lua" )
+include( "sh_notify.lua" )
 
 for k,v in pairs(CLASSES) do
 	local cls = "player_class/" .. v["class"] .. ".lua"
@@ -141,7 +142,7 @@ if SERVER then
 elseif CLIENT then
 	net.Receive("ColoredMessage",function(len) 
 		local msg = net.ReadTable()
-		chat.AddText(unpack(msg))
+		chat.AddText( LBR.MsgColors.info, "[LBR] ", unpack( msg ) )
 		chat.PlaySound()
 	end)
 end

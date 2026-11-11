@@ -89,7 +89,7 @@ end
 function LBR.ChangeMap( map, delay )
 	map = string.lower( map )
 	if not file.Exists( "maps/" .. map .. ".bsp", "GAME" ) then return false end
-	PrintMessage( HUD_PRINTTALK, "Changing map to " .. map .. "..." )
+	LBR.Chat( nil, "Changing map to " .. map .. "..." )
 	SetGlobalString( "LBR_NextMap", map )
 	timer.Create( "LBR_ChangeMap", delay or 3, 1, function()
 		RunConsoleCommand( "changelevel", map )
@@ -145,7 +145,7 @@ local function finishVote()
 	net.Broadcast()
 
 	if winner ~= current and LBR.ChangeMap( winner, 4 ) then return end
-	PrintMessage( HUD_PRINTTALK, "Map vote: staying on " .. current .. "." )
+	LBR.Chat( nil, "Map vote: staying on " .. current .. "." )
 	LBR.RoundsThisMap = 0
 	ReturnToLobby()
 end
@@ -188,7 +188,7 @@ function LBR.StartMapVote( duration )
 
 	timer.Remove( "timer_postround" )
 	timer.Create( "LBR_MapVote", duration, 1, finishVote )
-	PrintMessage( HUD_PRINTTALK, "Vote the next map! (" .. duration .. " seconds)" )
+	LBR.Chat( nil, "Vote the next map! (" .. duration .. " seconds)" )
 	return true
 end
 
@@ -221,7 +221,7 @@ end )
 
 concommand.Add( "lbr_mapvote_start", function( ply )
 	if not isAdmin( ply ) then return end
-	local function reply( msg ) if IsValid( ply ) then ply:ChatPrint( msg ) else print( msg ) end end
+	local function reply( msg ) if IsValid( ply ) then LBR.Chat( ply, msg ) else print( msg ) end end
 	if GetState() ~= STATE_NONE and GetState() ~= STATE_POST then
 		reply( "Wait for the end of the match to start a map vote." )
 		return
@@ -253,14 +253,14 @@ net.Receive( "LBR_ChangeMap", function( len, ply )
 	if not isAdmin( ply ) then return end
 	local map = net.ReadString()
 	if not LBR.ChangeMap( map, 3 ) then
-		ply:ChatPrint( "Map " .. map .. " is not installed on the server." )
+		LBR.Chat( ply, "Map " .. map .. " is not installed on the server.", "bad" )
 	end
 end )
 
 concommand.Add( "lbr_changemap", function( ply, cmd, args )
 	if not isAdmin( ply ) then return end
 	local map = args[1]
-	local function reply( msg ) if IsValid( ply ) then ply:ChatPrint( msg ) else print( msg ) end end
+	local function reply( msg ) if IsValid( ply ) then LBR.Chat( ply, msg ) else print( msg ) end end
 	if not map then reply( "Usage: lbr_changemap <map>" ) return end
 	if not LBR.ChangeMap( map, 3 ) then reply( "Map " .. map .. " is not installed on the server." ) end
 end )

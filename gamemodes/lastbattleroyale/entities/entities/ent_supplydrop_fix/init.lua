@@ -28,7 +28,7 @@ function ENT:Use(activator, caller)
 	if IsValid(activator) and activator:IsPlayer() then
 		self.LBR_Looted = true
 		self:EmitSound(Sound("items/ammopickup.wav"),70,100)
-		activator:PrintMessage(HUD_PRINTTALK, "Looting...")
+		LBR.Chat( activator, "Looting..." )
 		activator:Freeze(true)
 		timer.Simple(5, function()
 			if IsValid(activator) then
@@ -58,7 +58,7 @@ function ENT:Use(activator, caller)
 				activator:SetArmor(30)
 				activator:SetModel("models/mw2/skin_12/MW2_Soldier_06.mdl")
 				activator:EmitSound( Sound("npc/combine_soldier/zipline_clothing".. math.random(1, 2).. ".wav") )
-				activator:PrintMessage(HUD_PRINTTALK, "You picked up survivalist pack")
+				LBR.Chat( activator, "You picked up survivalist pack" )
 			elseif rnd == 2 then
 				local wep = table.Random( WEPS )
 				activator:Give(wep)
@@ -67,7 +67,7 @@ function ENT:Use(activator, caller)
 				activator:SetArmor(75)
 				activator:SetModel("models/mw2/skin_03/MW2_Soldier_0" .. math.random(2,4) .. ".mdl")
 				activator:EmitSound( Sound("npc/combine_soldier/zipline_clothing".. math.random(1, 2).. ".wav") )
-				activator:PrintMessage(HUD_PRINTTALK, "You picked up battle pack")
+				LBR.Chat( activator, "You picked up battle pack" )
 			end
 		end)
 		self:Remove()

@@ -1,4 +1,4 @@
-// Client HUD (battle royale style)
+// Client HUD (same look as the menus of cl_ui.lua: dark flat panels, thin gold line on top)
 //  bottom-left : shield + health bars
 //  bottom-right: weapon name + ammo
 //  top-center  : compass with zone center and teammates, match phase banner
@@ -32,7 +32,7 @@ local matGradientR = Material( "vgui/gradient-r" )
 
 local colWhite = Color( 255, 255, 255 )
 local colShadow = Color( 0, 0, 0, 200 )
-local colBg = Color( 10, 14, 24, 170 )
+local colBg = Color( 10, 14, 24, 205 )
 local colBarBg = Color( 0, 0, 0, 140 )
 local colHealth = Color( 90, 225, 95 )
 local colHealthLow = Color( 235, 70, 60 )
@@ -51,34 +51,37 @@ local function fmtTime( s )
 	return string.format( "%d:%02d", math.floor( s / 60 ), s % 60 )
 end
 
+// outlined text: only for things drawn over the world (names above teammates, compass)
 local function text( str, font, x, y, col, ax, ay )
 	draw.SimpleTextOutlined( str, font, x, y, col, ax or TEXT_ALIGN_LEFT, ay or TEXT_ALIGN_TOP, 1, colShadow )
 end
 
-local function slantPoly( x, y, w, h, sk )
-	return {
-		{ x = x + sk, y = y },
-		{ x = x + w + sk, y = y },
-		{ x = x + w, y = y + h },
-		{ x = x, y = y + h }
-	}
+// plain text: inside the panels
+local function ptext( str, font, x, y, col, ax, ay )
+	draw.SimpleText( str, font, x, y, col, ax or TEXT_ALIGN_LEFT, ay or TEXT_ALIGN_TOP )
 end
 
-local function slantBar( x, y, w, h, frac, col, ghostFrac )
-	local sk = h * 0.45
-	draw.NoTexture()
+// same look as the menus (cl_ui.lua): dark flat panel, thin gold line on top
+local function panel( x, y, w, h, accent )
+	surface.SetDrawColor( colBg )
+	surface.DrawRect( x, y, w, h )
+	surface.SetDrawColor( accent or colGold )
+	surface.DrawRect( x, y, w, S( 2 ) )
+end
+
+// flat bar with the white "damage taken" ghost
+local function bar( x, y, w, h, frac, col, ghostFrac )
 	surface.SetDrawColor( colBarBg )
-	surface.DrawPoly( slantPoly( x, y, w, h, sk ) )
+	surface.DrawRect( x, y, w, h )
 	if ghostFrac and ghostFrac > frac then
 		surface.SetDrawColor( 255, 255, 255, 90 )
-		surface.DrawPoly( slantPoly( x, y, math.max( w * ghostFrac, 1 ), h, sk ) )
+		surface.DrawRect( x, y, math.floor( w * math.min( ghostFrac, 1 ) ), h )
 	end
 	if frac > 0 then
 		surface.SetDrawColor( col )
-		surface.DrawPoly( slantPoly( x, y, math.max( w * math.min( frac, 1 ), 1 ), h, sk ) )
-		// light strip on top
-		surface.SetDrawColor( 255, 255, 255, 40 )
-		surface.DrawPoly( slantPoly( x + sk * 0.6, y, math.max( w * math.min( frac, 1 ) - sk * 0.2, 1 ), h * 0.3, sk * 0.3 ) )
+		surface.DrawRect( x, y, math.max( math.floor( w * math.min( frac, 1 ) ), 1 ), h )
+		surface.SetDrawColor( 255, 255, 255, 30 )
+		surface.DrawRect( x, y, math.max( math.floor( w * math.min( frac, 1 ) ), 1 ), math.max( math.floor( h * 0.35 ), 1 ) )
 	end
 end
 
@@ -114,26 +117,30 @@ local function drawVitals( ply )
 		shown.ghostTime = CurTime() + 0.6
 	end
 
-	local x, w = S( 40 ), S( 360 )
-	local yHp = ScrH() - S( 70 )
-	local yAr = yHp - S( 30 )
-
-	// shield
-	slantBar( x + S( 46 ), yAr, w, S( 20 ), shown.ar / 100, colShield, shown.arGhost / 100 )
-	text( tostring( ar ), "LBR_HUD_Small", x + S( 46 ) + w + S( 18 ), yAr + S( 10 ), colShield, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-
-	// health
 	local low = hp / maxhp <= 0.25
 	local col = low and colHealthLow or colHealth
-	slantBar( x + S( 46 ), yHp, w, S( 28 ), shown.hp / maxhp, col, shown.hpGhost / maxhp )
-	text( tostring( hp ), "LBR_HUD_Big", x + S( 46 ) + w + S( 22 ), yHp + S( 14 ), colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-	surface.SetFont( "LBR_HUD_Big" )
-	local hw = surface.GetTextSize( tostring( hp ) )
-	text( "/" .. maxhp, "LBR_HUD_Tiny", x + S( 46 ) + w + S( 26 ) + hw, yHp + S( 18 ), Color( 200, 200, 200 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	local w, h = S( 400 ), S( 92 )
+	local x, y = S( 24 ), ScrH() - S( 24 ) - h
+	panel( x, y, w, h )
 
+	local pad = S( 14 )
+	local bx = x + pad + S( 46 )
+	local bw = w - pad * 2 - S( 46 ) - S( 70 )
+
+	// health icon
 	surface.SetDrawColor( col )
 	surface.SetMaterial( matHealth )
-	surface.DrawTexturedRect( x, yHp - S( 4 ), S( 36 ), S( 36 ) )
+	surface.DrawTexturedRect( x + pad, y + S( 40 ), S( 34 ), S( 34 ) )
+
+	// shield
+	ptext( "SHIELD", "LBR_HUD_Tiny", bx, y + S( 12 ), Color( 150, 158, 175 ) )
+	bar( bx, y + S( 30 ), bw, S( 10 ), shown.ar / 100, colShield, shown.arGhost / 100 )
+	ptext( tostring( ar ), "LBR_HUD_Small", x + w - pad, y + S( 35 ), colShield, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+
+	// health
+	ptext( "HEALTH", "LBR_HUD_Tiny", bx, y + S( 46 ), Color( 150, 158, 175 ) )
+	bar( bx, y + S( 64 ), bw, S( 16 ), shown.hp / maxhp, col, shown.hpGhost / maxhp )
+	ptext( tostring( hp ), "LBR_HUD_Big", x + w - pad, y + S( 72 ), low and colHealthLow or colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 end
 
 ------------------------------------------------------------------------
@@ -144,28 +151,35 @@ local function drawAmmo( ply )
 	if not ply:Alive() then return end
 	local wep = ply:GetActiveWeapon()
 	if not IsValid( wep ) then return end
-	local x = ScrW() - S( 40 )
-	local y = ScrH() - S( 40 )
 
-	local name = wep.GetPrintName and wep:GetPrintName() or wep:GetClass()
+	local name = string.upper( wep.GetPrintName and wep:GetPrintName() or wep:GetClass() )
 	local clip = wep:Clip1()
 	local reserve = ply:GetAmmoCount( wep:GetPrimaryAmmoType() )
+	local hasAmmo = clip >= 0 or reserve > 0
 
+	local pad = S( 14 )
+	surface.SetFont( "LBR_HUD_Small" )
+	local nw = surface.GetTextSize( name )
+	local w = math.max( S( 220 ), nw + pad * 2 )
+	local h = hasAmmo and S( 92 ) or S( 40 )
+	local x, y = ScrW() - S( 24 ) - w, ScrH() - S( 24 ) - h
+	panel( x, y, w, h )
+	ptext( name, "LBR_HUD_Small", x + w - pad, y + S( 12 ), colGold, TEXT_ALIGN_RIGHT )
+	if not hasAmmo then return end
+
+	local by = y + h - S( 10 )
 	if clip >= 0 then
 		local maxclip = wep:GetMaxClip1()
 		local clipCol = ( maxclip > 0 and clip <= maxclip * 0.25 ) and colWarn or colWhite
 		surface.SetFont( "LBR_HUD_Med" )
 		local rw = surface.GetTextSize( tostring( reserve ) )
-		text( tostring( reserve ), "LBR_HUD_Med", x, y, Color( 200, 200, 200 ), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
-		text( tostring( clip ), "LBR_HUD_Huge", x - rw - S( 12 ), y + S( 6 ), clipCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
-		surface.SetDrawColor( 255, 255, 255, 120 )
-		surface.DrawRect( x - rw - S( 7 ), y - S( 30 ), S( 2 ), S( 26 ) )
-		y = y - S( 52 )
-	elseif reserve > 0 then
-		text( tostring( reserve ), "LBR_HUD_Huge", x, y + S( 6 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
-		y = y - S( 52 )
+		ptext( tostring( reserve ), "LBR_HUD_Med", x + w - pad, by - S( 4 ), Color( 150, 158, 175 ), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
+		surface.SetDrawColor( 255, 255, 255, 60 )
+		surface.DrawRect( x + w - pad - rw - S( 10 ), by - S( 30 ), S( 2 ), S( 24 ) )
+		ptext( tostring( clip ), "LBR_HUD_Huge", x + w - pad - rw - S( 18 ), by + S( 4 ), clipCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
+	else
+		ptext( tostring( reserve ), "LBR_HUD_Huge", x + w - pad, by + S( 4 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
 	end
-	text( string.upper( name ), "LBR_HUD_Small", x, y, colGold, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
 end
 
 ------------------------------------------------------------------------
@@ -245,6 +259,25 @@ end
 // Phase banner
 ------------------------------------------------------------------------
 
+// centered panel with a big title and an optional line under it
+local function centerBox( title, titleFont, col, sub, y )
+	surface.SetFont( titleFont )
+	local tw, th = surface.GetTextSize( title )
+	local sw, sh = 0, 0
+	if sub then
+		surface.SetFont( "LBR_HUD_Small" )
+		sw, sh = surface.GetTextSize( sub )
+	end
+	local pad = S( 22 )
+	local w = math.max( tw, sw ) + pad * 2
+	local h = S( 12 ) + th + ( sub and sh + S( 4 ) or 0 ) + S( 12 )
+	local x = ScrW() / 2 - w / 2
+	panel( x, y, w, h, col )
+	ptext( title, titleFont, ScrW() / 2, y + S( 12 ), col, TEXT_ALIGN_CENTER )
+	if sub then ptext( sub, "LBR_HUD_Small", ScrW() / 2, y + S( 12 ) + th + S( 4 ), Color( 236, 239, 245 ), TEXT_ALIGN_CENTER ) end
+	return h
+end
+
 local function drawBanner( lp, spectating, target )
 	local state = GetGlobalInt( "state" )
 	local now = CurTime()
@@ -254,7 +287,7 @@ local function drawBanner( lp, spectating, target )
 	if state == STATE_NONE then
 		if not GetGlobalBool( "LBR_MapReady", true ) then
 			title, col = "MAP NOT CONFIGURED", colWarn
-			sub = lp:IsAdmin() and "Press F8 to open the map editor" or "Waiting for an admin to configure this map"
+			sub = lp:IsAdmin() and "Press F8 to open the map editor, F2 to change map" or "Waiting for an admin to configure this map"
 		else
 			local need = GetGlobalInt( "LBR_MinPlayers", 2 )
 			title, col = "WAITING FOR PLAYERS", colWhite
@@ -275,17 +308,11 @@ local function drawBanner( lp, spectating, target )
 		sub = winner ~= "" and winner or nil
 	end
 
-	local y = S( 100 )
 	if title then
-		text( title, "LBR_HUD_Big", ScrW() / 2, y, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-		y = y + S( 36 )
-		if sub then
-			text( sub, "LBR_HUD_Small", ScrW() / 2, y, colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-			y = y + S( 24 )
-		end
+		centerBox( title, "LBR_HUD_Big", col, sub, S( 96 ) )
 	end
 	if spectating then
-		text( "SPECTATING " .. string.upper( target:Nick() ), "LBR_HUD_Med", ScrW() / 2, ScrH() - S( 130 ), colWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+		centerBox( "SPECTATING " .. string.upper( target:Nick() ), "LBR_HUD_Med", colWhite, nil, ScrH() - S( 170 ) )
 	end
 end
 
@@ -294,7 +321,7 @@ end
 ------------------------------------------------------------------------
 
 local function drawInfo( lp, ply )
-	local x = ScrW() - S( 30 )
+	local x = ScrW() - S( 24 )
 	local y = S( 20 )
 	local alive = #team.GetPlayers( 2 )
 	local kills = ply:GetNW2Int( "LBR_Kills", 0 )
@@ -302,45 +329,50 @@ local function drawInfo( lp, ply )
 	surface.SetFont( "LBR_HUD_Med" )
 	local kw = surface.GetTextSize( tostring( kills ) )
 	local aw = surface.GetTextSize( tostring( alive ) )
+	local boxH = S( 36 )
 	local boxW = S( 24 ) + kw + S( 20 ) + S( 24 ) + aw + S( 30 )
-	draw.RoundedBox( S( 6 ), x - boxW, y, boxW, S( 34 ), colBg )
+	panel( x - boxW, y, boxW, boxH )
 
+	local my = y + S( 1 ) + boxH / 2
 	local cx = x - S( 12 )
-	text( tostring( kills ), "LBR_HUD_Med", cx, y + S( 17 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+	ptext( tostring( kills ), "LBR_HUD_Med", cx, my, colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	cx = cx - kw - S( 26 )
 	surface.SetDrawColor( colWhite )
 	surface.SetMaterial( matSkull )
-	surface.DrawTexturedRect( cx, y + S( 5 ), S( 22 ), S( 22 ) )
+	surface.DrawTexturedRect( cx, my - S( 11 ), S( 22 ), S( 22 ) )
 	cx = cx - S( 12 )
-	text( tostring( alive ), "LBR_HUD_Med", cx, y + S( 17 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+	ptext( tostring( alive ), "LBR_HUD_Med", cx, my, colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	cx = cx - aw - S( 24 )
 	surface.SetMaterial( matUser )
-	surface.DrawTexturedRect( cx, y + S( 8 ), S( 18 ), S( 18 ) )
+	surface.DrawTexturedRect( cx, my - S( 9 ), S( 18 ), S( 18 ) )
 
-	y = y + S( 42 )
+	y = y + boxH + S( 8 )
 
 	if LBR.IsZoneActive() then
 		local radius = LBR.GetZoneRadius()
 		local dist = ply:GetPos():Distance( LBR.GetZonePos() )
 		local toEdge = dist - radius
-		local w = S( 230 )
-		draw.RoundedBox( S( 6 ), x - w, y, w, S( 64 ), colBg )
+		local w, h = S( 240 ), S( 62 )
 		local zcol = LBR.GetZoneColor and LBR.GetZoneColor() or colZone
-		surface.SetDrawColor( zcol.r, zcol.g, zcol.b, 255 )
-		surface.DrawRect( x - w, y, S( 4 ), S( 64 ) )
+		panel( x - w, y, w, h, Color( zcol.r, zcol.g, zcol.b, 255 ) )
 		local tl = LBR.GetZoneTimeLeft()
-		text( radius > 0 and ( "ZONE CLOSING  " .. fmtTime( tl ) ) or "ZONE CLOSED", "LBR_HUD_Small", x - w + S( 14 ), y + S( 6 ), colWhite )
+		ptext( radius > 0 and "ZONE CLOSING" or "ZONE CLOSED", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
+		if radius > 0 then ptext( fmtTime( tl ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT ) end
 		if toEdge > 0 then
-			text( "OUTSIDE: " .. units2m( toEdge ) .. "m to safety", "LBR_HUD_Small", x - w + S( 14 ), y + S( 34 ), colWarn )
+			ptext( "OUTSIDE: " .. units2m( toEdge ) .. "m to safety", "LBR_HUD_Small", x - w + S( 14 ), y + S( 34 ), colWarn )
 		else
-			text( "SAFE  -  edge " .. units2m( -toEdge ) .. "m", "LBR_HUD_Small", x - w + S( 14 ), y + S( 34 ), colGood )
+			ptext( "SAFE  -  edge " .. units2m( -toEdge ) .. "m", "LBR_HUD_Small", x - w + S( 14 ), y + S( 34 ), colGood )
 		end
-		y = y + S( 72 )
+		y = y + h + S( 8 )
 	end
 
 	local ev = GetGlobalFloat( "LBR_EventTime", 0 ) - CurTime()
 	if GetGlobalInt( "state" ) == STATE_LIVE and ev > 0 then
-		text( "Random event in " .. fmtTime( ev ), "LBR_HUD_Tiny", x, y, colGold, TEXT_ALIGN_RIGHT, TEXT_ALIGN_TOP )
+		local t = "RANDOM EVENT IN " .. fmtTime( ev )
+		surface.SetFont( "LBR_HUD_Tiny" )
+		local tw = surface.GetTextSize( t ) + S( 24 )
+		panel( x - tw, y, tw, S( 26 ), Color( 255, 140, 40 ) )
+		ptext( t, "LBR_HUD_Tiny", x - S( 12 ), y + S( 14 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	end
 end
 
@@ -355,23 +387,25 @@ local function drawTeam( lp )
 		if IsValid( pl ) and pl ~= lp then mates[#mates + 1] = pl end
 	end
 	if #mates == 0 then return end
-	local x, y = S( 20 ), S( 20 )
-	local w, rowH = S( 220 ), S( 40 )
-	text( "SQUAD", "LBR_HUD_Tiny", x, y, colGold )
-	y = y + S( 20 )
+	local x, y = S( 24 ), S( 20 )
+	local w, rowH = S( 230 ), S( 40 )
+	panel( x, y, w, S( 26 ) + #mates * rowH + S( 4 ) )
+	ptext( "SQUAD", "LBR_HUD_Tiny", x + S( 12 ), y + S( 8 ), colGold )
+	y = y + S( 26 )
 	for _, pl in ipairs( mates ) do
-		draw.RoundedBox( S( 4 ), x, y, w, rowH - S( 4 ), colBg )
 		local alive = pl:Alive() and pl:Team() == 2
-		text( string.sub( pl:Nick(), 1, 18 ), "LBR_HUD_Tiny", x + S( 8 ), y + S( 3 ), alive and colWhite or Color( 150, 150, 150 ) )
+		surface.SetDrawColor( 255, 255, 255, 9 )
+		surface.DrawRect( x + S( 6 ), y, w - S( 12 ), rowH - S( 4 ) )
+		ptext( string.sub( pl:Nick(), 1, 18 ), "LBR_HUD_Tiny", x + S( 14 ), y + S( 4 ), alive and colWhite or Color( 150, 158, 175 ) )
 		if alive then
 			local frac = math.Clamp( pl:Health() / math.max( pl:GetMaxHealth(), 1 ), 0, 1 )
-			slantBar( x + S( 8 ), y + S( 21 ), w - S( 30 ), S( 8 ), frac, frac <= 0.25 and colHealthLow or colHealth )
+			bar( x + S( 14 ), y + S( 22 ), w - S( 28 ), S( 7 ), frac, frac <= 0.25 and colHealthLow or colHealth )
 			if pl:Armor() > 0 then
 				surface.SetDrawColor( colShield )
-				surface.DrawRect( x + S( 8 ), y + S( 31 ), ( w - S( 30 ) ) * math.Clamp( pl:Armor() / 100, 0, 1 ), S( 2 ) )
+				surface.DrawRect( x + S( 14 ), y + S( 30 ), ( w - S( 28 ) ) * math.Clamp( pl:Armor() / 100, 0, 1 ), S( 2 ) )
 			end
 		else
-			text( "ELIMINATED", "LBR_HUD_Tiny", x + w - S( 8 ), y + S( 3 ), colWarn, TEXT_ALIGN_RIGHT )
+			ptext( "ELIMINATED", "LBR_HUD_Tiny", x + w - S( 14 ), y + S( 4 ), colWarn, TEXT_ALIGN_RIGHT )
 		end
 		y = y + rowH
 	end
@@ -417,7 +451,7 @@ local function drawEffects( lp )
 	if GetGlobalInt( "state" ) == STATE_LIVE and LBR.IsZoneActive() and not LBR.IsPosInZone( lp:GetPos() ) then
 		local pulse = 90 + math.sin( CurTime() * 4 ) * 40
 		drawVignette( 200, 40, 255, pulse )
-		text( "YOU ARE OUTSIDE THE SAFE ZONE", "LBR_HUD_Med", ScrW() / 2, ScrH() * 0.72, colWarn, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		centerBox( "YOU ARE OUTSIDE THE SAFE ZONE", "LBR_HUD_Med", colWarn, nil, ScrH() * 0.7 )
 	elseif lp:Health() <= 25 then
 		drawVignette( 200, 0, 0, 80 + math.sin( CurTime() * 3 ) * 30 )
 	end
