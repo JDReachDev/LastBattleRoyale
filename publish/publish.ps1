@@ -90,8 +90,9 @@ if ($workshopId) {
     if (!$Changes) { $Changes = Read-Host "Changelog for this update" }
     $publishArgs = @("update", "-addon", $GmaPath, "-id", $workshopId, "-changes", $Changes)
     if ($UpdateIcon) { $publishArgs += @("-icon", $IconPath) }
-    & $gmpublish @publishArgs
-    if ($LASTEXITCODE -ne 0) { throw "gmpublish update failed." }
+    $log = & $gmpublish @publishArgs 2>&1 | Tee-Object -Variable log
+    # gmpublish can exit with 0 even when Steam is not running
+    if ($LASTEXITCODE -ne 0 -or ($log -join "`n") -match "Error:|Couldn't initialize") { throw "gmpublish update failed (is Steam running?)." }
     Write-Host "Updated: https://steamcommunity.com/sharedfiles/filedetails/?id=$workshopId" -ForegroundColor Green
 } else {
     # First upload: create the Workshop item and remember its ID
