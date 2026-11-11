@@ -35,8 +35,9 @@ LBR.GetZoneColor = updateZoneColor
 // distance), with a glowing line on the ground.
 ------------------------------------------------------------------------
 
-// Triangle pattern: light lines on black, drawn additive so the lines glow in
-// the zone color (the old white texture with 1px dark lines disappeared under the tint)
+// Triangle pattern: big triangles (4 per texture repeat) with thick white lines on
+// black, drawn additive so only the lines glow in the zone color. Dense patterns
+// blur into a flat color through the mipmaps: keep the cells big.
 local patternTex = Material( "lastbattleroyale/zone_pattern.png", "noclamp smooth mips" ):GetTexture( "$basetexture" )
 local matWall = CreateMaterial( "LBR_ZoneWall2", "UnlitGeneric", {
 	["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
@@ -187,11 +188,12 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_DrawZone", function( depth, sky
 	if count < 2 then return end
 
 	local col = updateZoneColor()
+	// light tint + glowing triangle lines (the old values made a solid wall)
 	render.SetMaterial( matFill )
-	drawWall( count, col, 55, 0 )
+	drawWall( count, col, 22, 0 )
 	if q >= 2 then
 		render.SetMaterial( matWall )
-		drawWall( count, col, 255, CurTime() * 0.03 )
+		drawWall( count, col, 160, CurTime() * 0.03 )
 	end
 	render.SetMaterial( matGlow )
 	drawGroundGlow( count, col, q >= 3 and 1 or 0.7 )
