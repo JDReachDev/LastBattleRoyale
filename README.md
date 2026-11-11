@@ -30,7 +30,7 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` | Scoreboard: players in game, lobby, spectators (click for the mouse, right click a player to mute) |
+| `TAB` | Scoreboard: players in game, lobby, spectators (the view stays still, right click a player to mute; admins: *START NOW* button in the lobby) |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`6` | Switch weapon (custom weapon bar with slot, name and ammo) |
@@ -39,7 +39,7 @@ add maps/weapons and run it on their own server.
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
 | `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
-| `!start` / `TAB` → *START NOW* | Admin: start the round now with the players already in (even below `lbr_min_players`) |
+| `!start` / `TAB` → *START NOW* | Admin: start the round now with the players already in (even below `lbr_min_players`, even alone to test the map) |
 
 ## Requirements
 

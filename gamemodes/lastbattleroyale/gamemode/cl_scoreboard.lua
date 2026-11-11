@@ -284,10 +284,12 @@ local function createBoard()
 		if not show then return end
 		if not GetGlobalBool( "LBR_MapReady", true ) then
 			self.Disabled, self.Label = true, "MAP NOT READY"
-		elseif team.NumPlayers( TEAM_PLAYER or 1 ) < 2 then
-			self.Disabled, self.Label = true, "NEED 2 PLAYERS"
+		elseif team.NumPlayers( TEAM_PLAYER or 1 ) < 1 then
+			self.Disabled, self.Label = true, "NO PLAYERS"
 		else
-			self.Disabled, self.Label = false, "START NOW"
+			// alone: still allowed, to test the map
+			self.Disabled = false
+			self.Label = team.NumPlayers( TEAM_PLAYER or 1 ) < 2 and "START (TEST)" or "START NOW"
 		end
 		self:SetPos( math.floor( ( f:GetWide() - self:GetWide() ) / 2 ), S( 24 ) )
 	end
@@ -316,8 +318,8 @@ function GM:ScoreboardShow()
 	Board.NextCheck = 0
 	Board:Show()
 	Board:MakePopup()
-	Board:SetKeyboardInputEnabled( false )
-	Board:SetMouseInputEnabled( false ) // aim still works while TAB is held: click to get the mouse
+	Board:SetKeyboardInputEnabled( false ) // keep moving with WASD
+	Board:SetMouseInputEnabled( true ) // mouse goes to the board: the view stays still and buttons work right away
 	return true
 end
 
@@ -335,6 +337,15 @@ hook.Add( "PlayerBindPress", "LBR_ScoreboardMouse", function( ply, bind, pressed
 	if pressed and IsValid( Board ) and Board:IsVisible() and not Board:IsMouseInputEnabled()
 		and ( bind == "+attack" or bind == "+attack2" ) then
 		Board:SetMouseInputEnabled( true )
+		return true
+	end
+end )
+
+// the view never turns while the scoreboard is open
+hook.Add( "InputMouseApply", "LBR_ScoreboardFreezeView", function( cmd )
+	if IsValid( Board ) and Board:IsVisible() then
+		cmd:SetMouseX( 0 )
+		cmd:SetMouseY( 0 )
 		return true
 	end
 end )

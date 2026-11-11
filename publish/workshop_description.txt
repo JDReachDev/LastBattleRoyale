@@ -50,7 +50,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 
 [h2]Keys[/h2]
 [list]
-[*][b]TAB[/b] - scoreboard (click for the mouse, right click a player to mute or open the profile)
+[*][b]TAB[/b] - scoreboard (right click a player to mute or open the profile)
 [*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
 [*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]Mouse wheel / 1-6[/b] - switch weapon (new weapon bar)
@@ -59,7 +59,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
 [*][b]F8[/b] - [i]admins:[/i] map editor
-[*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now with the players already in
+[*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now with the players in (even alone to test)
 [/list]
 
 [h2]Supported maps[/h2]

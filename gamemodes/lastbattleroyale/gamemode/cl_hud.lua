@@ -259,7 +259,7 @@ local function drawBanner( lp, spectating, target )
 			local need = GetGlobalInt( "LBR_MinPlayers", 2 )
 			title, col = "WAITING FOR PLAYERS", colWhite
 			sub = #player.GetAll() .. " / " .. need
-			if lp:IsAdmin() and #player.GetAll() >= 2 then
+			if lp:IsAdmin() then
 				sub = sub .. "   -   Admin: TAB > START NOW or type !start"
 			end
 		end

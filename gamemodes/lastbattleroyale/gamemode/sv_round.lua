@@ -264,7 +264,8 @@ function LBR.ForceStart( ply )
 	if GetState() ~= STATE_NONE then return reply( "A round is already starting or running." ) end
 	if not LBR.IsMapReady() then return reply( "This map is not configured yet (F8 to open the map editor)." ) end
 	if LBR.AnyEditing() then return reply( "Someone is using the map editor: close it first." ) end
-	if #team.GetPlayers( TEAM_PLAYER ) < 2 then return reply( "At least 2 players are needed to start." ) end
+	// 1 player is allowed: admins can test the map alone (the round ends when they die)
+	if #team.GetPlayers( TEAM_PLAYER ) < 1 then return reply( "Nobody is in the lobby." ) end
 	PrintMessage( HUD_PRINTTALK, ( IsValid( ply ) and ply:Nick() or "The server" ) .. " started the round with " .. #team.GetPlayers( TEAM_PLAYER ) .. " players." )
 	RoundRestart()
 end

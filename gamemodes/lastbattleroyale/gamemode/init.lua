@@ -533,6 +533,11 @@ function playerdeath( victim, inflictor, attacker )
 			PrintMessage(HUD_PRINTTALK, alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " and " .. alive[3]:Nick() .. " won!" )
 			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " & " .. alive[3]:Nick() )
 			EndRound()
+		elseif num == 0 then
+			// nobody left (a round started alone to test, or the last ones died together)
+			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! Nobody is left, round over." )
+			SetGlobalString( "LBR_Winner", "" )
+			EndRound()
 		elseif num == 2 then
 			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. alive[1]:Nick() .. " versus " .. alive[2]:Nick() )
 		else
