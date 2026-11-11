@@ -17,6 +17,7 @@ AddCSLuaFile( "cl_perf.lua" )
 AddCSLuaFile( "cl_prompt.lua" )
 AddCSLuaFile( "cl_loot.lua" )
 AddCSLuaFile( "cl_weaponselect.lua" )
+AddCSLuaFile( "cl_mapvote.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )
@@ -26,6 +27,7 @@ include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with 
 include( "sv_player.lua" )
 include( "sv_perf.lua" )
 include( "sv_attachments.lua" )
+include( "sv_mapvote.lua" )
 include( "sv_menus.lua" )
 include( "classes.lua" )
 include( "classessystem.lua" )
@@ -407,6 +409,10 @@ local function EndRound()
 	SetState(STATE_POST)
 	SetGlobalFloat( "LBR_PhaseEnd", CurTime() + PostTime() )
 	timer.Create("timer_postround", PostTime(), 1, ReturnToLobby)
+	// map vote (sv_mapvote.lua): starts a few seconds after the winner screen and replaces the timer above
+	timer.Create( "LBR_MapVoteDelay", math.max( math.min( 5, PostTime() - 1 ), 0 ), 1, function()
+		if GetState() == STATE_POST and LBR.MapVoteAtRoundEnd then LBR.MapVoteAtRoundEnd() end
+	end )
 end
 
 function mayme()

@@ -22,6 +22,7 @@ add maps/weapons and run it on their own server.
 - Squads: invite other players to your team
 - **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers; configs are plain `.txt` files you can share
 - **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons, items and vehicles spawn and how often, pick them from the installed addons; saved in `data/lastbattleroyale/loot.txt`
+- **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
 - On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop
 - Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
 - Outline (halo) on loot to see it in the dark, custom scoreboard and HUD
@@ -38,6 +39,7 @@ add maps/weapons and run it on their own server.
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
+| `F2` | Admin: change map. Every installed map, split in *ready to play* and *to configure* (go there and press `F8`) |
 | `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
 | `!start` / `TAB` → *START NOW* | Admin: start the round now with the players already in (even below `lbr_min_players`, even alone to test the map) |
 
@@ -178,6 +180,7 @@ gamemodes/lastbattleroyale/
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
         cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-6)
         sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
+        sv_mapvote.lua / cl_mapvote.lua  end of match map vote, F2 admin map menu
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
         shared.lua               ConVars (and their old lst_ names), teams, round states

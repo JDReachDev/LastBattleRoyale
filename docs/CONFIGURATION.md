@@ -49,6 +49,12 @@ New ConVars / commands:
 | `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
 | `lbr_start` | command | — | Admin: start the round now with the players already in, even below `lbr_min_players` or alone to test the map (also `!start` in chat or *START NOW* in the `TAB` scoreboard) |
+| `lbr_mapvote` | server | `1` | Map vote at the end of the match. Only installed maps with a valid config (made with `F8` or built in) are in the vote; the current map is always one of them |
+| `lbr_mapvote_rounds` | server | `1` | Matches played on the same map before the vote |
+| `lbr_mapvote_time` | server | `20` | Seconds to vote |
+| `lbr_mapvote_maps` | server | `8` | Max maps in the vote (random pick when more are ready) |
+| `lbr_mapvote_start` | command | — | Admin: start a map vote now (in the lobby or after a match) |
+| `lbr_changemap <map>` | command | — | Admin: change map (also `F2`: list of every installed map, ready ones and ones still to configure) |
 | `lbr_editor` | command | — | Open / close the map editor (same as `F8`) |
 | `lbr_map_reload` | command | — | Superadmin: reload `data/lastbattleroyale/maps/<map>.txt` and respawn loot points |
 | `lbr_loot_reload` | command | — | Superadmin: reload `data/lastbattleroyale/loot.txt` (see *Loot editor* below) |
@@ -76,6 +82,11 @@ lbr_level_exp 25
 
 // CW 2.0 attachments only from the attachment packs (the default)
 lbr_cw_spawn_attachments 0
+
+// map vote after every match, 20 seconds
+lbr_mapvote 1
+lbr_mapvote_rounds 1
+lbr_mapvote_time 20
 ```
 
 ### Zone damage

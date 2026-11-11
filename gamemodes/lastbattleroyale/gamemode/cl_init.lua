@@ -12,6 +12,7 @@ include( "cl_menus.lua" )
 include( "cl_prompt.lua" )
 include( "cl_loot.lua" )
 include( "cl_weaponselect.lua" )
+include( "cl_mapvote.lua" )
 
 TEAM_PLAYER = 1
 TEAM_CONT = 2
@@ -245,8 +246,8 @@ function GM:PlayerBindPress( ply, bind, pressed )
 		ShowClassMenu()
 		return
 	end
-	if bind == "gm_showteam" then
-		--ShowMap()
+	if bind == "gm_showteam" and pressed then
+		if LocalPlayer():IsAdmin() then LBR.OpenMapMenu() end // F2: admin map menu (cl_mapvote.lua)
 		return
 	end
 	if bind == "+menu" then

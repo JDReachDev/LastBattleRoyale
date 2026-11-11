@@ -12,12 +12,13 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]New menus[/b]: TAB scoreboard, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
+[*][b]Map vote[/b] at the end of the match, only between maps ready to play
 [*][b]New weapon bar[/b]: mouse wheel and 1-6 switch weapon right away, with slot, name and ammo
-[*][b]Interaction prompts[/b]: look at a weapon, item, vehicle or supply drop and the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
-[*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls, and the existing maps keep working as before
+[*][b]Interaction prompts[/b]: the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
+[*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn, lighter zone and outlines
 [*][b]Settings renamed[/b] from lst_* to lbr_* (the old names still work)
-[*]Lots of bug fixes
+[*]Many bug fixes
 [/list]
 
 [h2]Features[/h2]
@@ -58,6 +59,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]Q[/b] - drop your active weapon
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
+[*][b]F2[/b] - [i]admins:[/i] change map: ready ones or new ones to configure
 [*][b]F8[/b] - [i]admins:[/i] map editor
 [*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now with the players in (even alone to test)
 [/list]
