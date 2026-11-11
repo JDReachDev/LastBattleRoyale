@@ -55,6 +55,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
 [*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]Mouse wheel / 1-6[/b] - switch weapon (new weapon bar)
+[*][b]C[/b] - customize your CW 2.0 weapon with the attachments you found
 [*][b]Q[/b] - drop your active weapon
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
@@ -105,7 +106,7 @@ Full list and documentation on [url=https://github.com/JDReachDev/LastBattleRoya
 
 [h2]Tips and problems[/h2]
 [list]
-[*]Weapons spawn with all attachments? Run [b]cw_disable_all_attachments_on_spawn 1[/b] on the server.
+[*]Attachments are loot: everyone starts with none. [b]lbr_cw_spawn_attachments 1[/b] gives all of them on spawn.
 [*]Errors or lag? Disable the addons you don't need and delete [b]garrysmod/download/[/b] and [b]garrysmod/downloads/server/[/b] (old files from public servers).
 [*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lbr_zone_quality[/b].
 [*]Keep nuke and implosion disabled for a better experience.

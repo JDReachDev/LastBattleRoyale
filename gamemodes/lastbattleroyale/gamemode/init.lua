@@ -25,6 +25,7 @@ include( "sv_loot.lua" ) // after config.lua: loot.txt replaces the loot lists
 include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with the data file
 include( "sv_player.lua" )
 include( "sv_perf.lua" )
+include( "sv_attachments.lua" )
 include( "sv_menus.lua" )
 include( "classes.lua" )
 include( "classessystem.lua" )

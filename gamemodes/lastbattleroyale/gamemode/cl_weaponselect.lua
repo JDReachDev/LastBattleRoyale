@@ -61,8 +61,9 @@ local function currentWeapon( ply )
 	return ply:GetActiveWeapon()
 end
 
-// CW 2.0 uses the mouse wheel in its customization menu: leave it alone then
-local function weaponWantsWheel( wep )
+// CW 2.0 uses the mouse wheel and the number keys in its customization menu (C):
+// leave them alone then
+local function weaponIsCustomizing( wep )
 	if not IsValid( wep ) then return false end
 	if wep.dt and CW_CUSTOMIZE and wep.dt.State == CW_CUSTOMIZE then return true end
 	return false
@@ -75,7 +76,12 @@ hook.Add( "PlayerBindPress", "LBR_WeaponSelect", function( ply, bind, pressed )
 	local isPrev = string.find( bind, "invprev", 1, true )
 	local slot = tonumber( string.match( bind, "^slot(%d)$" ) or "" )
 	if not isNext and not isPrev and not slot then return end
-	if ( isNext or isPrev ) and weaponWantsWheel( ply:GetActiveWeapon() ) then return end
+	if weaponIsCustomizing( ply:GetActiveWeapon() ) then
+		// CW 2.0 reads the number keys on release: swallow the press so the
+		// engine does not switch weapon, let the wheel through
+		if slot then return true end
+		return
+	end
 
 	local list = weaponList( ply )
 	if #list == 0 then return true end

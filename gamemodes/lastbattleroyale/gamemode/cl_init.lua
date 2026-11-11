@@ -18,7 +18,6 @@ TEAM_CONT = 2
 TEAM_SPEC = 3
 
 RunConsoleCommand("cw_crosshair", "1")
-RunConsoleCommand("cw_disable_all_attachments_on_spawn")
 if TEAMERSTAB == nil then
 	TEAMERSTAB = {}
 	answeredcall = nil

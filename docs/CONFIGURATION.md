@@ -44,6 +44,7 @@ New ConVars / commands:
 | `lbr_outline_distance` | client | `1500` | Max distance of loot outlines; lower = more FPS on big maps |
 | `lbr_zone_view_distance` | client | `9000` | How far the zone wall is drawn; lower = more FPS |
 | `lbr_changeclass <class>` | command | — | Choose the class for the next round (same as the F3 menu) |
+| `lbr_cw_spawn_attachments` | server | `0` | `0` = players start with no CW 2.0 attachments (they come from the attachment packs), `1` = every attachment on spawn (plain CW 2.0) |
 | `lbr_cull_loot_distance` | server | `4000` | Loot farther than this from a player is not sent to (nor drawn by) that player; `0` = off |
 | `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
@@ -72,8 +73,8 @@ lbr_event_implosion 0
 lbr_exp_scale 1
 lbr_level_exp 25
 
-// CW 2.0: spawn weapons without attachments
-cw_disable_all_attachments_on_spawn 1
+// CW 2.0 attachments only from the attachment packs (the default)
+lbr_cw_spawn_attachments 0
 ```
 
 ### Zone damage

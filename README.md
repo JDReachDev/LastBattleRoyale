@@ -34,6 +34,7 @@ add maps/weapons and run it on their own server.
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`6` | Switch weapon (custom weapon bar with slot, name and ammo) |
+| `C` | CW 2.0 weapon customization: put on the attachments you found (`1`–`4` / `R` pick the category, the weapon does not change) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
@@ -147,7 +148,7 @@ Loot and vehicles are chosen in game too (`F8` → `Q` → *Loot and vehicles*, 
 Classes and the default loot tables are plain Lua: see
 **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**.
 
-Tip: if every weapon spawns with all attachments, run `cw_disable_all_attachments_on_spawn 1` on the server.
+Attachments are loot: players start with none and find them in the attachment packs (`lbr_cw_spawn_attachments 1` gives every attachment on spawn, as plain CW 2.0 does).
 
 ## Repository layout
 
@@ -175,6 +176,7 @@ gamemodes/lastbattleroyale/
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
         cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-6)
+        sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
         shared.lua               ConVars (and their old lst_ names), teams, round states
