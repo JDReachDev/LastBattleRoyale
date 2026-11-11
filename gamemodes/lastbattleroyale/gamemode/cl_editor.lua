@@ -551,6 +551,10 @@ function ED.OpenMenu()
 		end
 	end
 
+	button( "Loot and vehicles: which weapons / items / vehicles spawn...", function()
+		if LBR.OpenLootEditor then LBR.OpenLootEditor() end
+	end, Color( 150, 110, 0 ) )
+
 	label( "Player models (one per line)" )
 	local pm = scroll:Add( "DTextEntry" )
 	pm:Dock( TOP )

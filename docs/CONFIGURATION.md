@@ -49,6 +49,7 @@ New ConVars / commands:
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
 | `lbr_editor` | command | — | Open / close the map editor (same as `F8`) |
 | `lbr_map_reload` | command | — | Superadmin: reload `data/lastbattleroyale/maps/<map>.txt` and respawn loot points |
+| `lbr_loot_reload` | command | — | Superadmin: reload `data/lastbattleroyale/loot.txt` (see *Loot editor* below) |
 
 Optional: `lst_maxrounds` is **not** created by the gamemode. If it exists (for example created by the
 map vote addon) the round system runs the `MapChange` hook after that many rounds.
@@ -87,7 +88,40 @@ timer.Create("HurtAllPlayers", 0.36, 0, HurtPlayers)   -- tick interval in secon
 
 ---
 
-## 2. Loot tables (`gamemode/config.lua`)
+## 2. Loot and vehicles
+
+### In game: Loot editor (recommended)
+
+Open the map editor (`F8`), press `Q` and click **Loot and vehicles**:
+
+- the groups are on the left (rare weapons, weapons, pistols & grenades, items, ammo, cars, helicopters);
+- untick an entry to disable it, change its **weight** to make it more or less likely (the *chance*
+  column shows the result), `X` removes it;
+- **+ ADD** lists every weapon / entity installed (search by class, name or category); you can also
+  type a class name by hand. Classes not installed on your client are shown in red as *NOT INSTALLED*;
+- **SAVE** writes `garrysmod/data/lastbattleroyale/loot.txt` on the server; it is used from the next round;
+- **RESET TO DEFAULT** deletes the file and goes back to the lists in `config.lua`.
+
+Without `loot.txt` nothing changes: the gamemode uses the `config.lua` tables below, exactly as before.
+The file is the same on every map (how *many* items spawn is per map, see `weaponsc`).
+`lbr_loot_reload` (superadmin / server console) reloads the file after editing it by hand.
+
+```json
+{
+  "format": "lastbattleroyale-loot",
+  "version": 1,
+  "groups": {
+    "BETTERWEAPONS": [ { "class": "cw_ak74", "weight": 1, "on": true }, ... ],
+    "WEAPONS": [...], "ADDITIONALWEAPONS": [...], "ITEMS": [...], "AMMO": [...],
+    "CARS": [...], "HELI_RARE": [...], "HELI_VERYRARE": [...]
+  }
+}
+```
+
+`weight` 1–100: an entry with weight 2 is twice as likely as one with weight 1 (in the old lists that
+meant writing the class twice). `on: false` keeps the entry but never spawns it.
+
+### Default tables (`gamemode/config.lua`)
 
 ```lua
 ITEMS = {
@@ -148,7 +182,7 @@ Join the map as admin (or in singleplayer / listen server) between rounds and pr
 | `R` | Place mode: on the aimed surface / at your own position (supply drops always use your position) |
 | `E` | Teleport to the next point of the category |
 | `Z` | Undo |
-| `Q` | Menu: save, zone radius, loot amounts, player models, copy/import JSON, reload, reset |
+| `Q` | Menu: save, zone radius, loot amounts, **Loot and vehicles** panel, player models, copy/import JSON, reload, reset |
 | `F8` | Close (asks to save if there are unsaved changes) |
 
 The panel on the left shows the point counts and what is still missing for the map to be playable.

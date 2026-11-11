@@ -11,6 +11,8 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]New HUD[/b] in battle royale style: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel
 [*][b]New menus[/b]: TAB scoreboard, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
+[*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
+[*][b]Interaction prompts[/b]: look at a weapon, item, vehicle or supply drop and the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls, and the existing maps keep working as before
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn, lighter zone and outlines
 [*][b]Settings renamed[/b] from lst_* to lbr_* (the old names still work)
@@ -54,7 +56,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
 [*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]Q[/b] - drop your active weapon
-[*][b]E[/b] - pick up a weapon from the ground
+[*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
 [*][b]F8[/b] - [i]admins:[/i] map editor
 [/list]
@@ -77,11 +79,13 @@ Join the map as admin between rounds and press [b]F8[/b] (or type [b]lbr_editor[
 [*][b]Left click[/b] place a point / [b]Right click[/b] remove it
 [*][b]Mouse wheel / 1-8[/b] choose what to place: player spawns, lobby spawns, loot, cars, helicopters, zone centers, nuke targets, supply drops
 [*][b]R[/b] place where you aim / at your position - [b]E[/b] go to next point - [b]Z[/b] undo
-[*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import
+[*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
 [/list]
 The panel tells you what is still missing for the map to be playable. Configs are saved in:
 [code]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/code]
 You can share these files: drop one in that folder and the map is ready. The configs of the supported maps are created there automatically, so you can edit them too ("Reset" restores the original).
+
+[b]Loot and vehicles[/b] (F8, then Q): pick which weapons, items, cars and helicopters spawn, how likely each one is (weight), disable or add anything installed. Saved in [b]garrysmod/data/lastbattleroyale/loot.txt[/b] (all maps).
 
 [h2]Server settings[/h2]
 [list]
@@ -104,7 +108,7 @@ Full list and documentation on [url=https://github.com/JDReachDev/LastBattleRoya
 [*]Weapons spawn with all attachments? Run [b]cw_disable_all_attachments_on_spawn 1[/b] on the server.
 [*]Errors or lag? Disable the addons you don't need and delete [b]garrysmod/download/[/b] and [b]garrysmod/downloads/server/[/b] (old files from public servers).
 [*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lbr_zone_quality[/b].
-[*]For a better experience, keep nuke and implosion disabled.
+[*]Keep nuke and implosion disabled for a better experience.
 [/list]
 
 [h2]Support[/h2]

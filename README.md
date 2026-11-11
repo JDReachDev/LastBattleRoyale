@@ -21,6 +21,8 @@ add maps/weapons and run it on their own server.
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
 - **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers; configs are plain `.txt` files you can share
+- **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons, items and vehicles spawn and how often, pick them from the installed addons; saved in `data/lastbattleroyale/loot.txt`
+- On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop
 - Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
 - Outline (halo) on loot to see it in the dark, custom scoreboard and HUD
 
@@ -32,7 +34,7 @@ add maps/weapons and run it on their own server.
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Q` | Drop the active weapon |
-| `E` | Pick up a weapon from the ground |
+| `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
 | `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
 
@@ -140,7 +142,8 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 Defaults above are the ones shown in the *Start New Game* menu ([`lastbattleroyale.txt`](gamemodes/lastbattleroyale/lastbattleroyale.txt)).
 
 Map configs live in `garrysmod/data/lastbattleroyale/maps/<map>.txt` and are made in game with `F8`.
-Everything else (loot tables, vehicles, classes) is plain Lua: see
+Loot and vehicles are chosen in game too (`F8` → `Q` → *Loot and vehicles*, saved in `data/lastbattleroyale/loot.txt`).
+Classes and the default loot tables are plain Lua: see
 **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**.
 
 Tip: if every weapon spawns with all attachments, run `cw_disable_all_attachments_on_spawn 1` on the server.
@@ -168,6 +171,8 @@ gamemodes/lastbattleroyale/
         cl_ui.lua                shared look of the menus (fonts, colors, buttons)
         cl_scoreboard.lua        TAB scoreboard
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
+        cl_prompt.lua            "[E] PICK UP ..." interaction prompt
+        sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
         shared.lua               ConVars (and their old lst_ names), teams, round states
         sv_round.lua             round system, zone, loot/vehicle spawning, events

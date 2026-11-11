@@ -9,14 +9,18 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "sh_mapconfig.lua" )
 AddCSLuaFile( "sh_zone.lua" )
 AddCSLuaFile( "sh_spawn.lua" )
+AddCSLuaFile( "sh_loot.lua" )
 AddCSLuaFile( "cl_hud.lua" )
 AddCSLuaFile( "cl_zone.lua" )
 AddCSLuaFile( "cl_editor.lua" )
 AddCSLuaFile( "cl_perf.lua" )
+AddCSLuaFile( "cl_prompt.lua" )
+AddCSLuaFile( "cl_loot.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )
 include( "sv_round.lua" )
+include( "sv_loot.lua" ) // after config.lua: loot.txt replaces the loot lists
 include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with the data file
 include( "sv_player.lua" )
 include( "sv_perf.lua" )

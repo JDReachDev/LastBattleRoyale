@@ -9,6 +9,8 @@ include( "cl_hud.lua" )
 include( "cl_editor.lua" )
 include( "cl_perf.lua" )
 include( "cl_menus.lua" )
+include( "cl_prompt.lua" )
+include( "cl_loot.lua" )
 
 TEAM_PLAYER = 1
 TEAM_CONT = 2
