@@ -14,7 +14,7 @@ add maps/weapons and run it on their own server.
 ## Features
 
 - Round flow: lobby → preparing → live → post round, with a configurable minimum player count
-- Shrinking safe zone with damage outside it, visible zone with 4 quality levels
+- Shrinking safe zone with damage outside it: a glowing wall that follows the terrain and fades upward, plus a storm effect (fog, grey colors) while you are outside
 - Random loot (weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo) on every round
 - Cars (SCars) and helicopters (WAC) spawned around the map
 - Random supply airdrops, optional nuclear strike event and optional implosion bomb at the end
@@ -28,9 +28,9 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` | Show alive players (scoreboard) |
-| `F3` | Class menu |
-| `F4` | Team (squad) menu — `F6` decline / `F7` accept an invite |
+| `TAB` | Scoreboard: players in game, lobby, spectators (click for the mouse, right click a player to mute) |
+| `F3` | Class menu: stats, loadout, level and what unlocks each class |
+| `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon from the ground |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
@@ -62,7 +62,7 @@ Server **and** clients need them. The full list is in the Workshop collection
 | [Last Stand Map Voting](https://steamcommunity.com/workshop/filedetails/?id=798682244) | Map vote at the end of the match |
 | [Pripyat (Resources)](https://steamcommunity.com/workshop/filedetails/?id=1486462327) | Content for `rp_pripyat_cop` |
 
-Counter-Strike: Source content is recommended (armor). Without it set `lst_usecssarmor 0`.
+Counter-Strike: Source content is recommended (armor). Without it set `lbr_css_armor 0`.
 
 ## Supported maps
 
@@ -112,24 +112,26 @@ and pass its ID with `+host_workshop_collection` so clients download everything 
 
 ## Configuration
 
-All server settings are ConVars (`lst_*`). Quick reference:
+All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the old names still work
+(`lst_zonespeed 1` in an old `server.cfg` sets `lbr_zone_speed`). Quick reference:
 
 | ConVar | Default | Description |
 |---|---|---|
-| `lst_minimumplayers` | `2` | Players needed to start a round |
-| `lst_time_preparing` | `30` | Preparing time (seconds) |
-| `lst_time_actionpreparing` | `30` | Time before the round goes live (seconds) |
-| `lst_time_postround` | `15` | Time after the round ends (seconds) |
-| `lst_zonespeed` | `0.75` | How fast the zone shrinks (units per tick) |
-| `lst_healhealth` | `1` | `1` = health regenerates up to 20 while inside the zone |
-| `lst_usecssarmor` | `1` | `1` = use CS:S armor models (needs CS:S mounted) |
-| `lst_event_enablenuke` | `0` | `1` = enable the random nuclear strike event |
-| `lst_enableimplosion` | `0` | `1` = implosion bomb when the zone fully closes |
-| `lst_expscale` | `1` | EXP multiplier |
-| `lst_levelexp` | `25` | EXP needed for the next level = next level × this value |
-| `lst_zonequality` | `3` | Zone render quality: `3` high + texture, `2` medium, `1` low, `0` invisible |
-| `lst_objoutline` | `1` | `1` = outline on loot |
+| `lbr_min_players` | `2` | Players needed to start a round |
+| `lbr_time_preparing` | `30` | Preparing time (seconds) |
+| `lbr_time_weapons_hot` | `30` | Time before the round goes live (seconds) |
+| `lbr_time_postround` | `15` | Time after the round ends (seconds) |
+| `lbr_zone_speed` | `0.75` | How fast the zone shrinks (units per tick) |
+| `lbr_zone_heal` | `1` | `1` = health regenerates up to 20 while inside the zone |
+| `lbr_css_armor` | `1` | `1` = use CS:S armor models (needs CS:S mounted) |
+| `lbr_event_nuke` | `0` | `1` = enable the random nuclear strike event |
+| `lbr_event_implosion` | `0` | `1` = implosion bomb when the zone fully closes |
+| `lbr_exp_scale` | `1` | EXP multiplier |
+| `lbr_level_exp` | `25` | EXP needed for the next level = next level × this value |
+| `lbr_zone_quality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |
+| `lbr_outline` | `1` | `1` = outline on loot |
 | `lbr_outline_distance` | `1500` | Client: max loot outline distance (lower = more FPS) |
+| `lbr_zone_view_distance` | `9000` | Client: how far the zone wall is drawn (lower = more FPS) |
 | `lbr_cull_loot_distance` | `4000` | Loot farther than this is not sent to the player (big maps FPS), `0` = off |
 | `lbr_cull_vehicle_distance` | `8000` | Client: parked vehicles farther than this are not drawn, `0` = off |
 | `lbr_editor_superadminonly` | `0` | `1` = only superadmins can use the map editor |
@@ -155,20 +157,23 @@ gamemodes/lastbattleroyale/
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
         init.lua                 server entry point, net messages, squads, death handling
-        cl_init.lua              client entry point, class/team menus
+        cl_init.lua              client entry point, key binds
         cl_hud.lua               HUD
-        cl_zone.lua              zone rendering, loot outlines
+        cl_zone.lua              zone wall, storm effect, loot outlines
         cl_editor.lua            in-game map editor (client)
         cl_perf.lua / sv_perf.lua  distance culling of vehicles / loot on big maps
         sh_mapconfig.lua         map config format, validation, JSON
         sh_zone.lua              zone math shared by server and client
         sv_mapconfig.lua         map config files + map editor (server)
-        cl_scoreboard.lua        scoreboard
-        shared.lua               ConVars, teams, round states
+        cl_ui.lua                shared look of the menus (fonts, colors, buttons)
+        cl_scoreboard.lua        TAB scoreboard
+        cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
+        sh_spawn.lua             safe spawn positions (players, loot, vehicles)
+        shared.lua               ConVars (and their old lst_ names), teams, round states
         sv_round.lua             round system, zone, loot/vehicle spawning, events
         sv_player.lua            player helpers, class switching
         config.lua               loot tables, vehicles, built-in map configs
-        classes.lua              class list and unlock requirements
+        classes.lua              class list, unlock requirements, menu descriptions
         player_class/            one file per class (stats + loadout)
 materials/                       HUD icons and map images
 docs/                            documentation
@@ -185,7 +190,6 @@ publish\publish.bat -Changes "What changed"
 
 ## Known issues
 
-- `lastbattleroyale.txt` lists `lst_enableimplosion` twice in the settings menu.
 - `class_officer` exists in `player_class/` but is not registered in `classes.lua`.
 - With many addons installed, problems are often caused by old files downloaded from public servers:
   clear `garrysmod/download/` and `garrysmod/downloads/server/`.

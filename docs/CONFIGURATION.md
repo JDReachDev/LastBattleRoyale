@@ -2,7 +2,7 @@
 
 Last Battle Royale is configured in two places:
 
-1. **ConVars** (`lst_*`) — server settings you can change without touching code.
+1. **ConVars** (`lbr_*`) — server settings you can change without touching code.
 2. **Lua tables** in [`gamemode/config.lua`](../gamemodes/lastbattleroyale/gamemode/config.lua)
    and [`gamemode/classes.lua`](../gamemodes/lastbattleroyale/gamemode/classes.lua) — loot, vehicles,
    maps and classes.
@@ -16,26 +16,25 @@ All paths below are relative to `gamemodes/lastbattleroyale/`.
 They are created in [`gamemode/shared.lua`](../gamemodes/lastbattleroyale/gamemode/shared.lua) and
 shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/lastbattleroyale/lastbattleroyale.txt).
 
-> **Two sets of defaults.** When you start a game from the main menu the values of
-> `lastbattleroyale.txt` are used. On a dedicated server without a `server.cfg` the
-> defaults written in `shared.lua` are used instead (they differ: see the table).
-> Always set them explicitly in `server.cfg`.
+> **Old names.** Until this version they were called `lst_*` (from Last Stand). The old names
+> still work: `lst_zonespeed 1` in an old `server.cfg` sets `lbr_zone_speed`. The defaults of the
+> *Start New Game* menu and of a dedicated server are now the same.
 
-| ConVar | Menu default | Code default | Description |
+| ConVar | Old name | Default | Description |
 |---|---|---|---|
-| `lst_minimumplayers` | `2` | `2` | Players needed to start a round |
-| `lst_time_preparing` | `30` | `15` | Preparing phase (seconds) |
-| `lst_time_actionpreparing` | `30` | `60` | Time before the round goes live (seconds) |
-| `lst_time_postround` | `15` | `15` | Post round phase (seconds) |
-| `lst_zonespeed` | `0.75` | `1` | Radius removed from the zone every tick (decimals now work: 0.75 used to be rounded to 1) |
-| `lst_healhealth` | `1` | `1` | Regenerate health up to 20 HP while inside the zone |
-| `lst_usecssarmor` | `1` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
-| `lst_event_enablenuke` | `0` | `1` | Random nuclear strike event during the round |
-| `lst_enableimplosion` | `0` | `1` | Implosion bomb when the zone reaches radius 0 |
-| `lst_expscale` | `1` | `1` | EXP multiplier for kills / wins |
-| `lst_levelexp` | — | `25` | EXP for the next level = next level × this value |
-| `lst_zonequality` | `3` | `3` | `3` high + texture, `2` medium, `1` low, `0` invisible |
-| `lst_objoutline` | `1` | `1` | Outline (halo) on loot |
+| `lbr_min_players` | `lst_minimumplayers` | `2` | Players needed to start a round |
+| `lbr_time_preparing` | `lst_time_preparing` | `30` | Preparing phase (seconds) |
+| `lbr_time_weapons_hot` | `lst_time_actionpreparing` | `30` | Time before players can attack (seconds) |
+| `lbr_time_postround` | `lst_time_postround` | `15` | Post round phase (seconds) |
+| `lbr_zone_speed` | `lst_zonespeed` | `0.75` | Radius removed from the zone every tick |
+| `lbr_zone_heal` | `lst_healhealth` | `1` | Regenerate health up to 20 HP while inside the zone |
+| `lbr_css_armor` | `lst_usecssarmor` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
+| `lbr_event_nuke` | `lst_event_enablenuke` | `0` | Random nuclear strike event during the round |
+| `lbr_event_implosion` | `lst_enableimplosion` | `0` | Implosion bomb when the zone reaches radius 0 |
+| `lbr_exp_scale` | `lst_expscale` | `1` | EXP multiplier for kills / wins |
+| `lbr_level_exp` | `lst_levelexp` | `25` | EXP for the next level = next level × this value |
+| `lbr_zone_quality` | `lst_zonequality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |
+| `lbr_outline` | `lst_objoutline` | `1` | Client: outline (halo) on loot |
 
 New ConVars / commands:
 
@@ -43,6 +42,8 @@ New ConVars / commands:
 |---|---|---|---|
 | `lbr_editor_superadminonly` | server | `0` | `1` = only superadmins can open the map editor (admins otherwise) |
 | `lbr_outline_distance` | client | `1500` | Max distance of loot outlines; lower = more FPS on big maps |
+| `lbr_zone_view_distance` | client | `9000` | How far the zone wall is drawn; lower = more FPS |
+| `lbr_changeclass <class>` | command | — | Choose the class for the next round (same as the F3 menu) |
 | `lbr_cull_loot_distance` | server | `4000` | Loot farther than this from a player is not sent to (nor drawn by) that player; `0` = off |
 | `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
@@ -58,19 +59,17 @@ map vote addon) the round system runs the `MapChange` hook after that many round
 hostname "Last Battle Royale"
 gamemode lastbattleroyale
 
-lst_minimumplayers 4
-lst_time_preparing 30
-lst_time_actionpreparing 30
-lst_time_postround 15
-lst_zonespeed 0.75
-lst_healhealth 1
-lst_usecssarmor 1
-lst_event_enablenuke 0
-lst_enableimplosion 0
-lst_expscale 1
-lst_levelexp 25
-lst_zonequality 3
-lst_objoutline 1
+lbr_min_players 4
+lbr_time_preparing 30
+lbr_time_weapons_hot 30
+lbr_time_postround 15
+lbr_zone_speed 0.75
+lbr_zone_heal 1
+lbr_css_armor 1
+lbr_event_nuke 0
+lbr_event_implosion 0
+lbr_exp_scale 1
+lbr_level_exp 25
 
 // CW 2.0: spawn weapons without attachments
 cw_disable_all_attachments_on_spawn 1
@@ -235,8 +234,8 @@ Levels and EXP are saved per class with `PData` (server `sv.db`), keys `<class>_
 
 In `gamemode/init.lua`:
 
-- a kill gives `(25 + victim level × 2) × lst_expscale`
-- winning the round gives `30 × 2.5 × lst_expscale`, or `30 × 4 × lst_expscale` with 5+ kills in the round
+- a kill gives `(25 + victim level × 2) × lbr_exp_scale`
+- winning the round gives `30 × 2.5 × lbr_exp_scale`, or `30 × 4 × lbr_exp_scale` with 5+ kills in the round
 
 `PlayersReward()` and `ScoreReward()` in `classessystem.lua` are helpers for rewards based on
 server population and kills (currently not called).

@@ -2,7 +2,9 @@
 
 AddCSLuaFile( "classes.lua" )
 AddCSLuaFile( "cl_init.lua" )
+AddCSLuaFile( "cl_ui.lua" )
 AddCSLuaFile( "cl_scoreboard.lua" )
+AddCSLuaFile( "cl_menus.lua" )
 AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "sh_mapconfig.lua" )
 AddCSLuaFile( "sh_zone.lua" )
@@ -18,6 +20,7 @@ include( "sv_round.lua" )
 include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with the data file
 include( "sv_player.lua" )
 include( "sv_perf.lua" )
+include( "sv_menus.lua" )
 include( "classes.lua" )
 include( "classessystem.lua" )
 
@@ -295,6 +298,7 @@ end )
 
 net.Receive( "ChangeClass", function( len, ply )
 	ply:ChangeClass(net.ReadString())
+	if LBR_SendClassInfo then LBR_SendClassInfo( ply ) end
 end)
 
 cantdropweapons = {

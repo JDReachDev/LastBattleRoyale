@@ -3,7 +3,7 @@ AddCSLuaFile("shared.lua")
 include('shared.lua')
 
 function ENT:Initialize()
-	local cmd = GetConVar("lst_usecssarmor"):GetInt()
+	local cmd = GetConVar("lbr_css_armor"):GetInt()
 	if cmd == 0 then
 		self.Entity:SetModel("models/Items/item_item_crate.mdl")
 	else

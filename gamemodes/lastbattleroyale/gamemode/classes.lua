@@ -149,3 +149,18 @@ class.Add({
 		}
 	}
 })
+
+// Shown in the F3 menu. Keep "loadout" in sync with PLAYER:Loadout() in player_class/<class>.lua.
+// (player_class/class_officer.lua exists but is not registered above: add a class.Add to enable it.)
+CLASS_INFO = {
+	class_default   = { desc = "Balanced starter class.", loadout = { "weapon_crowbar" } },
+	class_russian   = { desc = "Starts with a pistol, but dies to anything.", loadout = { "weapon_fists", "cw_makarov" } },
+	class_sprinter  = { desc = "Fast and light, with a smoke to get away.", loadout = { "cw_extrema_ratio_official", "cw_smoke_grenade" } },
+	class_traceur   = { desc = "The fastest runner, but very fragile.", loadout = { "cw_shorty" } },
+	class_mercenary = { desc = "Tough and slow, starts with a pistol.", loadout = { "weapon_crowbar", "cw_m1911" } },
+	class_scout     = { desc = "Quick, with a knife and a SLAM mine.", loadout = { "cw_extrema_ratio_official", "weapon_slam" } },
+	class_soldier   = { desc = "A pistol and a frag grenade from the start.", loadout = { "weapon_crowbar", "cw_p99", "cw_frag_grenade" } },
+	class_medic     = { desc = "Extra health and an adrenaline shot.", loadout = { "weapon_crowbar", "sg_adrenaline" } },
+	class_veteran   = { desc = "Fast and tough: for those who mastered every class.", loadout = { "weapon_crowbar" } },
+	class_officer   = { desc = "Stunstick and a shotgun.", loadout = { "weapon_stunstick", "cw_shorty" } },
+}

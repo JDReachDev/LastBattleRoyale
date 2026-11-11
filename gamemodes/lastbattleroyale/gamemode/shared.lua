@@ -33,42 +33,69 @@ team.SetUp( TEAM_PLAYER,"Players",		Color( 165, 165, 89 ) )
 team.SetUp( TEAM_CONT,	"Contestants",	Color( 89, 165, 127 ) )
 team.SetUp( TEAM_SPEC,	"Spectators",	Color( 255, 255, 255 ) )
 
-if !ConVarExists("lst_minimumplayers") then CreateConVar( "lst_minimumplayers", "2", FCVAR_NOTIFY, "Set minimum players" ) end
-if !ConVarExists("lst_time_actionpreparing") then CreateConVar( "lst_time_actionpreparing", "60", FCVAR_NOTIFY, "Set action preparing time" ) end
-if !ConVarExists("lst_time_preparing") then CreateConVar( "lst_time_preparing", "15", FCVAR_NOTIFY, "Set preparing time" ) end
-if !ConVarExists("lst_time_postround") then CreateConVar( "lst_time_postround", "15", FCVAR_NOTIFY, "Set post time" ) end
-if !ConVarExists("lst_zonespeed") then CreateConVar( "lst_zonespeed", "1", FCVAR_NOTIFY, "Set zone speed" ) end
-if !ConVarExists("lst_healhealth") then CreateConVar( "lst_healhealth", "1", FCVAR_NOTIFY, "Heal players health after 5 seconds" ) end
-if !ConVarExists("lst_event_enablenuke") then CreateConVar( "lst_event_enablenuke", "1", FCVAR_NOTIFY, "Enable nuke event" ) end
-if !ConVarExists("lst_enableimplosion") then CreateConVar( "lst_enableimplosion", "1", FCVAR_NOTIFY, "Enable implosion bomb at the end" ) end
-if !ConVarExists("lst_usecssarmor") then CreateConVar( "lst_usecssarmor", "1", FCVAR_NOTIFY, "If you dont have CS:Source installed then turn it to 0" ) end
-if !ConVarExists("lst_expscale") then CreateConVar( "lst_expscale", "1", FCVAR_NOTIFY, "Set EXP scale" ) end
-if !ConVarExists("lst_levelexp") then CreateConVar( "lst_levelexp", "25", FCVAR_NOTIFY, "Set def level exp" ) end
-if !ConVarExists("lst_zonequality") then CreateConVar( "lst_zonequality", "3", FCVAR_NOTIFY, "3)high+texture 2)medium 1)low 0)invisible" ) end
-if !ConVarExists("lst_objoutline") then CreateConVar( "lst_objoutline", "1", FCVAR_NOTIFY, "0 no, 1 yes" ) end
+// ConVars. They were called lst_* (from Last Stand): now lbr_*.
+// The old names still work: setting lst_zonespeed (server.cfg, console, command line)
+// sets lbr_zone_speed, so old configs keep working.
+LBR = LBR or {}
+LBR.ConVars = {
+	// { new name, old name, default, help, per player }
+	{ "lbr_min_players", "lst_minimumplayers", "2", "Players needed to start a round" },
+	{ "lbr_time_preparing", "lst_time_preparing", "30", "Seconds in the lobby before the match starts" },
+	{ "lbr_time_weapons_hot", "lst_time_actionpreparing", "30", "Seconds after the start before players can attack" },
+	{ "lbr_time_postround", "lst_time_postround", "15", "Seconds before going back to the lobby" },
+	{ "lbr_zone_speed", "lst_zonespeed", "0.75", "Zone radius removed every tick" },
+	{ "lbr_zone_heal", "lst_healhealth", "1", "Health regenerates up to 20 inside the zone" },
+	{ "lbr_css_armor", "lst_usecssarmor", "1", "Use CS:S models for armor (needs CS:S mounted)" },
+	{ "lbr_event_nuke", "lst_event_enablenuke", "0", "Random nuclear strike during the match" },
+	{ "lbr_event_implosion", "lst_enableimplosion", "0", "Implosion bomb when the zone closes" },
+	{ "lbr_exp_scale", "lst_expscale", "1", "EXP multiplier" },
+	{ "lbr_level_exp", "lst_levelexp", "25", "EXP for the next level = next level x this" },
+	{ "lbr_zone_quality", "lst_zonequality", "3", "3 high, 2 medium, 1 low, 0 invisible", true },
+	{ "lbr_outline", "lst_objoutline", "1", "Outline on loot", true },
+}
+
+for _, c in ipairs( LBR.ConVars ) do
+	local name, old, def, help, perPlayer = c[1], c[2], c[3], c[4], c[5]
+	// the Start New Game menu (lastbattleroyale.txt) may have created it already
+	if not ConVarExists( name ) then
+		local flags = perPlayer and { FCVAR_ARCHIVE } or { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }
+		CreateConVar( name, def, flags, help )
+	end
+	if not ConVarExists( old ) then
+		CreateConVar( old, def, perPlayer and 0 or FCVAR_NOTIFY, "Old name of " .. name )
+	end
+	if SERVER or perPlayer then
+		// old value set before this file ran (command line, menu of an old version)
+		local o = GetConVar( old )
+		if o and o:GetString() ~= def then RunConsoleCommand( name, o:GetString() ) end
+		cvars.AddChangeCallback( old, function( _, _, new )
+			RunConsoleCommand( name, new )
+		end, "LBR_OldName" )
+	end
+end
 
 function ActionPrepTime()
-	return GetConVar("lst_time_actionpreparing"):GetInt()
+	return GetConVar("lbr_time_weapons_hot"):GetInt()
 end
 
 function PrepTime()
-	return GetConVar("lst_time_preparing"):GetInt()
+	return GetConVar("lbr_time_preparing"):GetInt()
 end
 
 function PostTime()
-	return GetConVar("lst_time_postround"):GetInt()
+	return GetConVar("lbr_time_postround"):GetInt()
 end
 
 function MinPlayers()
-	return GetConVar("lst_minimumplayers"):GetInt()
+	return GetConVar("lbr_min_players"):GetInt()
 end
 
 function EXPScale()
-	return GetConVar("lst_expscale"):GetInt()
+	return GetConVar("lbr_exp_scale"):GetInt()
 end
 
 function LevelEXP()
-	return GetConVar("lst_levelexp"):GetInt()
+	return GetConVar("lbr_level_exp"):GetInt()
 end
 
 function GetGMWalkSpeed()

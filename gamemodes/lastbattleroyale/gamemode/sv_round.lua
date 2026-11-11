@@ -32,12 +32,12 @@ function SetState(num)
 	SetGlobalInt("state", num)
 end
 
-local cvZoneSpeed = GetConVar("lst_zonespeed")
-local cvHeal = GetConVar("lst_healhealth")
-local cvImplosion = GetConVar("lst_enableimplosion")
-local cvNuke = GetConVar("lst_event_enablenuke")
+local cvZoneSpeed = GetConVar("lbr_zone_speed")
+local cvHeal = GetConVar("lbr_zone_heal")
+local cvImplosion = GetConVar("lbr_event_implosion")
+local cvNuke = GetConVar("lbr_event_nuke")
 
-// lst_zonespeed is "radius removed every tick", converted to units per second
+// lbr_zone_speed is "radius removed every tick", converted to units per second
 function GetZoneSpeed()
 	return cvZoneSpeed:GetFloat()
 end

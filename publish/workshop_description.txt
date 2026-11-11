@@ -7,7 +7,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]Features[/h2]
 [list]
-[*][b]Shrinking safe zone[/b] with damage outside, smooth and synced for every player
+[*][b]Shrinking safe zone[/b]: a glowing wall that follows the terrain, storm effect and damage outside, synced for every player
 [*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
 [*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
@@ -20,9 +20,9 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]Keys[/h2]
 [list]
-[*][b]TAB[/b] - players alive
-[*][b]F3[/b] - class menu
-[*][b]F4[/b] - squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite)
+[*][b]TAB[/b] - scoreboard (click for the mouse, right click a player to mute or open the profile)
+[*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
+[*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]Q[/b] - drop your active weapon
 [*][b]E[/b] - pick up a weapon from the ground
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
@@ -55,23 +55,25 @@ You can share these files: drop one in that folder and the map is ready. The con
 
 [h2]Server settings[/h2]
 [list]
-[*][b]lst_minimumplayers[/b] - players needed to start (default 2)
-[*][b]lst_zonespeed[/b] - zone shrink speed (default 0.75)
-[*][b]lst_zonequality[/b] - zone quality: 3 high + texture, 2 medium, 1 low, 0 invisible
-[*][b]lst_objoutline[/b] - outline on loot (1/0)
-[*][b]lst_event_enablenuke / lst_enableimplosion[/b] - nuke and implosion events (1/0)
+[*][b]lbr_min_players[/b] - players needed to start (default 2)
+[*][b]lbr_zone_speed[/b] - zone shrink speed (default 0.75)
+[*][b]lbr_zone_quality[/b] - client: zone wall quality, 3 high, 2 medium, 1 low, 0 invisible
+[*][b]lbr_outline[/b] - client: outline on loot (1/0)
+[*][b]lbr_zone_view_distance[/b] - client: how far the zone wall is drawn (default 9000)
+[*][b]lbr_event_nuke / lbr_event_implosion[/b] - nuke and implosion events (1/0)
 [*][b]lbr_cull_loot_distance[/b] - loot farther than this is not sent to players (default 4000, 0 = off)
 [*][b]lbr_cull_vehicle_distance[/b] - client: parked vehicles farther than this are not drawn (default 8000)
 [*][b]lbr_outline_distance[/b] - client: max loot outline distance (default 1500)
 [*][b]lbr_editor_superadminonly[/b] - only superadmins can use the map editor (1/0)
 [/list]
+Old [b]lst_*[/b] names from previous versions still work.
 Full list and documentation on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
 
 [h2]Tips and problems[/h2]
 [list]
 [*]Weapons spawn with all attachments? Run [b]cw_disable_all_attachments_on_spawn 1[/b] on the server.
 [*]Errors or lag? Disable the addons you don't need and delete [b]garrysmod/download/[/b] and [b]garrysmod/downloads/server/[/b] (old files from public servers).
-[*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lst_zonequality[/b].
+[*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lbr_zone_quality[/b].
 [*]For a better experience, keep nuke and implosion disabled.
 [/list]
 
