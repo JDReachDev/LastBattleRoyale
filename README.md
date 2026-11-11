@@ -33,6 +33,7 @@ add maps/weapons and run it on their own server.
 | `TAB` | Scoreboard: players in game, lobby, spectators (click for the mouse, right click a player to mute) |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
+| `Mouse wheel` / `1`–`6` | Switch weapon (custom weapon bar with slot, name and ammo) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
@@ -156,7 +157,8 @@ gamemodes/lastbattleroyale/
     lastbattleroyale.txt         gamemode definition + Start New Game settings
     icon24.png, logo.png
     backgrounds/                 main menu backgrounds
-    entities/entities/           zone, loot, armor, supply drop, implosion bomb
+    entities/entities/           zone, loot, armor, supply drop, implosion bomb,
+                                 base_gmodentity (Sandbox base needed by addon entities)
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
         init.lua                 server entry point, net messages, squads, death handling
@@ -172,6 +174,7 @@ gamemodes/lastbattleroyale/
         cl_scoreboard.lua        TAB scoreboard
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
+        cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-6)
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
         shared.lua               ConVars (and their old lst_ names), teams, round states

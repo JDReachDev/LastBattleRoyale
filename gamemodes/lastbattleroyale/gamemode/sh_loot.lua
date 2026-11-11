@@ -7,12 +7,14 @@
 // {
 //   "format": "lastbattleroyale-loot", "version": 1,
 //   "groups": {
-//     "BETTERWEAPONS": [ { "class": "cw_ak74", "weight": 1, "on": true }, ... ],
+//     "BETTERWEAPONS": [ { "class": "cw_ak74", "weight": 1, "on": true, "ammo": 60 }, ... ],
 //     ...
 //   }
 // }
 // weight = how many "tickets" the class has in its group (the old config.lua
 // lists had a class written twice to make it twice as likely: that is weight 2).
+// ammo = extra reserve ammo given when the weapon is picked up (0 = only the
+// loaded magazine, as before).
 
 LBR = LBR or {}
 
@@ -33,6 +35,7 @@ LBR.LootGroups = {
 
 LBR.LootMaxPerGroup = 400
 LBR.LootMaxWeight = 100
+LBR.LootMaxAmmo = 9999
 
 function LBR.LootGroupById( id )
 	for _, g in ipairs( LBR.LootGroups ) do
@@ -94,7 +97,7 @@ function LBR.LootToJSON( groups )
 	for _, g in ipairs( LBR.LootGroups ) do
 		local list = {}
 		for _, e in ipairs( groups[g.id] or {} ) do
-			list[#list + 1] = { class = e.class, weight = e.weight, on = e.on and true or false }
+			list[#list + 1] = { class = e.class, weight = e.weight, on = e.on and true or false, ammo = ( e.ammo or 0 ) > 0 and e.ammo or nil }
 		end
 		data.groups[g.id] = list
 	end
@@ -121,7 +124,8 @@ function LBR.LootFromJSON( json )
 					list[#list + 1] = {
 						class = e.class,
 						weight = math.Clamp( math.floor( tonumber( e.weight ) or 1 ), 1, LBR.LootMaxWeight ),
-						on = e.on ~= false
+						on = e.on ~= false,
+						ammo = math.Clamp( math.floor( tonumber( e.ammo ) or 0 ), 0, LBR.LootMaxAmmo )
 					}
 				end
 			end

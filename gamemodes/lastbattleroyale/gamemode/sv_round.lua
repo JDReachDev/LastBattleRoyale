@@ -353,6 +353,7 @@ function NewSpawnAllItems()
 				it:Spawn()
 				LBR.PlaceOnFloor( it, spawns[index] )
 				it.kanadelootable = true
+				it.LBR_Ammo = LBR.LootAmmo and LBR.LootAmmo[items[index]] // extra ammo on pickup (Loot editor)
 			end
 		end
 	end )

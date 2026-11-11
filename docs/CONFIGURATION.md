@@ -95,6 +95,8 @@ timer.Create("HurtAllPlayers", 0.36, 0, HurtPlayers)   -- tick interval in secon
 Open the map editor (`F8`), press `Q` and click **Loot and vehicles**:
 
 - the groups are on the left (rare weapons, weapons, pistols & grenades, items, ammo, cars, helicopters);
+- **extra ammo** (weapons only): reserve ammo given when the weapon is picked up, on top of the
+  loaded magazine (`0` = only the magazine, as before; the tooltip shows the ammo type);
 - untick an entry to disable it, change its **weight** to make it more or less likely (the *chance*
   column shows the result), `X` removes it;
 - **+ ADD** lists every weapon / entity installed (search by class, name or category); you can also
@@ -118,6 +120,7 @@ The file is the same on every map (how *many* items spawn is per map, see `weapo
 }
 ```
 
+`ammo` (optional, 0–9999): extra reserve ammo on pickup.
 `weight` 1–100: an entry with weight 2 is twice as likely as one with weight 1 (in the old lists that
 meant writing the class twice). `on: false` keeps the entry but never spawns it.
 

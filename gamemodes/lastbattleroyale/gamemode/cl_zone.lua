@@ -35,13 +35,14 @@ LBR.GetZoneColor = updateZoneColor
 // distance), with a glowing line on the ground.
 ------------------------------------------------------------------------
 
-// 1300px triangle pattern (the old 5200px texture used ~100 MB of video memory)
-local patternTex = Material( "oc1y8p02.jpg", "noclamp smooth mips" ):GetTexture( "$basetexture" )
-local matWall = CreateMaterial( "LBR_ZoneWall", "UnlitGeneric", {
+// Triangle pattern: light lines on black, drawn additive so the lines glow in
+// the zone color (the old white texture with 1px dark lines disappeared under the tint)
+local patternTex = Material( "lastbattleroyale/zone_pattern.png", "noclamp smooth mips" ):GetTexture( "$basetexture" )
+local matWall = CreateMaterial( "LBR_ZoneWall2", "UnlitGeneric", {
 	["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
-	["$translucent"] = 1, ["$nocull"] = 1,
+	["$additive"] = 1, ["$nocull"] = 1,
 } )
-if patternTex then matWall:SetTexture( "$basetexture", patternTex ) end
+if patternTex and not patternTex:IsError() then matWall:SetTexture( "$basetexture", patternTex ) end
 local matFill = CreateMaterial( "LBR_ZoneFill", "UnlitGeneric", {
 	["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
 	["$translucent"] = 1, ["$nocull"] = 1,
@@ -53,7 +54,7 @@ local matGlow = CreateMaterial( "LBR_ZoneGlow", "UnlitGeneric", {
 
 local WALL_HEIGHT = 2200   // fades to nothing at this height above the ground
 local WALL_DEPTH = 1500    // goes this far under the ground (hidden by the terrain)
-local TEX_SCALE = 700      // world units per texture repeat
+local TEX_SCALE = 1400     // world units per texture repeat
 local segmentsByQuality = { [1] = 40, [2] = 64, [3] = 96 }
 
 // wall rows: height above the ground, alpha (0..1)
@@ -187,10 +188,10 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_DrawZone", function( depth, sky
 
 	local col = updateZoneColor()
 	render.SetMaterial( matFill )
-	drawWall( count, col, 70, 0 )
+	drawWall( count, col, 55, 0 )
 	if q >= 2 then
 		render.SetMaterial( matWall )
-		drawWall( count, col, 170, CurTime() * 0.05 )
+		drawWall( count, col, 255, CurTime() * 0.03 )
 	end
 	render.SetMaterial( matGlow )
 	drawGroundGlow( count, col, q >= 3 and 1 or 0.7 )

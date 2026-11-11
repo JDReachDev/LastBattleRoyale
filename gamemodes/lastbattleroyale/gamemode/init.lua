@@ -16,6 +16,7 @@ AddCSLuaFile( "cl_editor.lua" )
 AddCSLuaFile( "cl_perf.lua" )
 AddCSLuaFile( "cl_prompt.lua" )
 AddCSLuaFile( "cl_loot.lua" )
+AddCSLuaFile( "cl_weaponselect.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )
@@ -647,6 +648,18 @@ function GM:PlayerCanPickupWeapon( ply, wep )
 	if ply:Team() == TEAM_CONT then
 		if wep.kanadelootable == true then
 			if ply:KeyDown(IN_USE) then
+				// extra reserve ammo set in the Loot editor, given once if the pickup happens
+				if ( wep.LBR_Ammo or 0 ) > 0 and not wep.LBR_AmmoPending then
+					wep.LBR_AmmoPending = true
+					local amount, ammoType = wep.LBR_Ammo, wep:GetPrimaryAmmoType()
+					timer.Simple( 0, function()
+						if IsValid( wep ) and not IsValid( wep:GetOwner() ) then
+							wep.LBR_AmmoPending = nil // not picked up (for example ammo full)
+							return
+						end
+						if IsValid( ply ) and ammoType and ammoType >= 0 then ply:GiveAmmo( amount, ammoType ) end
+					end )
+				end
 				return true
 			end
 		else

@@ -22,6 +22,13 @@ function LBR.ApplyLoot( groups )
 	FLYING_VEHICLES = FLYING_VEHICLES or {}
 	FLYING_VEHICLES.RARE     = LBR.LootExpand( groups.HELI_RARE )
 	FLYING_VEHICLES.VERYRARE = LBR.LootExpand( groups.HELI_VERYRARE )
+	// extra ammo given on pickup, per weapon class
+	LBR.LootAmmo = {}
+	for _, list in pairs( groups ) do
+		for _, e in ipairs( list ) do
+			if ( e.ammo or 0 ) > 0 then LBR.LootAmmo[e.class] = e.ammo end
+		end
+	end
 	LBR.LootCurrent = groups
 end
 

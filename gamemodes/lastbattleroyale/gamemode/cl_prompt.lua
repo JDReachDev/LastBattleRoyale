@@ -47,8 +47,16 @@ local function describe( lp, ent )
 	end
 
 	if ent:IsVehicle() or LBR.IsVehicleClass( class ) then
-		if ent:IsVehicle() and IsValid( ent:GetDriver() ) then return end
-		return "ENTER", niceName( ent )
+		// seats of SCars / WAC: show the name of the car / helicopter
+		local parent = ent:GetParent()
+		local main = ( IsValid( parent ) and LBR.IsVehicleClass( parent:GetClass() ) ) and parent or ent
+		// GetDriver() exists only on the server: check the players instead
+		if ent:IsVehicle() then
+			for _, p in ipairs( player.GetAll() ) do
+				if p ~= lp and p:GetVehicle() == ent then return end
+			end
+		end
+		return "ENTER", niceName( main )
 	end
 
 	if LBR.IsLootClass( class ) then

@@ -221,7 +221,7 @@ function L.Rebuild()
 			end
 			local total = totalWeight( list )
 			local chance = ( e.on and total > 0 ) and ( e.weight / total * 100 ) or 0
-			UI.Text( e.on and string.format( "%.1f%%", chance ) or "OFF", "LBR_UI_Small", w - S( 130 ), h / 2, e.on and C.accent or C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+			UI.Text( e.on and string.format( "%.1f%%", chance ) or "OFF", "LBR_UI_Small", w - S( 180 ), h / 2, e.on and C.accent or C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 		end
 		row.OnMousePressed = function( self, code )
 			local x = self:CursorPos()
@@ -257,6 +257,35 @@ function L.Rebuild()
 				markDirty()
 			end
 		end
+
+		// extra reserve ammo on pickup (weapons only)
+		local isWeapon = not LBR.LootGroupById( L.sel ).vehicle and ( kind == "weapon" or not name )
+		if isWeapon then
+			local am = vgui.Create( "DNumberWang", row )
+			am:Dock( RIGHT )
+			am:DockMargin( 0, S( 5 ), S( 6 ), S( 5 ) )
+			am:SetWide( S( 60 ) )
+			am:SetMinMax( 0, LBR.LootMaxAmmo )
+			am:SetDecimals( 0 )
+			am:SetValue( e.ammo or 0 )
+			local t = weapons.Get( e.class )
+			local prim = t and t.Primary or {}
+			am:SetTooltip( "Extra ammo given when this weapon is picked up (0 = only the loaded magazine)"
+				.. ( prim.Ammo and ( "\nAmmo type: " .. tostring( prim.Ammo ) ) or "" )
+				.. ( prim.ClipSize and prim.ClipSize > 0 and ( "\nMagazine: " .. prim.ClipSize ) or "" ) )
+			am.OnValueChanged = function( _, v )
+				local nv = math.Clamp( math.floor( tonumber( v ) or 0 ), 0, LBR.LootMaxAmmo )
+				if nv ~= ( e.ammo or 0 ) then
+					e.ammo = nv
+					markDirty()
+				end
+			end
+		else
+			local sp = vgui.Create( "DPanel", row )
+			sp:Dock( RIGHT )
+			sp:SetWide( S( 66 ) )
+			sp.Paint = nil
+		end
 	end
 	if #list == 0 then
 		local empty = L.rows:Add( "DPanel" )
@@ -273,7 +302,7 @@ function L.Open()
 	if IsValid( L.frame ) then L.frame:Remove() end
 	if LBR.Editor and IsValid( LBR.Editor.menu ) then LBR.Editor.menu:Remove() end
 
-	local fr = UI.Frame( S( 1000 ), S( 720 ), "Loot and vehicles", "What spawns in the rounds. Weight = how likely; untick to disable. Saved in data/" .. LBR.LootFile )
+	local fr = UI.Frame( S( 1000 ), S( 720 ), "Loot and vehicles", "What spawns in the rounds. Weight = how likely, extra ammo = given on pickup; untick to disable. Saved in data/" .. LBR.LootFile )
 	L.frame = fr
 	fr:SetKeyboardInputEnabled( true )
 	local baseClose = fr.Close
@@ -367,8 +396,9 @@ function L.Open()
 		UI.Text( g.desc, "LBR_UI_Small", 0, S( 26 ), C.dim )
 		UI.Text( "CLASS", "LBR_UI_Tiny", S( 40 ), h - S( 12 ), C.dim )
 		UI.Text( "NAME", "LBR_UI_Tiny", S( 280 ), h - S( 12 ), C.dim )
-		UI.Text( "CHANCE", "LBR_UI_Tiny", w - S( 130 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
-		UI.Text( "WEIGHT", "LBR_UI_Tiny", w - S( 70 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
+		UI.Text( "CHANCE", "LBR_UI_Tiny", w - S( 180 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
+		if not g.vehicle then UI.Text( "EXTRA AMMO", "LBR_UI_Tiny", w - S( 104 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT ) end
+		UI.Text( "WEIGHT", "LBR_UI_Tiny", w - S( 44 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
 	end
 
 	local addBtn = UI.Button( head, "+ ADD", C.good, openPicker )

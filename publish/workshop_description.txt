@@ -12,6 +12,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]New menus[/b]: TAB scoreboard, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
+[*][b]New weapon bar[/b]: mouse wheel and 1-6 switch weapon right away, with slot, name and ammo
 [*][b]Interaction prompts[/b]: look at a weapon, item, vehicle or supply drop and the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls, and the existing maps keep working as before
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn, lighter zone and outlines
@@ -28,8 +29,6 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
 [*][b]9 classes[/b] unlocked by levelling up
 [*][b]Fortnite-style HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, alive players, squad panel
-[*][b]In-game map editor[/b]: configure ANY map without writing code
-[*][b]Safe spawns[/b]: players and loot never get stuck in floors or walls
 [*][b]Optimized for big maps[/b] (gm_fork, gm_valley): far loot and vehicles are not sent / drawn, lighter zone and outlines
 [/list]
 
@@ -55,6 +54,7 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 [*][b]TAB[/b] - scoreboard (click for the mouse, right click a player to mute or open the profile)
 [*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
 [*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
+[*][b]Mouse wheel / 1-6[/b] - switch weapon (new weapon bar)
 [*][b]Q[/b] - drop your active weapon
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
@@ -85,7 +85,7 @@ The panel tells you what is still missing for the map to be playable. Configs ar
 [code]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/code]
 You can share these files: drop one in that folder and the map is ready. The configs of the supported maps are created there automatically, so you can edit them too ("Reset" restores the original).
 
-[b]Loot and vehicles[/b] (F8, then Q): pick which weapons, items, cars and helicopters spawn, how likely each one is (weight), disable or add anything installed. Saved in [b]garrysmod/data/lastbattleroyale/loot.txt[/b] (all maps).
+[b]Loot and vehicles[/b] (F8, then Q): pick which weapons, items, cars and helicopters spawn, how likely each one is (weight), extra ammo on pickup, disable or add anything installed. Saved in [b]garrysmod/data/lastbattleroyale/loot.txt[/b] (all maps).
 
 [h2]Server settings[/h2]
 [list]
