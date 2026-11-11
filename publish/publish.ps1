@@ -90,7 +90,10 @@ if ($workshopId) {
     if (!$Changes) { $Changes = Read-Host "Changelog for this update" }
     $publishArgs = @("update", "-addon", $GmaPath, "-id", $workshopId, "-changes", $Changes)
     if ($UpdateIcon) { $publishArgs += @("-icon", $IconPath) }
-    $log = & $gmpublish @publishArgs 2>&1 | Tee-Object -Variable log
+    # gmpublish writes info to stderr: do not let PowerShell treat it as an error
+    $ErrorActionPreference = "Continue"
+    $log = & $gmpublish @publishArgs 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable log
+    $ErrorActionPreference = "Stop"
     # gmpublish can exit with 0 even when Steam is not running
     if ($LASTEXITCODE -ne 0 -or ($log -join "`n") -match "Error:|Couldn't initialize") { throw "gmpublish update failed (is Steam running?)." }
     Write-Host "Updated: https://steamcommunity.com/sharedfiles/filedetails/?id=$workshopId" -ForegroundColor Green
