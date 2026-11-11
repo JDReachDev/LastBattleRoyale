@@ -24,7 +24,9 @@ function ENT:PhysicsCollide(data, physobj)
 end
 
 function ENT:Use(activator, caller)
-	if activator:IsPlayer() then
+	if self.LBR_Looted then return end
+	if IsValid(activator) and activator:IsPlayer() then
+		self.LBR_Looted = true
 		self:EmitSound(Sound("items/ammopickup.wav"),70,100)
 		activator:PrintMessage(HUD_PRINTTALK, "Looting...")
 		activator:Freeze(true)
@@ -33,7 +35,8 @@ function ENT:Use(activator, caller)
 				activator:Freeze(false)
 			end
 		end )
-		timer.Create("SupplyDrop", 5, 1, function()
+		timer.Create("SupplyDrop" .. activator:EntIndex(), 5, 1, function()
+			if not IsValid(activator) or not activator:Alive() or activator:Team() != TEAM_CONT then return end
 			local whenToUnfreeze = 5
 			
 			WEPS = {

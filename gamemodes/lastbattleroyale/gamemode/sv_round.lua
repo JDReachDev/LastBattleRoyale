@@ -1,7 +1,6 @@
 
 // server-side round system
 
-include("config.lua")
 
 TEAM_PLAYER = 1
 TEAM_CONT = 2
@@ -33,99 +32,137 @@ function SetState(num)
 	SetGlobalInt("state", num)
 end
 
+local cvZoneSpeed = GetConVar("lst_zonespeed")
+local cvHeal = GetConVar("lst_healhealth")
+local cvImplosion = GetConVar("lst_enableimplosion")
+local cvNuke = GetConVar("lst_event_enablenuke")
+
+// lst_zonespeed is "radius removed every tick", converted to units per second
 function GetZoneSpeed()
-	return GetConVar("lst_zonespeed"):GetFloat()
+	return cvZoneSpeed:GetFloat()
 end
 
 zoneisactive = false
 canattack = false
 
+local function MapCfg()
+	return LBR.GetMapConfig() or {}
+end
+
+local function CatList( key, parent )
+	local cfg = MapCfg()
+	if parent then
+		return istable( cfg[parent] ) and cfg[parent][key] or {}
+	end
+	return cfg[key] or {}
+end
+
 -------------- ROUND SYSTEM --------------
 
 function Round_Check()
 	if #player.GetAll() < MinPlayers() then return end
-	local usable = true
-	if MAPCONFIG == nil then
-		usable = false
-	end
-	if MAPCONFIG[game.GetMap()] == nil then
-		usable = false
-	end
-	if MAPCONFIG[game.GetMap()]["spawns"] == nil then
-		usable = false
-	end
-	if MAPCONFIG[game.GetMap()]["weaponspawns"] == nil then
-		usable = false
-	end
-	if MAPCONFIG[game.GetMap()]["endpositions"] == nil then
-		usable = false
-	end
-	if usable == false then
-		Error("This map is not compatible with this gamemode or config file is broken.")
-		return false
-	end
-	if usable then return true end
+	return LBR.IsMapReady()
 end
- 
+
+local nextNotConfiguredMsg = 0
+
 function GM:Tick()
-	if GetState() == STATE_NONE then
-		if #team.GetPlayers(TEAM_PLAYER) >= MinPlayers() then
-			print("rround2")
-			if #team.GetPlayers(TEAM_PLAYER) >= math.floor(#player.GetAll() / 3) then
+	local state = GetState()
+	if state == STATE_NONE then
+		SetGlobalInt( "LBR_MinPlayers", MinPlayers() )
+		if #team.GetPlayers(TEAM_PLAYER) >= MinPlayers() and #team.GetPlayers(TEAM_PLAYER) >= math.floor(#player.GetAll() / 3) then
+			if not LBR.IsMapReady() then
+				if CurTime() > nextNotConfiguredMsg then
+					nextNotConfiguredMsg = CurTime() + 60
+					PrintMessage(HUD_PRINTTALK, "This map is not configured for Last Battle Royale. An admin can press F8 to open the map editor.")
+				end
+			elseif not LBR.AnyEditing() then
 				RoundRestart()
 			end
 		end
-	end
-	if GetState() == STATE_LIVE then
-		if zoneisactive then
-			if GetGlobalInt("Zone_Radius") < 1750 then
-				if startednuclearsiren == false then
-					startednuclearsiren = true
-					BroadcastLua('surface.PlaySound("gbombs_5/sirens/nuclear_siren.wav")')
-				end
+	elseif state == STATE_LIVE and zoneisactive then
+		local radius = LBR.GetZoneRadius()
+		if radius < LBR.ZoneWarnRadius and startednuclearsiren == false then
+			startednuclearsiren = true
+			BroadcastLua('surface.PlaySound("gbombs_5/sirens/nuclear_siren.wav")')
+		end
+		if radius <= 0 and cvImplosion:GetInt() == 1 then
+			zoneisactive = false
+			implosionbomb = ents.Create( "hb_main_implosionbomb_edit" )
+			if IsValid(implosionbomb) then
+				implosionbomb:SetPos( LBR.GetZonePos() )
+				implosionbomb:Spawn()
+				implosionbomb:Arm()
+				implosionbomb:ExplodeEDIT()
 			end
-			if GetGlobalInt("Zone_Radius") > 0 then
-				SetGlobalInt( "Zone_Radius", GetGlobalInt("Zone_Radius") - GetZoneSpeed() )
-			elseif GetConVar("lst_enableimplosion"):GetInt() == 1 then
-				zoneisactive = false
-				implosionbomb = ents.Create( "hb_main_implosionbomb_edit" )
-				if IsValid(implosionbomb) then
-					implosionbomb:SetPos( GetGlobalVector("Zone_Pos") )
-					implosionbomb:Spawn()
-					implosionbomb:Arm()
-					implosionbomb:ExplodeEDIT()
-				end
-				BroadcastLua('RunConsoleCommand("stopsound")')
-			end
+			BroadcastLua('RunConsoleCommand("stopsound")')
 		end
 	end
 end
 
 function RunEvents(num)
+	local nukes = CatList( "nukepositions", "events" )
+	local drops = CatList( "supplydrops", "events" )
+	if num == 1 and #nukes == 0 then num = 2 end
 	if num == 1 then
+		local nuke = ents.Create( "hb_nuclear_fatman" )
+		if not IsValid( nuke ) then return end
 		PrintMessage(HUD_PRINTTALK, "Nuclear airstrike inbound")
 		PrintMessage(HUD_PRINTCENTER, "Nuclear airstrike inbound!")
-		local nuke = ents.Create( "hb_nuclear_fatman" )
-		local pos = table.Random(MAPCONFIG[game.GetMap()]["events"]["nukepositions"])
-		nuke:SetPos( pos )
+		nuke:SetPos( nukes[math.random( #nukes )] )
 		nuke:Spawn()
 		nuke:Arm()
 		// lua_run RunEvents(2)
 	elseif num == 2 then
-		local airdropcount = math.random(1,4)
-		local allspawns = {}
-		table.Add(allspawns, MAPCONFIG[game.GetMap()]["events"]["supplydrops"])
-		for i=1, airdropcount do
-			table.RemoveByValue(allspawns, table.Random(allspawns))
-		end
-		PrintMessage(HUD_PRINTTALK, tostring(#allspawns) .. " supply airdrops incoming.")
-		PrintMessage(HUD_PRINTCENTER, tostring(#allspawns) .. " supply airdrops incoming!")
-		for k,v in pairs(allspawns) do
+		if #drops == 0 then return end
+		local spawns = LBR.ShuffledCopy( drops )
+		local count = math.max( 1, #spawns - math.random( 1, 4 ) )
+		PrintMessage(HUD_PRINTTALK, tostring(count) .. " supply airdrops incoming.")
+		PrintMessage(HUD_PRINTCENTER, tostring(count) .. " supply airdrops incoming!")
+		for i = 1, count do
 			local supplydrop = ents.Create( "ent_supplydrop_fix" )
-			supplydrop:SetPos( v )
-			supplydrop:Spawn()
+			if IsValid( supplydrop ) then
+				supplydrop:SetPos( spawns[i] )
+				supplydrop:Spawn()
+			end
 		end
 	end
+end
+
+local function RemoveFromTeam( pl, other )
+	table.RemoveByValue( pl.TeamingPlayers, other:SteamID64() )
+	pl:PrintMessage( HUD_PRINTTALK, other:Nick() .. " is no longer in your team" )
+	pl:UpdateTeamers()
+end
+
+// players that asked to leave a team during the previous round
+local function ProcessTeamLeaves()
+	for _, pl in ipairs( player.GetAll() ) do
+		for _, leaver in ipairs( pl.wantstoleave or {} ) do
+			if IsValid( leaver ) and table.HasValue( pl.TeamingPlayers, leaver:SteamID64() ) then
+				for _, sid in ipairs( table.Copy( pl.TeamingPlayers ) ) do
+					local mate = player.GetBySteamID64( sid )
+					if sid ~= leaver:SteamID64() and IsValid( mate ) then
+						RemoveFromTeam( leaver, mate )
+						RemoveFromTeam( mate, leaver )
+					end
+				end
+				RemoveFromTeam( pl, leaver )
+				RemoveFromTeam( leaver, pl )
+			end
+		end
+		pl.wantstoleave = {}
+	end
+end
+
+// true when every player in the server is in the same team
+local function EveryoneInOneTeam()
+	local all = player.GetAll()
+	if #all < 2 or #all > 4 then return false end
+	for i = 2, #all do
+		if not IsInTeam( all[1], all[i] ) then return false end
+	end
+	return true
 end
 
 function RoundRestart()
@@ -140,92 +177,51 @@ function RoundRestart()
 	SetRoundNum(GetRoundNum() + 1)
 	UpdateAllTeamers()
 	RegenerateSpawns()
-	timer.Destroy("timer_prearing")
-	timer.Destroy("timer_attackdelay")
-	timer.Destroy("timer_event1")
-	timer.Destroy("timer_event2")
+	timer.Remove("timer_prearing")
+	timer.Remove("timer_attackdelay")
+	timer.Remove("timer_event1")
+	timer.Remove("timer_event2")
 	canattack = false
+	SetGlobalBool( "LBR_CanAttack", false )
 	SetState(STATE_PREPARING)
+	SetGlobalFloat( "LBR_PhaseEnd", CurTime() + PrepTime() )
 	PrintMessage(HUD_PRINTTALK, "Game is starting in " .. PrepTime() .. " seconds")
 	PrintMessage(HUD_PRINTCENTER, "Game is starting in " .. PrepTime() .. " seconds")
 	net.Start("LST_PrepStart")
 	net.Broadcast()
 	timer.Create("timer_prearing", PrepTime(), 1, function()
-		for k,pl in pairs(player.GetAll()) do
-			for k2,pl2 in pairs(pl.wantstoleave) do
-				for k3,pl_teamer_64 in pairs(pl.TeamingPlayers) do
-					if pl_teamer_64 == pl2:SteamID64() then
-						for k4,v in pairs(pl.TeamingPlayers) do
-							if v != pl2:SteamID64() then
-								local plyr = player.GetBySteamID64( v )
-								if plyr != false then
-									print("removing " .. plyr:Nick() .. " from " .. pl2:Nick() .. "'s mates")
-									table.RemoveByValue(pl2.TeamingPlayers, plyr:SteamID64())
-									plyr:PrintMessage(HUD_PRINTTALK, pl2:Nick() .. " is no longer in your team")
-									print("removing " .. pl2:Nick() .. " from " .. plyr:Nick() .. "'s mates")
-									table.RemoveByValue(plyr.TeamingPlayers, pl2:SteamID64())
-									plyr:UpdateTeamers()
-								end
-							end
-						end
-						
-						print("removing " .. pl2:Nick() .. " from " .. pl:Nick() .. "'s mates")
-						table.RemoveByValue(pl.TeamingPlayers, pl2:SteamID64())
-						pl:PrintMessage(HUD_PRINTTALK, pl2:Nick() .. " is no longer in your team")
-						pl:UpdateTeamers()
-						print("removing " .. pl:Nick() .. " from " .. pl2:Nick() .. "'s mates")
-						table.RemoveByValue(pl2.TeamingPlayers, pl:SteamID64())
-						pl2:UpdateTeamers()
-						pl.wantstoleave = {}
-						
-					end
-				end
-			end
+		ProcessTeamLeaves()
+		if EveryoneInOneTeam() then
+			PrintMessage(HUD_PRINTTALK, "You cannot start the game when all players are in a team")
+			SetState(STATE_NONE)
+			return
 		end
-		local cnt = player.GetAll()
-		if #cnt == 4 then
-			if IsInTeam3(cnt[1], cnt[2], cnt[3], cnt[4]) then
-				PrintMessage(HUD_PRINTTALK, "You cannot start the game when all players are in a team")
-				SetState(STATE_NONE)
-				return
-			end
-		end
-		if #cnt == 3 then
-			if IsInTeam3(cnt[1], cnt[2], cnt[3]) then
-				PrintMessage(HUD_PRINTTALK, "You cannot start the game when all players are in a team")
-				SetState(STATE_NONE)
-				return
-			end
-		end
-		if #cnt == 2 then
-			if IsInTeam(cnt[1], cnt[2]) then
-				PrintMessage(HUD_PRINTTALK, "You cannot start the game when all players are in a team")
-				SetState(STATE_NONE)
-				return
-			end
+		if not LBR.IsMapReady() then
+			PrintMessage(HUD_PRINTTALK, "Map config is not valid anymore, round cancelled.")
+			SetState(STATE_NONE)
+			return
 		end
 		game.CleanUpMap()
 		PrintMessage(HUD_PRINTTALK, "Game is live! Players will be able to fight after " .. ActionPrepTime() .. " seconds.")
 		PrintMessage(HUD_PRINTCENTER, "Game is live!")
-		PrintMessage(HUD_PRINTTALK, "Mini-Freezes are normal ;)")
 		canattack = false
+		SetGlobalFloat( "LBR_PhaseEnd", CurTime() + ActionPrepTime() )
 		timer.Create("timer_attackdelay", ActionPrepTime(), 1, function()
 			canattack = true
+			SetGlobalBool( "LBR_CanAttack", true )
 			PrintMessage(HUD_PRINTTALK, "Action phase is live! Players are able to fight now.")
 			PrintMessage(HUD_PRINTCENTER, "Action phase is live!")
 			net.Start("LST_ActionStart")
 			net.Broadcast()
 		end)
+		SetGlobalFloat( "LBR_EventTime", CurTime() + 360 )
 		timer.Create("timer_event1", 300, 1, function()
 			PrintMessage(HUD_PRINTTALK, "Random event starts in one minute")
 			PrintMessage(HUD_PRINTCENTER, "Random event starts in one minute")
 			timer.Create("timer_event2", 60, 1, function()
-				if GetConVar("lst_event_enablenuke"):GetInt() == 1 then
-					if math.random(1,3) == 1 then
-						RunEvents(1)
-					else
-						RunEvents(2)
-					end
+				SetGlobalFloat( "LBR_EventTime", 0 )
+				if cvNuke:GetInt() == 1 and math.random(1,3) == 1 then
+					RunEvents(1)
 				else
 					RunEvents(2)
 				end
@@ -238,17 +234,21 @@ function RoundRestart()
 		NewSpawnAllItems()
 		SpawnAllVehicles()
 		SpawnAllFlyingVehicles()
-		local allspawns = {}
-		table.Add(allspawns, MAPCONFIG[game.GetMap()]["playerspawns"])
-		
-		for k,pl in pairs(player.GetAll()) do
+
+		local spawns = LBR.ShuffledCopy( CatList( "playerspawns" ) )
+		for i, pl in ipairs( player.GetAll() ) do
 			pl.roundkills = 0
-			local spawn = table.Random(allspawns)
+			pl:SetNW2Int( "LBR_Kills", 0 )
 			pl:Spawn()
 			pl:SetActivePlayer()
-			if spawn == nil then spawn = table.Random(allspawns) print("bad spawn:" .. spawn) end
-			pl:SetPos(spawn)
-			table.RemoveByValue(allspawns, spawn)
+			if #spawns > 0 then
+				local spawn = spawns[ ( ( i - 1 ) % #spawns ) + 1 ]
+				if i > #spawns then
+					// more players than spawns: spread them around the same point
+					spawn = spawn + Vector( math.random( -48, 48 ), math.random( -48, 48 ), 4 )
+				end
+				pl:SetPos( spawn )
+			end
 		end
 		net.Start("LST_RoundStart")
 		net.Broadcast()
@@ -258,15 +258,15 @@ end
 ////////////// ROUND SYSTEM //////////////
 
 function SetupZone()
-	local pos = table.Random( MAPCONFIG[game.GetMap()]["endpositions"] )
-	//local zonepos3d = pos["pos3d"]
-	//local zonepos2d = pos["pos2d"]
-	SetGlobalVector( "Zone_Pos", pos )
-	//SetGlobalString( "Zone_Pos2D", zonepos2d )
-	//SetGlobalFloat( "Zone_Pos2D_x", pos["pos2d"][1] )
-	//SetGlobalFloat( "Zone_Pos2D_y", pos["pos2d"][2] )
-	SetGlobalInt( "Zone_Radius", MAPCONFIG[game.GetMap()]["zone_radius"] )
-	
+	local centers = CatList( "endpositions" )
+	local pos = centers[math.random( #centers )]
+	local tickrate = 1 / engine.TickInterval()
+
+	SetGlobalVector( "LBR_ZonePos", pos )
+	SetGlobalFloat( "LBR_ZoneStartRadius", MapCfg().zone_radius or 20000 )
+	SetGlobalFloat( "LBR_ZoneStartTime", CurTime() )
+	SetGlobalFloat( "LBR_ZoneSpeed", GetZoneSpeed() * tickrate )
+
 	zone = ents.Create( "ent_zone" )
 	if IsValid(zone) then
 		zone:SetPos( pos )
@@ -276,27 +276,24 @@ function SetupZone()
 	net.Broadcast()
 end
 
+function StopZone()
+	zoneisactive = false
+	SetGlobalFloat( "LBR_ZoneStartRadius", 0 )
+end
+
 function IsInZone(ply)
-	local radius = GetGlobalInt( "Zone_Radius")
-	if radius < 1 then
-		return false
-	end
-	local allents = ents.FindInSphere( GetGlobalInt( "Zone_Pos"), radius )
-	for k,v in pairs(allents) do
-		if v == ply then
-			return true
-		end
-	end
-	return false
+	return LBR.IsPosInZone( ply:GetPos() )
 end
 
 function HurtPlayers()
 	if GetState() != STATE_LIVE then return end
-	for k,v in pairs( player.GetAll() ) do
-		if IsInZone(v) == false then
-			v:TakeDamage( 1, v, v )
-		elseif GetConVar("lst_healhealth"):GetInt() == 1 then
-			if v:Health() < 20 then
+	if not LBR.IsZoneActive() then return end
+	local heal = cvHeal:GetInt() == 1
+	for _, v in ipairs( team.GetPlayers( TEAM_CONT ) ) do
+		if v:Alive() then
+			if not IsInZone(v) then
+				v:TakeDamage( 1, v, v )
+			elseif heal and v:Health() < 20 then
 				v:SetHealth(v:Health() + 1)
 			end
 		end
@@ -305,9 +302,9 @@ end
 timer.Create("HurtAllPlayers", 0.36, 0, HurtPlayers)
 
 function SpawnAllVehicles()
-	for k,v in pairs(MAPCONFIG[game.GetMap()]["vehiclepositions"]) do
-		local spawn = v
-		local car = ents.Create( table.Random(VEHICLES) )
+	if #VEHICLES == 0 then return end
+	for _, spawn in ipairs( CatList( "vehiclepositions" ) ) do
+		local car = ents.Create( VEHICLES[math.random( #VEHICLES )] )
 		if IsValid( car ) then
 			car:SetPos( spawn )
 			car:Spawn()
@@ -315,58 +312,60 @@ function SpawnAllVehicles()
 	end
 end
 
-function GetItemsToSpawn(n1,n2,n3,n4,n5)
+local itemCategories = { "BETTERWEAPONS", "WEAPONS", "ADDITIONALWEAPONS", "ITEMS", "AMMO" }
+
+function GetItemsToSpawn(...)
+	local counts = { ... }
 	local tabl = {}
-	for i=1, n1 do
-		table.ForceInsert(tabl, table.Random(ITEMS["BETTERWEAPONS"]))
-	end
-	for i=1, n2 do
-		table.ForceInsert(tabl, table.Random(ITEMS["WEAPONS"]))
-	end
-	for i=1, n3 do
-		table.ForceInsert(tabl, table.Random(ITEMS["ADDITIONALWEAPONS"]))
-	end
-	for i=1, n4 do
-		table.ForceInsert(tabl, table.Random(ITEMS["ITEMS"]))
-	end
-	for i=1, n5 do
-		table.ForceInsert(tabl, table.Random(ITEMS["AMMO"]))
+	for i, cat in ipairs( itemCategories ) do
+		local pool = ITEMS[cat] or {}
+		if #pool > 0 then
+			for _ = 1, ( counts[i] or 0 ) do
+				tabl[#tabl + 1] = pool[math.random( #pool )]
+			end
+		end
 	end
 	return tabl
 end
 
+// Items are created a few per tick instead of all at once: less freeze on big maps
+local ITEMS_PER_TICK = 6
+
 function NewSpawnAllItems()
-	local itemstospawn = {}
-	local spawns = {}
-	table.Add(spawns, MAPCONFIG[game.GetMap()]["weaponspawns"])
-	local pls = #player.GetAll()
-	itemstospawn = GetItemsToSpawn(MAPCONFIG[game.GetMap()]["weaponsc"][1],MAPCONFIG[game.GetMap()]["weaponsc"][2],MAPCONFIG[game.GetMap()]["weaponsc"][3],MAPCONFIG[game.GetMap()]["weaponsc"][4],MAPCONFIG[game.GetMap()]["weaponsc"][5])
-	//PrintTable(itemstospawn)
-	for k,v in pairs(itemstospawn) do
-		local it = ents.Create( v )
-		if IsValid( it ) then
-			local pos = table.Random(spawns)
-			if pos == nil then pos = table.Random(spawns) print(pos) print(v) return end
-			it:SetPos( pos )
-			table.RemoveByValue(spawns, pos)
-			it:Spawn()
-			it.kanadelootable = true
+	timer.Remove( "LBR_SpawnItems" )
+	local wc = MapCfg().weaponsc or {}
+	local items = LBR.ShuffledCopy( GetItemsToSpawn( wc[1], wc[2], wc[3], wc[4], wc[5] ) )
+	local spawns = LBR.ShuffledCopy( CatList( "weaponspawns" ) )
+	local total = math.min( #items, #spawns )
+	if total == 0 then return end
+	local round = GetRoundNum()
+	local index = 0
+	timer.Create( "LBR_SpawnItems", 0, 0, function()
+		if GetState() ~= STATE_LIVE or GetRoundNum() ~= round then
+			timer.Remove( "LBR_SpawnItems" )
+			return
 		end
-	end
+		for _ = 1, ITEMS_PER_TICK do
+			index = index + 1
+			if index > total then
+				timer.Remove( "LBR_SpawnItems" )
+				return
+			end
+			local it = ents.Create( items[index] )
+			if IsValid( it ) then
+				it:SetPos( spawns[index] )
+				it:Spawn()
+				it.kanadelootable = true
+			end
+		end
+	end )
 end
 
 function SpawnAllFlyingVehicles()
-	for k,v in pairs(MAPCONFIG[game.GetMap()]["flying_vehiclespawns"]) do
-		if math.random(1,100) <= 50 then
-			local spawn = v
-			local vehicle = ents.Create( table.Random(FLYING_VEHICLES["VERYRARE"]) )
-			if IsValid( vehicle ) then
-				vehicle:SetPos( spawn )
-				vehicle:Spawn()
-			end
-		else
-			local spawn = v
-			local vehicle = ents.Create( table.Random(FLYING_VEHICLES["RARE"]) )
+	for _, spawn in ipairs( CatList( "flying_vehiclespawns" ) ) do
+		local pool = math.random(1,100) <= 50 and FLYING_VEHICLES["VERYRARE"] or FLYING_VEHICLES["RARE"]
+		if pool and #pool > 0 then
+			local vehicle = ents.Create( pool[math.random( #pool )] )
 			if IsValid( vehicle ) then
 				vehicle:SetPos( spawn )
 				vehicle:Spawn()
@@ -379,30 +378,17 @@ function GM:PlayerCanHearPlayersVoice( listener, talker )
 	if talker:Team() == TEAM_SPEC and listener:Team() == TEAM_CONT then
 		return false
 	end
-	/*
-	if talker:Team() == TEAM_CONT and listener:Team() == TEAM_CONT then
-		if talker:GetPos():Distance(listener:GetPos()) > 1250 then
-			if IsInTeam(listener, talker) then
-				return true
-			end
-			return false
-		end
-	end
-	*/
 	return true
 end
 
 function GM:PlayerCanSeePlayersChat( text, teamOnly, listener, speaker )
+	if not IsValid( speaker ) then return true end
 	if listener == speaker then return true end
 	if speaker:Team() == TEAM_SPEC and listener:Team() == TEAM_CONT then
 		return false
 	end
 	if teamOnly then
-		if IsInTeam(listener, speaker) then
-			return true
-		else
-			return false
-		end
+		return IsInTeam(listener, speaker)
 	end
 	return true
 end

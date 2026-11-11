@@ -1,6 +1,8 @@
 // Shared file, for clients and server
 
 include( "classes.lua" )
+include( "sh_mapconfig.lua" )
+include( "sh_zone.lua" )
 
 for k,v in pairs(CLASSES) do
 	local cls = "player_class/" .. v["class"] .. ".lua"

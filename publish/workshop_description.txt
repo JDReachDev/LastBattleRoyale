@@ -1,64 +1,79 @@
 [h1]Last Battle Royale[/h1]
-Battle Royale Gamemode.
-This addon is based on LAST STAND by Kanade. But extremely modified.
+A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons and armor, team up with your squad and survive the shrinking zone until only one is left.
+Based on LAST STAND by Kanade, but almost completely rewritten.
 
+[b]Support the project:[/b] [url=https://ko-fi.com/jdreach]Ko-fi[/url]
 [b]Source code (open source):[/b] [url=https://github.com/JDReachDev/LastBattleRoyale]github.com/JDReachDev/LastBattleRoyale[/url]
+
+[h2]Features[/h2]
+[list]
+[*][b]Shrinking safe zone[/b] with damage outside, smooth and synced for every player
+[*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
+[*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
+[*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
+[*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
+[*][b]9 classes[/b] unlocked by levelling up
+[*][b]Fortnite-style HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, alive players, squad panel
+[*][b]In-game map editor[/b]: configure ANY map without writing code
+[*][b]Optimized for big maps[/b] (gm_fork, gm_valley): far loot and vehicles are not sent / drawn, lighter zone and outlines
+[/list]
 
 [h2]Keys[/h2]
 [list]
-[*]TAB - show players alive
-[*]F3 - open class menu
-[*]F4 - open team menu (F6 Decline squad / F7 Accept squad)
-[*]Q - drop your active weapon
-[*]E - pick up a weapon from the ground
-[*]E (Hold) + Left Click - throw grenades (if you have one CW weapon)
+[*][b]TAB[/b] - players alive
+[*][b]F3[/b] - class menu
+[*][b]F4[/b] - squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite)
+[*][b]Q[/b] - drop your active weapon
+[*][b]E[/b] - pick up a weapon from the ground
+[*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
+[*][b]F8[/b] - [i]admins:[/i] map editor
 [/list]
 
 [h2]Supported maps[/h2]
 [olist]
-[*]rp_pripyat_cop (Best imho, and for lot of player)
+[*]rp_pripyat_cop (the best one, great for many players)
 [*]rp_city17_build210
 [*]gm_marsh
 [*]rp_wasteland
-[*]gm_fork (Heavy Map - lower fps)
-[*]gm_valley (Heavy Map - lower fps)
+[*]gm_fork
+[*]gm_valley
 [*]rp_ineu_pass_v1e
 [/olist]
+Any other map can be configured in game with the map editor.
 
-[h2]Changes applied[/h2]
+[h2]Map editor (F8)[/h2]
+Join the map as admin between rounds and press [b]F8[/b] (or type [b]lbr_editor[/b] in console). You fly around and see every point already placed.
 [list]
-[*]added many weapons
-[*]changed the hud
-[*]added many supported maps
-[*]added outline to objects to see them better in the dark
-[*]removed OP ksg
-[*]removed old safe
-[*]added modern safe like FORTNITE (known bug, the safe is seen to pass also in the background)
-[*]rebalanced some maps
-[*]now you know the safe position
-[*]added some classes
-[*]no nuke by default
-[*]hidden the health of the players to make the game more competitive
-[*]increased damage from the safe
-[*]life regenerates faster up to 20
-[*]added "Zone Quality" var
-[*]more
+[*][b]Left click[/b] place a point / [b]Right click[/b] remove it
+[*][b]Mouse wheel / 1-8[/b] choose what to place: player spawns, lobby spawns, loot, cars, helicopters, zone centers, nuke targets, supply drops
+[*][b]R[/b] place where you aim / at your position - [b]E[/b] go to next point - [b]Z[/b] undo
+[*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import
+[/list]
+The panel tells you what is still missing for the map to be playable. Configs are saved in:
+[code]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/code]
+You can share these files: drop one in that folder and the map is ready. The configs of the supported maps are created there automatically, so you can edit them too ("Reset" restores the original).
+
+[h2]Server settings[/h2]
+[list]
+[*][b]lst_minimumplayers[/b] - players needed to start (default 2)
+[*][b]lst_zonespeed[/b] - zone shrink speed (default 0.75)
+[*][b]lst_zonequality[/b] - zone quality: 3 high + texture, 2 medium, 1 low, 0 invisible
+[*][b]lst_objoutline[/b] - outline on loot (1/0)
+[*][b]lst_event_enablenuke / lst_enableimplosion[/b] - nuke and implosion events (1/0)
+[*][b]lbr_cull_loot_distance[/b] - loot farther than this is not sent to players (default 4000, 0 = off)
+[*][b]lbr_cull_vehicle_distance[/b] - client: parked vehicles farther than this are not drawn (default 8000)
+[*][b]lbr_outline_distance[/b] - client: max loot outline distance (default 1500)
+[*][b]lbr_editor_superadminonly[/b] - only superadmins can use the map editor (1/0)
+[/list]
+Full list and documentation on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
+
+[h2]Tips and problems[/h2]
+[list]
+[*]Weapons spawn with all attachments? Run [b]cw_disable_all_attachments_on_spawn 1[/b] on the server.
+[*]Errors or lag? Disable the addons you don't need and delete [b]garrysmod/download/[/b] and [b]garrysmod/downloads/server/[/b] (old files from public servers).
+[*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lst_zonequality[/b].
+[*]For a better experience, keep nuke and implosion disabled.
 [/list]
 
-[h2]Zone quality (lst_zonequality)[/h2]
-3. High + Texture
-2. Medium
-1. Low
-0. Invisible
-
-If you have all the attachments at the spawn, write this in the console: [b]cw_disable_all_attachments_on_spawn 1[/b] (for servers)
-
-If you have PROBLEMS, ERRORS or LAG: disable outline, disable all the addons except those necessary, delete the folders of files downloaded from public servers:
-[list]
-[*]GarrysMod\garrysmod\downloads\server\
-[*]GarrysMod\garrysmod\download\
-[/list]
-
-For a better experience, disable nukes and implosion, imho.
-
-All server settings and how to add new maps: see the documentation on GitHub.
+[h2]Support[/h2]
+Enjoying Last Battle Royale? You can buy me a coffee on [url=https://ko-fi.com/jdreach]Ko-fi[/url]. Thanks!

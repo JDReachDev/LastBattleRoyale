@@ -7,6 +7,13 @@ TEAM_SPEC = 3
 
 local ply = FindMetaTable( "Player" )
 
+function RandomPlayerModel()
+	local cfg = LBR.GetMapConfig()
+	local models = cfg and cfg.playermodels or LBR.DefaultPlayerModels
+	if #models == 0 then models = LBR.DefaultPlayerModels end
+	return models[math.random( #models )]
+end
+
 function ply:SetSpectator()
 	self:StripWeapons()
 	self:RemoveAllAmmo()
@@ -23,7 +30,7 @@ function ply:SetWaitingPly()
 	self:StripWeapons()
 	self:RemoveAllAmmo()
 	self:SetTeam(TEAM_PLAYER)
-	self:SetModel( table.Random( MAPCONFIG[game.GetMap()]["playermodels"] ) )
+	self:SetModel( RandomPlayerModel() )
 	self:SetHealth(100)
 	self:SetMaxHealth(100)
 	self:SetArmor(0)
@@ -41,7 +48,7 @@ function ply:SetActivePlayer()
 	self:StripWeapons()
 	self:RemoveAllAmmo()
 	self:SetTeam(TEAM_CONT)
-	self:SetModel( table.Random( MAPCONFIG[game.GetMap()]["playermodels"] ) )
+	self:SetModel( RandomPlayerModel() )
 	self:SetNoCollideWithTeammates( true )
 	self:AllowFlashlight( true )
 	self:GodDisable()
@@ -171,10 +178,8 @@ end
 function ply:UpdateTeamers()
 	if self.TeamingPlayers == nil then return end
 	net.Start( "UpdateTeamers" )
-		if #self.TeamingPlayers < 4 then
-			print("send teaming plys:")
-			PrintTable(self.TeamingPlayers)
-			net.WriteTable( self.TeamingPlayers )
-		end
+		local mates = {}
+		for i = 1, math.min( #self.TeamingPlayers, 3 ) do mates[i] = self.TeamingPlayers[i] end
+		net.WriteTable( mates )
 	net.Send(self)
 end

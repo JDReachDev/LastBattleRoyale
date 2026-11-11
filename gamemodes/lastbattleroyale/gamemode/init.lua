@@ -4,11 +4,19 @@ AddCSLuaFile( "classes.lua" )
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "cl_scoreboard.lua" )
 AddCSLuaFile( "shared.lua" )
+AddCSLuaFile( "sh_mapconfig.lua" )
+AddCSLuaFile( "sh_zone.lua" )
+AddCSLuaFile( "cl_hud.lua" )
+AddCSLuaFile( "cl_zone.lua" )
+AddCSLuaFile( "cl_editor.lua" )
+AddCSLuaFile( "cl_perf.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )
 include( "sv_round.lua" )
+include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with the data file
 include( "sv_player.lua" )
+include( "sv_perf.lua" )
 include( "classes.lua" )
 include( "classessystem.lua" )
 
@@ -27,10 +35,11 @@ util.AddNetworkString( "LST_RoundEnd" )
 util.AddNetworkString( "LST_ZoneSetup" )
 
 function IsInTeam(pl1, pl2)
+	if not IsValid(pl1) or not IsValid(pl2) then return false end
 	if pl1:IsBot() or pl2:IsBot() then
 		return false
 	end
-	for k,v in pairs(pl1.TeamingPlayers) do
+	for k,v in pairs(pl1.TeamingPlayers or {}) do
 		if v == pl2:SteamID64() then
 			return true
 		end
@@ -78,22 +87,19 @@ end
 if timer.Exists("checkrequeststick") == false then
 	timer.Create("checkrequeststick", 1, 0, function()
 		local curtime = CurTime()
-		for k,v in pairs(player.GetAll()) do
-			if v.REQUESTINFO != nil then
-				for key,val in pairs(v.REQUESTINFO) do
-					//print("val: " .. tostring(val))
-					if istable(val) then PrintTable(val) end
+		for _, v in ipairs(player.GetAll()) do
+			local reqs = v.REQUESTINFO
+			if reqs != nil then
+				// iterate backwards: entries are removed while looping
+				for i = #reqs, 1, -1 do
+					local val = reqs[i]
 					if curtime > val["requestedlast"] then
-						if IsValid(val["requestedplayer"]) then
-							v:PrintMessage(HUD_PRINTTALK, val["requestedplayer"]:Nick() .. " didn't answer team-up request in time")
-							//print("reqinfo")
-							//PrintTable(v.REQUESTINFO)
-							//print("req: " .. tostring(val["requestedplayer"].sentteaming))
-							//print("vply: " .. tostring(v.sentteaming))
-							val["requestedplayer"].sentteaming = nil
-							table.RemoveByValue(v.REQUESTINFO, val)
-							//PrintTable(v.REQUESTINFO)
+						local target = val["requestedplayer"]
+						if IsValid(target) then
+							v:PrintMessage(HUD_PRINTTALK, target:Nick() .. " didn't answer team-up request in time")
+							target.sentteaming = nil
 						end
+						table.remove(reqs, i)
 					end
 				end
 			end
@@ -343,9 +349,8 @@ STATE_PREPARING = 2
 STATE_LIVE = 3
 STATE_POST = 4
  
-if MAPCONFIG[game.GetMap()] == nil then
-	Error("ERROR: This map is not compatible with Last Stand")
-end
+// Unconfigured maps no longer stop the gamemode from loading: players wait in the lobby
+// and an admin can configure the map with the editor (F8).
 
 InitialSpawns = {}
 
@@ -357,12 +362,41 @@ DonatorList = {
 }
 
 function RegenerateSpawns()
-	local allspawns = {}
-	table.Add(allspawns, MAPCONFIG[game.GetMap()]["initialspawns"])
-	InitialSpawns = allspawns
+	local cfg = LBR.GetMapConfig()
+	InitialSpawns = LBR.ShuffledCopy( cfg and cfg["initialspawns"] or {} )
 end
 
 RegenerateSpawns()
+
+// next free lobby spawn, nil when the map has none (the map's own spawn points are used)
+function TakeInitialSpawn()
+	if #InitialSpawns == 0 then RegenerateSpawns() end
+	return table.remove( InitialSpawns )
+end
+
+// everybody back to the lobby after a round
+function ReturnToLobby()
+	timer.Remove( "LBR_SpawnItems" )
+	StopZone()
+	SetGlobalFloat( "LBR_EventTime", 0 )
+	RegenerateSpawns()
+	game.CleanUpMap()
+	for _, v in ipairs(player.GetAll()) do
+		v.goingtobespec = false
+		v.goingtowait = true
+		v:Spawn()
+	end
+	SetState(STATE_NONE)
+end
+
+local function EndRound()
+	net.Start("LST_RoundEnd")
+	net.Broadcast()
+	StopZone()
+	SetState(STATE_POST)
+	SetGlobalFloat( "LBR_PhaseEnd", CurTime() + PostTime() )
+	timer.Create("timer_postround", PostTime(), 1, ReturnToLobby)
+end
 
 function mayme()
 	print("team.numplayers : players: " .. team.NumPlayers(TEAM_PLAYER) .. " teamnum : " .. teamnum(TEAM_PLAYER))
@@ -433,15 +467,11 @@ function GM:PlayerSpawn(ply)
 		return
 	end
 	if ply.goingtowait then
-		local spawn = table.Random(InitialSpawns)
-		if spawn == nil then
-			RegenerateSpawns()
-			spawn = table.Random(InitialSpawns)
-		end
 		ply:SetWaitingPly()
-		print(spawn)
-		ply:SetPos(spawn)
-		table.RemoveByValue(InitialSpawns, spawn)
+		local spawn = TakeInitialSpawn()
+		if spawn then
+			ply:SetPos(spawn)
+		end
 		return
 	end
 end
@@ -456,22 +486,21 @@ function GM:PlayerSetHandsModel( ply, ent )
 	end
 end
 function playerdeath( victim, inflictor, attacker )
-	if GetState() != STATE_LIVE then
-		victim.nextspawn = CurTime() + 10
-		victim.goingtobespec = true
-		return
-	end
 	victim.nextspawn = CurTime() + 10
 	victim.goingtobespec = true
+	if GetState() != STATE_LIVE then
+		return
+	end
 	if victim:Team() == TEAM_CONT then
 		victim:SetTeam(TEAM_SPEC)
-		local num = team.NumPlayers(TEAM_CONT)
+		local alive = team.GetPlayers(TEAM_CONT)
+		local num = #alive
 		if num == 1 then
-			local ply = team.GetPlayers(TEAM_CONT)[1]
+			local ply = alive[1]
 			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. ply:Nick() .. " is the winner!" )
 			ply:AddFrags(5)
 			local exp = 30 * EXPScale()
-			if ply.roundkills >= 5 then
+			if (ply.roundkills or 0) >= 5 then
 				ply:SetEXP( ply:GetEXP() + (exp * 4) )
 				ply:LevelUpdate()
 				ply:PlayerMsg(Color(255,255,0), "You have earned " .. (exp * 4) .. " exp for winning the round with bonus for 5 or more kills!")
@@ -481,96 +510,37 @@ function playerdeath( victim, inflictor, attacker )
 				ply:PlayerMsg(Color(255,255,0), "You have earned " .. (exp * 2.5) .. " exp for winning the round!")
 			end
 			player_manager.RunClass( ply, "SaveStats" )
-			net.Start("LST_RoundEnd")
-			net.Broadcast()
 			ply:PrintMessage(HUD_PRINTCENTER, "You won!")
 			victim.nextspawn = math.huge
-			SetState(STATE_POST)
-			timer.Create("timer_postround", PostTime(), 1, function()
-				RegenerateSpawns()
-				game.CleanUpMap()
-				for k,v in pairs(player.GetAll()) do
-					local spawn = table.Random(InitialSpawns)
-					v:Spawn()
-					v:SetWaitingPly()
-					if spawn != nil then 
-						v:SetPos(spawn)
-						table.RemoveByValue(InitialSpawns, spawn)
-					end
-				end
-				SetState(STATE_NONE)
-			end)
+			SetGlobalString( "LBR_Winner", ply:Nick() )
+			EndRound()
+		elseif num == 2 and IsInTeam(alive[1], alive[2]) then
+			PrintMessage(HUD_PRINTTALK, alive[1]:Nick() .. " and " .. alive[2]:Nick() .. " won!" )
+			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. " & " .. alive[2]:Nick() )
+			EndRound()
+		elseif num == 3 and IsInTeam3(alive[1], alive[2], alive[3]) then
+			PrintMessage(HUD_PRINTTALK, alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " and " .. alive[3]:Nick() .. " won!" )
+			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " & " .. alive[3]:Nick() )
+			EndRound()
 		elseif num == 2 then
-			local ply1 = team.GetPlayers(TEAM_CONT)[1]
-			local ply2 = team.GetPlayers(TEAM_CONT)[2]
-			if IsInTeam(ply1, ply2) then
-				PrintMessage(HUD_PRINTTALK, ply1:Nick() .. " and " .. ply2:Nick() .. " won!" )
-				net.Start("LST_RoundEnd")
-				net.Broadcast()
-				SetState(STATE_POST)
-				timer.Create("timer_postround", PostTime(), 1, function()
-					RegenerateSpawns()
-					game.CleanUpMap()
-					for k,v in pairs(player.GetAll()) do
-						local spawn = table.Random(InitialSpawns)
-						v:Spawn()
-						v:SetWaitingPly()
-						if spawn != nil then
-							v:SetPos(spawn)
-							table.RemoveByValue(InitialSpawns, spawn)
-						end
-					end
-					SetState(STATE_NONE)
-				end)
-			else
-				PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. ply1:Nick() .. " versus " .. ply2:Nick() )
-			end
-			
-		elseif num == 3 then
-			local ply1 = team.GetPlayers(TEAM_CONT)[1]
-			local ply2 = team.GetPlayers(TEAM_CONT)[2]
-			local ply3 = team.GetPlayers(TEAM_CONT)[3]
-			if IsInTeam3(ply1, ply2, ply3) then
-				PrintMessage(HUD_PRINTTALK, ply1:Nick() .. ", " .. ply2:Nick() .. " and " .. ply3:Nick() .. " won!" )
-				net.Start("LST_RoundEnd")
-				net.Broadcast()
-				SetState(STATE_POST)
-				timer.Create("timer_postround", PostTime(), 1, function()
-					RegenerateSpawns()
-					game.CleanUpMap()
-					for k,v in pairs(player.GetAll()) do
-						local spawn = table.Random(InitialSpawns)
-						v:Spawn()
-						v:SetWaitingPly()
-						if spawn != nil then 
-							v:SetPos(spawn)
-							table.RemoveByValue(InitialSpawns, spawn)
-						end
-					end
-					SetState(STATE_NONE)
-				end)
-			else
-				PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. #team.GetPlayers(TEAM_CONT) .. " players left." )
-			end
+			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. alive[1]:Nick() .. " versus " .. alive[2]:Nick() )
 		else
-			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. #team.GetPlayers(TEAM_CONT) .. " players left." )
+			PrintMessage(HUD_PRINTTALK, victim:Nick() .. " died! " .. num .. " players left." )
 		end
 		victim:PrintMessage(HUD_PRINTTALK, "You will spawn as spectator in 10 seconds.")
 		victim.goingtobespec = true
 		victim.goingtowait = false
-		if #victim:GetWeapons() > 0 then
-			local pos = victim:GetPos()
-			for k,v in pairs(victim:GetWeapons()) do
-				local wep = ents.Create( v:GetClass() )
-				if IsValid( wep ) then
-					wep:SetPos( pos )
-					wep:Spawn()
-					wep:SetClip1(v:Clip1())
-				end
+		local pos = victim:GetPos()
+		for _, v in ipairs(victim:GetWeapons()) do
+			local wep = ents.Create( v:GetClass() )
+			if IsValid( wep ) then
+				wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
+				wep:Spawn()
+				wep:SetClip1(v:Clip1())
 			end
 		end
 	end
-	if attacker:IsPlayer() then
+	if IsValid(attacker) and attacker:IsPlayer() and attacker != victim then
 		if victim:Team() == TEAM_SPEC and attacker:Team() == TEAM_CONT then
 			local exp = ( 25 + (victim:GetLevel() * 2) ) * EXPScale()
 			local hitgroup = victim:LastHitGroup()
@@ -580,7 +550,8 @@ function playerdeath( victim, inflictor, attacker )
 			else
 				attacker:PlayerMsg(Color(255,255,0), "You have earned " .. exp .. " exp for killing " .. victim:Nick())
 			end
-			attacker.roundkills = attacker.roundkills + 1
+			attacker.roundkills = (attacker.roundkills or 0) + 1
+			attacker:SetNW2Int( "LBR_Kills", attacker.roundkills )
 			exp = math.Round(exp)
 			attacker:SetEXP(attacker:GetEXP() + exp)
 			attacker:LevelUpdate()
@@ -592,7 +563,7 @@ end
 hook.Add("PlayerDeath", "playerdeathhook", playerdeath)
 
 function deaththink( ply )
-	if (CurTime() >= ply.nextspawn) then
+	if (CurTime() >= (ply.nextspawn or 0)) then
 		ply:Spawn()
 		ply.nextspawn = math.huge
 	end
@@ -601,21 +572,7 @@ hook.Add("PlayerDeathThink", "playerdeaththinkhook", deaththink)
 
 function ResetGame()
 	print("reseting game")
-	SetState(STATE_POST)
-	timer.Create("timer_postround", PostTime(), 1, function()
-		game.CleanUpMap()
-		RegenerateSpawns()
-		for k,v in pairs(player.GetAll()) do
-			local spawn = table.Random(InitialSpawns)
-			v:Spawn()
-			v:SetWaitingPly()
-			if spawn != nil then 
-				v:SetPos(spawn)
-				table.RemoveByValue(InitialSpawns, spawn)
-			end
-		end
-		SetState(STATE_NONE)
-	end)
+	EndRound()
 end
 
 function GM:PlayerDisconnected( ply )
@@ -633,6 +590,7 @@ function GM:PlayerDisconnected( ply )
 	end
 	ply.TeamingPlayers = {}
 	player_manager.RunClass( ply, "SaveStats" )
+	if GetState() == STATE_POST then return end
 	if GetState() != STATE_LIVE then return end
 	local pls = 0
 	for k,v in pairs(player.GetAll()) do
@@ -643,10 +601,12 @@ function GM:PlayerDisconnected( ply )
 		end
 	end
 	if pls == 1 then
-		local winner = team.GetPlayers(TEAM_CONT)[1]
-		winner:PrintMessage(HUD_PRINTTALK, ply:Nick() .. " disconnected, " .. winner:Nick() .. " won!." )
-		net.Start("LST_RoundEnd")
-		net.Broadcast()
+		for _, winner in ipairs(team.GetPlayers(TEAM_CONT)) do
+			if winner != ply then
+				winner:PrintMessage(HUD_PRINTTALK, ply:Nick() .. " disconnected, " .. winner:Nick() .. " won!" )
+				SetGlobalString( "LBR_Winner", winner:Nick() )
+			end
+		end
 		ResetGame()
 	elseif pls == 0 then
 		ResetGame()

@@ -27,7 +27,7 @@ shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/last
 | `lst_time_preparing` | `30` | `15` | Preparing phase (seconds) |
 | `lst_time_actionpreparing` | `30` | `60` | Time before the round goes live (seconds) |
 | `lst_time_postround` | `15` | `15` | Post round phase (seconds) |
-| `lst_zonespeed` | `0.75` | `1` | Radius removed from the zone every tick |
+| `lst_zonespeed` | `0.75` | `1` | Radius removed from the zone every tick (decimals now work: 0.75 used to be rounded to 1) |
 | `lst_healhealth` | `1` | `1` | Regenerate health up to 20 HP while inside the zone |
 | `lst_usecssarmor` | `1` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
 | `lst_event_enablenuke` | `0` | `1` | Random nuclear strike event during the round |
@@ -36,6 +36,18 @@ shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/last
 | `lst_levelexp` | — | `25` | EXP for the next level = next level × this value |
 | `lst_zonequality` | `3` | `3` | `3` high + texture, `2` medium, `1` low, `0` invisible |
 | `lst_objoutline` | `1` | `1` | Outline (halo) on loot |
+
+New ConVars / commands:
+
+| Name | Side | Default | Description |
+|---|---|---|---|
+| `lbr_editor_superadminonly` | server | `0` | `1` = only superadmins can open the map editor (admins otherwise) |
+| `lbr_outline_distance` | client | `1500` | Max distance of loot outlines; lower = more FPS on big maps |
+| `lbr_cull_loot_distance` | server | `4000` | Loot farther than this from a player is not sent to (nor drawn by) that player; `0` = off |
+| `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
+| `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
+| `lbr_editor` | command | — | Open / close the map editor (same as `F8`) |
+| `lbr_map_reload` | command | — | Superadmin: reload `data/lastbattleroyale/maps/<map>.txt` and respawn loot points |
 
 Optional: `lst_maxrounds` is **not** created by the gamemode. If it exists (for example created by the
 map vote addon) the round system runs the `MapChange` hook after that many rounds.
@@ -108,45 +120,72 @@ FLYING_VEHICLES = {
 Every point in `vehiclepositions` gets a random car; every point in `flying_vehiclespawns` gets a
 helicopter (50% from each list).
 
-## 4. Per-map configuration (`MAPCONFIG`)
+## 4. Per-map configuration
 
-```lua
-MAPCONFIG = {
-	gm_fork = {
-		weaponsc = {18,14,13,15,16},  -- items to spawn: BETTERWEAPONS, WEAPONS, ADDITIONALWEAPONS, ITEMS, AMMO
-		zone_radius = 40000,          -- starting zone radius
-		playerspawns = { Vector(...), ... },          -- where players are placed when the round goes live
-		initialspawns = { Vector(...), ... },         -- lobby / waiting area spawns
-		vehiclepositions = { Vector(...), ... },      -- cars
-		flying_vehiclespawns = { Vector(...), ... },  -- helicopters
-		events = {
-			nukepositions = { Vector(...), ... },     -- nuke event targets
-			supplydrops = { Vector(...), ... }        -- airdrop positions (high in the sky)
-		},
-		endpositions = { Vector(...), ... },          -- possible zone centers (one is picked each round)
-		playermodels = { "models/...mdl", ... },      -- random models while waiting
-		weaponspawns = { Vector(...), ... }           -- loot positions
-	},
-	...
+Every map has its own text file (JSON inside):
+
+```
+garrysmod/data/lastbattleroyale/maps/<map>.txt
+```
+
+- On server start every map built into `config.lua` (`MAPCONFIG`) is **exported** to that folder,
+  only if its file does not exist yet. Existing configs are never lost or overwritten.
+- The game always plays the `.txt` file. Edit it with the in-game editor, by hand, or drop in a file
+  shared by someone else (the file name must be the map name, e.g. `gm_fork.txt`).
+- Delete a file (or press *Reset* in the editor) to get the built-in config back.
+- A map without a valid config does not start rounds; admins get a chat message telling them to press `F8`.
+- Addons can ship configs in `data_static/lastbattleroyale/maps/<map>.txt`.
+
+### Map editor (F8)
+
+Join the map as admin (or in singleplayer / listen server) between rounds and press **F8**
+(or run `lbr_editor`). You fly in noclip with god mode and see every existing point.
+
+| Key | Action |
+|---|---|
+| `Left click` | Place a point of the selected category where you aim |
+| `Right click` | Remove the hovered point |
+| `Mouse wheel` / `1`–`8` | Change category |
+| `R` | Place mode: on the aimed surface / at your own position (supply drops always use your position) |
+| `E` | Teleport to the next point of the category |
+| `Z` | Undo |
+| `Q` | Menu: save, zone radius, loot amounts, player models, copy/import JSON, reload, reset |
+| `F8` | Close (asks to save if there are unsaved changes) |
+
+The panel on the left shows the point counts and what is still missing for the map to be playable.
+*Save* writes the `.txt` file and applies it immediately.
+
+Categories: player spawns, lobby spawns, loot spawns, cars, helicopters, zone centers
+(`endpositions`), nuke targets, supply drops.
+
+### File format
+
+```json
+{
+  "format": "lastbattleroyale-map",
+  "version": 1,
+  "map": "gm_fork",
+  "zone_radius": 40000,
+  "weaponsc": [18, 14, 13, 15, 16],
+  "playermodels": ["models/player/group03/male_01.mdl"],
+  "playerspawns": [[x, y, z], ...],
+  "initialspawns": [...], "weaponspawns": [...], "vehiclepositions": [...],
+  "flying_vehiclespawns": [...], "endpositions": [...],
+  "events": { "nukepositions": [...], "supplydrops": [...] }
 }
 ```
 
+`weaponsc` = items to spawn for BETTERWEAPONS, WEAPONS, ADDITIONALWEAPONS, ITEMS, AMMO.
+
 Rules:
 
-- `weaponspawns` must contain **at least as many points as the sum of `weaponsc`**,
-  because each item takes a free position.
-- `playerspawns` should have at least as many points as the max player count.
-- The map name key must match `game.GetMap()` exactly.
+- Required: `playerspawns`, `weaponspawns`, `endpositions` and `zone_radius`.
+- `weaponspawns` should contain at least as many points as the sum of `weaponsc`.
+- `playerspawns` should have at least as many points as the max player count (extra players reuse points with a small offset).
+- `zone_radius` must cover the playable area from every `endpositions` point (the editor draws it).
 
-### Adding a new map
-
-1. Load the map in singleplayer / listen server with `sv_cheats 1`.
-2. Walk to each position and run `getpos` in the console (or `lua_run print(Entity(1):GetPos())`).
-   Copy the coordinates as `Vector(x, y, z)`.
-   For loot, aim at the floor and use `lua_run print(Entity(1):GetEyeTrace().HitPos + Vector(0,0,10))`.
-3. Add a new block to `MAPCONFIG` with all the keys above (copy an existing map as template).
-4. Pick `zone_radius` big enough to cover the playable area from every `endpositions` point.
-5. Add the map to the Workshop collection of supported maps and to the README.
+The old `MAPCONFIG` table in `config.lua` still works: it is only used as the source of the
+built-in files.
 
 ---
 

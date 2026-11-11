@@ -1,5 +1,7 @@
 # Last Battle Royale (Garry's Mod)
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support%20me-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jdreach)
+
 Battle royale gamemode for Garry's Mod, published on the Steam Workshop:
 **<https://steamcommunity.com/sharedfiles/filedetails/?id=1549863126>**
 
@@ -18,6 +20,8 @@ add maps/weapons and run it on their own server.
 - Random supply airdrops, optional nuclear strike event and optional implosion bomb at the end
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
+- **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers; configs are plain `.txt` files you can share
+- Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
 - Outline (halo) on loot to see it in the dark, custom scoreboard and HUD
 
 ## Controls
@@ -30,6 +34,7 @@ add maps/weapons and run it on their own server.
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon from the ground |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
+| `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
 
 ## Requirements
 
@@ -73,8 +78,8 @@ Collection: **[Last Battle Royale Supported Maps](https://steamcommunity.com/wor
 | `gm_valley` | Heavy map, lower FPS |
 | `rp_ineu_pass_v1e` | |
 
-Any other map needs an entry in [`config.lua`](gamemodes/lastbattleroyale/gamemode/config.lua) —
-see [docs/CONFIGURATION.md](docs/CONFIGURATION.md#adding-a-new-map).
+Any other map can be configured in game: join as admin, press `F8`, place the points and save —
+see [docs/CONFIGURATION.md](docs/CONFIGURATION.md#map-editor-f8).
 
 ## Installation
 
@@ -124,11 +129,16 @@ All server settings are ConVars (`lst_*`). Quick reference:
 | `lst_levelexp` | `25` | EXP needed for the next level = next level × this value |
 | `lst_zonequality` | `3` | Zone render quality: `3` high + texture, `2` medium, `1` low, `0` invisible |
 | `lst_objoutline` | `1` | `1` = outline on loot |
+| `lbr_outline_distance` | `1500` | Client: max loot outline distance (lower = more FPS) |
+| `lbr_cull_loot_distance` | `4000` | Loot farther than this is not sent to the player (big maps FPS), `0` = off |
+| `lbr_cull_vehicle_distance` | `8000` | Client: parked vehicles farther than this are not drawn, `0` = off |
+| `lbr_editor_superadminonly` | `0` | `1` = only superadmins can use the map editor |
 | `lst_maxrounds` | *(not created)* | Optional, created by the map vote addon: after this many rounds the `MapChange` hook runs |
 
 Defaults above are the ones shown in the *Start New Game* menu ([`lastbattleroyale.txt`](gamemodes/lastbattleroyale/lastbattleroyale.txt)).
 
-Everything else (loot tables, vehicles, maps, classes) is plain Lua: see
+Map configs live in `garrysmod/data/lastbattleroyale/maps/<map>.txt` and are made in game with `F8`.
+Everything else (loot tables, vehicles, classes) is plain Lua: see
 **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**.
 
 Tip: if every weapon spawns with all attachments, run `cw_disable_all_attachments_on_spawn 1` on the server.
@@ -145,12 +155,19 @@ gamemodes/lastbattleroyale/
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
         init.lua                 server entry point, net messages, squads, death handling
-        cl_init.lua              HUD, zone rendering, class/team menus
+        cl_init.lua              client entry point, class/team menus
+        cl_hud.lua               HUD
+        cl_zone.lua              zone rendering, loot outlines
+        cl_editor.lua            in-game map editor (client)
+        cl_perf.lua / sv_perf.lua  distance culling of vehicles / loot on big maps
+        sh_mapconfig.lua         map config format, validation, JSON
+        sh_zone.lua              zone math shared by server and client
+        sv_mapconfig.lua         map config files + map editor (server)
         cl_scoreboard.lua        scoreboard
         shared.lua               ConVars, teams, round states
         sv_round.lua             round system, zone, loot/vehicle spawning, events
         sv_player.lua            player helpers, class switching
-        config.lua               loot tables, vehicles and per-map configuration
+        config.lua               loot tables, vehicles, built-in map configs
         classes.lua              class list and unlock requirements
         player_class/            one file per class (stats + loadout)
 materials/                       HUD icons and map images
@@ -168,11 +185,15 @@ publish\publish.bat -Changes "What changed"
 
 ## Known issues
 
-- The zone is sometimes visible through the background (rendering order).
 - `lastbattleroyale.txt` lists `lst_enableimplosion` twice in the settings menu.
 - `class_officer` exists in `player_class/` but is not registered in `classes.lua`.
 - With many addons installed, problems are often caused by old files downloaded from public servers:
   clear `garrysmod/download/` and `garrysmod/downloads/server/`.
+
+## Support
+
+If you enjoy Last Battle Royale, you can support it on Ko-fi:
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-support%20me-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jdreach)
 
 ## Contributing
 
