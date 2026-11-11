@@ -274,11 +274,21 @@ local function createBoard()
 	end )
 	start:SetSize( S( 130 ), S( 30 ) )
 	start:SetTooltip( "Start the round with the players already in, even if the minimum is not reached" )
-	start.Think = function( self )
+	// always shown to admins in the lobby; greyed out with the reason when it can't start.
+	// Called from the board's Think: a hidden panel does not run its own Think, so
+	// the button could never come back once hidden.
+	local function updateStart( self )
 		local lp = LocalPlayer()
 		local show = IsValid( lp ) and lp:IsAdmin() and GetGlobalInt( "state", 1 ) == 1
-			and GetGlobalBool( "LBR_MapReady", true ) and team.NumPlayers( TEAM_PLAYER or 1 ) >= 2
 		if self:IsVisible() ~= show then self:SetVisible( show ) end
+		if not show then return end
+		if not GetGlobalBool( "LBR_MapReady", true ) then
+			self.Disabled, self.Label = true, "MAP NOT READY"
+		elseif team.NumPlayers( TEAM_PLAYER or 1 ) < 2 then
+			self.Disabled, self.Label = true, "NEED 2 PLAYERS"
+		else
+			self.Disabled, self.Label = false, "START NOW"
+		end
 		self:SetPos( math.floor( ( f:GetWide() - self:GetWide() ) / 2 ), S( 24 ) )
 	end
 
@@ -288,6 +298,7 @@ local function createBoard()
 	f.Sig = ""
 	f.NextCheck = 0
 	f.Think = function( self )
+		updateStart( start )
 		if CurTime() < self.NextCheck then return end
 		self.NextCheck = CurTime() + 0.5
 		local sig = signature()
