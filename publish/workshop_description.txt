@@ -42,7 +42,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Shrinking safe zone[/b] with storm effect and damage outside, synced for every player
 [*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
-[*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
+[*][b]Events[/b]: supply airdrops (always inside the safe zone), optional nuclear strike and implosion bomb
 [*][b]Squads[/b] of up to 4 players with teammate markers on compass, screen and map
 [*][b]Classes[/b] with their own loadout, unlocked by levelling up
 [/list]

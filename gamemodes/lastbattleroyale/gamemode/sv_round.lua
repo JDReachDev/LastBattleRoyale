@@ -116,9 +116,22 @@ function RunEvents(num)
 		if LBR.MapMarkNuke then LBR.MapMarkNuke( nuke, target ) end
 		// lua_run RunEvents(2)
 	elseif num == 2 then
+		// only the points inside the safe zone, measured flat (the point may be
+		// high up) and on the radius it will have in 30 s, while the crate falls
+		// and players run to it
+		if LBR.IsZoneActive() then
+			local center = LBR.GetZonePos()
+			local r = LBR.GetZoneRadius() - LBR.GetZoneSpeed() * 30
+			local inside = {}
+			for _, p in ipairs( drops ) do
+				local d = Vector( p.x - center.x, p.y - center.y, 0 )
+				if r > 0 and d:Length() <= r then inside[#inside + 1] = p end
+			end
+			drops = inside
+		end
 		if #drops == 0 then return end
 		local spawns = LBR.ShuffledCopy( drops )
-		local count = math.max( 1, #spawns - math.random( 1, 4 ) )
+		local count = math.Clamp( #spawns - math.random( 1, 4 ), 1, #spawns )
 		LBR.Chat( nil, tostring(count) .. " supply airdrops incoming." )
 		LBR.Notify( nil, tostring(count) .. " supply airdrops incoming!", "event", 6 )
 		for i = 1, count do

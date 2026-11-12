@@ -17,7 +17,7 @@ add maps/weapons and run it on their own server.
 - Shrinking safe zone with damage outside it: a glowing wall, brightest at eye height and fading up and down, plus a storm effect (fog, grey colors) while you are outside
 - Random loot (weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo) on every round
 - Cars (SCars) and helicopters (WAC) spawned around the map
-- Random supply airdrops, optional nuclear strike event and optional implosion bomb at the end
+- Random supply airdrops (only inside the safe zone), optional nuclear strike event and optional implosion bomb at the end
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
 - **Map** (`M`): the whole map seen from above on any map, with a battleship grid, your squad, the safe zone, supply drops and the nuke target; click to place a marker for your squad
