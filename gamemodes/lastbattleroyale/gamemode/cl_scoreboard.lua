@@ -455,9 +455,9 @@ local function invTile( parent, slot )
 		// only weapons with a magazine and some ammo of that caliber
 		local id = wep:GetPrimaryAmmoType()
 		if id >= 0 and wep:GetMaxClip1() > 0 then
-			local total = math.max( wep:Clip1(), 0 ) + LocalPlayer():GetAmmoCount( id )
+			local total = LBR.UnloadAmount( LocalPlayer(), wep )
 			if total > 0 then
-				m:AddOption( "Unload ammo (" .. total .. ")", function() send( "LBR_InvUnload" ) end ):SetIcon( "icon16/box.png" )
+				m:AddOption( "Unload a magazine (" .. total .. ")", function() send( "LBR_InvUnload" ) end ):SetIcon( "icon16/box.png" )
 			end
 		end
 		m:Open()
@@ -620,7 +620,7 @@ local function buildSide( f )
 	hint:Dock( TOP )
 	hint:SetTall( S( 18 ) )
 	hint.Paint = function( self, w, h )
-		UI.Text( "Drag to move  -  Right click: drop / unload ammo  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( "Drag to move  -  Right click: drop / unload  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 	local lastE, lastB, lastH
 	inv.Think = function( self )

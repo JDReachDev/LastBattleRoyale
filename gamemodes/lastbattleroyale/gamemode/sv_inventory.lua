@@ -185,8 +185,7 @@ net.Receive( "LBR_InvMove", function( _, ply )
 	LBR.InvCheckActive( ply )
 end )
 
-// right click > Unload ammo: the magazine and all the reserve of that caliber go
-// in a box on the ground, anyone with a weapon of the same group takes it with E
+// right click > Unload ammo: one magazine (see LBR.UnloadAmount) goes in a box on the ground, anyone with a weapon of the same group takes it with E
 net.Receive( "LBR_InvUnload", function( _, ply )
 	local s = net.ReadUInt( 4 )
 	if not ply:Alive() or ( ply.LBR_UnloadNext or 0 ) > CurTime() then return end
@@ -199,15 +198,14 @@ net.Receive( "LBR_InvUnload", function( _, ply )
 		LBR.Notify( ply, "This weapon has no ammo to unload", "bad", 2 )
 		return
 	end
-	local total = math.max( w:Clip1(), 0 ) + ply:GetAmmoCount( id )
+	local total, fromClip = LBR.UnloadAmount( ply, w )
 	if total <= 0 then
 		LBR.Notify( ply, "No ammo to unload", "bad", 2 )
 		return
 	end
 	local box = ents.Create( "lbr_ammo_box" )
 	if not IsValid( box ) then return end
-	w:SetClip1( 0 )
-	ply:SetAmmo( 0, id )
+	if fromClip then w:SetClip1( 0 ) else ply:RemoveAmmo( total, id ) end
 	box:SetPos( ply:GetShootPos() + ply:GetAimVector() * 20 )
 	box:SetAngles( Angle( 0, ply:EyeAngles().y, 0 ) )
 	box:SetAmmoID( id )

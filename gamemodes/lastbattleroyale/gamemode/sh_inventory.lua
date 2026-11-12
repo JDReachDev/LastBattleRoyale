@@ -28,6 +28,17 @@ for g, list in pairs( AMMO_GROUPS ) do
 end
 
 // group of an ammo type id ("pistol", "rifle"...), or "#<name>" for an unknown type
+// ammo that Unload takes out: the magazine in the weapon, or one magazine's
+// worth from the reserve when it is empty
+function LBR.UnloadAmount( ply, wep )
+	local id = wep:GetPrimaryAmmoType()
+	local max = wep:GetMaxClip1()
+	if id < 0 or max <= 0 then return 0, false end
+	local clip = math.max( wep:Clip1(), 0 )
+	if clip > 0 then return clip, true end
+	return math.min( max, ply:GetAmmoCount( id ) ), false
+end
+
 function LBR.AmmoGroup( id )
 	if not id or id < 0 then return nil end
 	local name = game.GetAmmoName( id )
