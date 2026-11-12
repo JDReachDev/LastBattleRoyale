@@ -1,5 +1,5 @@
 [h1]Last Battle Royale 2.0[/h1]
-A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons and armor, team up with your squad and survive the shrinking zone until only one is left.
+A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attachments and armor, team up with your squad and survive the shrinking zone until only one is left.
 Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [b]Support the project:[/b] [url=https://ko-fi.com/jdreach]Ko-fi[/url]
@@ -7,107 +7,96 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall, brightest at eye height and fading up and down, with a storm effect (fog, grey colors) when you are outside. No more "hole" in the sky from far away
+[*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots, up to 8 items. Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop. Mouse wheel and 1-5 switch instantly, melee always last (6)
+[*][b]New TAB menu[/b]: scoreboard, inventory, your stats (class, level, EXP, kills) and buttons for classes, squad and map
+[*][b]Attachments are loot[/b]: you start with none and find attachment kits around the map. In the C menu the ones you don't have are red
+[*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall, brightest at eye height and fading up and down, with a storm effect (fog, grey colors) when you are outside
 [*][b]New HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel. One clean style for HUD, menus and messages
-[*][b]New menus[/b]: TAB with scoreboard, inventory and stats, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
+[*][b]New menus[/b]: F3 class menu (stats, loadout, level and unlocks), F4 squad menu (invite and remove players with the mouse)
+[*][b]Map vote[/b] at the end of the match, only between maps ready to play. Admins can change map with F2
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
-[*][b]Map vote[/b] at the end of the match, only between maps ready to play
-[*][b]Inventory[/b]: 5 equipment slots (mouse wheel and 1-5, instant switch) + 3 backpack slots. Hold TAB to move items (drag) or drop them (right click)
 [*][b]Interaction prompts[/b]: the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls
-[*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn, lighter zone and outlines
+[*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn
 [*][b]Settings renamed[/b] from lst_* to lbr_* (the old names still work)
 [*]Many bug fixes
 [/list]
 
 [h2]Features[/h2]
 [list]
-[*][b]Shrinking safe zone[/b]: a glowing wall, storm effect and damage outside, synced for every player
+[*][b]Shrinking safe zone[/b] with storm effect and damage outside, synced for every player
 [*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
 [*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
 [*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
-[*][b]9 classes[/b] unlocked by levelling up
+[*][b]Classes[/b] with their own loadout, unlocked by levelling up
 [/list]
 
 [h2]How to play[/h2]
 [olist]
-[*][b]Lobby[/b]: everyone waits in the lobby until there are enough players (2 by default). Use this time to pick your class (F3) and make a squad (F4)
+[*][b]Lobby[/b]: everyone waits until there are enough players (2 by default). Pick your class (F3) and make a squad (F4)
 [*][b]Preparing[/b]: a countdown starts (30 s), then all players are spread around the map
-[*][b]Loot[/b]: weapons can't be used for the first 30 s: run, find weapons, armor, medkits and vehicles
+[*][b]Loot[/b]: weapons can't be used for the first 30 s: find weapons, attachments, armor, medkits and vehicles. Pick up with [b]E[/b], hold TAB to sort your inventory
 [*][b]Zone[/b]: the safe zone shrinks over time. Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right
-[*][b]Win[/b]: the last player (or the last squad) alive wins the round. After a few seconds everyone goes back to the lobby for the next round
+[*][b]Win[/b]: the last player (or squad) alive wins. Then everyone goes back to the lobby, or votes the next map
 [/olist]
-Kills and wins give EXP to the class you are using. Level up classes to unlock new ones (F3 shows what each class needs). Dead players can spectate the others.
+Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows what each one needs). Dead players can spectate.
 
 [h2]How to start a server[/h2]
 [list]
-[*][b]Listen server[/b]: subscribe to this addon and to all the required items, open Garry's Mod, choose the [b]Last Battle Royale[/b] gamemode (bottom right of the main menu), pick one of the supported maps and start with 2+ player slots. The settings are in the Start New Game menu
-[*][b]Dedicated server[/b]: use [b]+gamemode lastbattleroyale[/b] and a Workshop collection with this addon, the required items and your maps ([b]+host_workshop_collection[/b])
-[*][b]Other maps[/b]: configure them in game with the map editor (F8), see below
+[*][b]Listen server[/b]: subscribe to this addon and all the required items, choose the [b]Last Battle Royale[/b] gamemode (bottom right of the main menu), pick a supported map and start with 2+ player slots. Settings are in the Start New Game menu
+[*][b]Dedicated server[/b]: [b]+gamemode lastbattleroyale[/b] and a Workshop collection with this addon, the required items and your maps ([b]+host_workshop_collection[/b])
+[*][b]Other maps[/b]: configure them in game with the map editor (F8)
 [/list]
 
 [h2]Keys[/h2]
 [list]
 [*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop), stats
-[*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
-[*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]Mouse wheel / 1-5[/b] - switch between the equipment slots (6: melee)
-[*][b]C[/b] - customize your CW 2.0 weapon with the attachments you found (the ones you don't have are red)
+[*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops
 [*][b]Q[/b] - drop your active weapon
-[*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)
+[*][b]C[/b] - CW 2.0 customization: press the category number (1, 2, 3...) to mount the attachments you found
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
+[*][b]F3[/b] - class menu / [b]F4[/b] - squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite)
 [*][b]F2[/b] - [i]admins:[/i] change map: ready ones or new ones to configure
 [*][b]F8[/b] - [i]admins:[/i] map editor
-[*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now with the players in (even alone to test)
+[*][b]!start[/b] or [b]TAB > START NOW[/b] - [i]admins:[/i] start now (even alone to test)
 [/list]
 
 [h2]Supported maps[/h2]
-[olist]
-[*]rp_pripyat_cop (the best one, great for many players)
-[*]rp_city17_build210
-[*]gm_marsh
-[*]rp_wasteland
-[*]gm_fork
-[*]gm_valley
-[*]rp_ineu_pass_v1e
-[/olist]
-Any other map can be configured in game with the map editor.
+rp_pripyat_cop (the best one), rp_city17_build210, gm_marsh, rp_wasteland, gm_fork, gm_valley, rp_ineu_pass_v1e. Any other map can be configured in game.
 
 [h2]Map editor (F8)[/h2]
-Join the map as admin between rounds and press [b]F8[/b] (or type [b]lbr_editor[/b] in console). You fly around and see every point already placed.
+As admin between rounds press [b]F8[/b] (or [b]lbr_editor[/b] in console): you fly around and see every point already placed.
 [list]
 [*][b]Left click[/b] place a point / [b]Right click[/b] remove it
 [*][b]Mouse wheel / 1-8[/b] choose what to place: player spawns, lobby spawns, loot, cars, helicopters, zone centers, nuke targets, supply drops
-[*][b]R[/b] place where you aim / at your position - [b]E[/b] go to next point - [b]Z[/b] undo
+[*][b]R[/b] place where you aim / at your position - [b]E[/b] next point - [b]Z[/b] undo
 [*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
 [/list]
-The panel tells you what is still missing for the map to be playable. Configs are saved in:
-[code]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/code]
-You can share these files: drop one in that folder and the map is ready. The configs of the supported maps are created there automatically, so you can edit them too ("Reset" restores the original).
+The panel tells you what is still missing. Configs are saved in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share them, drop one in that folder and the map is ready. The supported maps are there too, so you can edit them ("Reset" restores the original).
 
-[b]Loot and vehicles[/b] (F8, then Q): pick which weapons, items, cars and helicopters spawn, how likely each one is (weight), extra ammo on pickup, disable or add anything installed. Saved in [b]garrysmod/data/lastbattleroyale/loot.txt[/b] (all maps).
+[b]Loot and vehicles[/b] (F8, then Q): pick which weapons, items, cars and helicopters spawn, how likely each one is, extra ammo on pickup. Saved in [b]garrysmod/data/lastbattleroyale/loot.txt[/b] (all maps).
 
 [h2]Server settings[/h2]
 [list]
 [*][b]lbr_min_players[/b] - players needed to start (default 2)
+[*][b]lbr_time_preparing / lbr_time_weapons_hot[/b] - lobby countdown and no-attack time (default 30 / 30)
 [*][b]lbr_zone_speed[/b] - zone shrink speed (default 0.75)
-[*][b]lbr_zone_quality[/b] - client: zone wall quality, 3 high, 2 medium, 1 low, 0 invisible
-[*][b]lbr_outline[/b] - client: outline on loot (1/0)
-[*][b]lbr_zone_view_distance[/b] - client: how far the zone wall is drawn (default 9000)
+[*][b]lbr_mapvote[/b] - map vote at the end of the match (1/0), [b]lbr_mapvote_rounds[/b] matches before the vote (default 1)
 [*][b]lbr_event_nuke / lbr_event_implosion[/b] - nuke and implosion events (1/0)
+[*][b]lbr_cw_spawn_attachments[/b] - 1 = all attachments on spawn, as plain CW 2.0
 [*][b]lbr_cull_loot_distance[/b] - loot farther than this is not sent to players (default 4000, 0 = off)
-[*][b]lbr_cull_vehicle_distance[/b] - client: parked vehicles farther than this are not drawn (default 8000)
-[*][b]lbr_outline_distance[/b] - client: max loot outline distance (default 1500)
 [*][b]lbr_editor_superadminonly[/b] - only superadmins can use the map editor (1/0)
+[*][b]lbr_zone_quality[/b] - client: zone wall, 3 high, 2 medium, 1 low, 0 invisible
+[*][b]lbr_outline / lbr_outline_distance[/b] - client: outline on loot (1/0) and its max distance (default 1500)
+[*][b]lbr_zone_view_distance / lbr_cull_vehicle_distance[/b] - client: how far the zone and parked vehicles are drawn (9000 / 8000)
 [/list]
-Old [b]lst_*[/b] names from previous versions still work.
-Full list and documentation on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
+Old [b]lst_*[/b] names still work. Full list on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
 
 [h2]Tips and problems[/h2]
 [list]
-[*]Attachments are loot: everyone starts with none. [b]lbr_cw_spawn_attachments 1[/b] gives all of them on spawn.
 [*]Errors or lag? Disable the addons you don't need and delete [b]garrysmod/download/[/b] and [b]garrysmod/downloads/server/[/b] (old files from public servers).
 [*]Low FPS on big maps? Lower [b]lbr_outline_distance[/b] and [b]lbr_zone_quality[/b].
 [*]Keep nuke and implosion disabled for a better experience.

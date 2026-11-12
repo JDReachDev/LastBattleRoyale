@@ -36,7 +36,7 @@ add maps/weapons and run it on their own server.
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
-| `C` | CW 2.0 weapon customization: put on the attachments you found, the ones you don't have are red (`1`–`4` / `R` pick the category, the weapon does not change) |
+| `C` | CW 2.0 weapon customization: put on the attachments you found (press the category number `1`, `2`, `3`…; the ones you don't have are red) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
@@ -143,6 +143,11 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_cull_loot_distance` | `4000` | Loot farther than this is not sent to the player (big maps FPS), `0` = off |
 | `lbr_cull_vehicle_distance` | `8000` | Client: parked vehicles farther than this are not drawn, `0` = off |
 | `lbr_editor_superadminonly` | `0` | `1` = only superadmins can use the map editor |
+| `lbr_mapvote` | `1` | `1` = map vote at the end of the match (only configured maps) |
+| `lbr_mapvote_rounds` | `1` | Matches on the same map before the vote |
+| `lbr_mapvote_maps` | `8` | Max maps in the vote |
+| `lbr_mapvote_time` | `20` | Seconds to vote |
+| `lbr_cw_spawn_attachments` | `0` | `1` = every CW 2.0 attachment on spawn, `0` = attachments only from the loot |
 | `lst_maxrounds` | *(not created)* | Optional, created by the map vote addon: after this many rounds the `MapChange` hook runs |
 
 Defaults above are the ones shown in the *Start New Game* menu ([`lastbattleroyale.txt`](gamemodes/lastbattleroyale/lastbattleroyale.txt)).
