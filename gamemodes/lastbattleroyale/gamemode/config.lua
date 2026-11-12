@@ -126,7 +126,7 @@ ITEMS = {
 
 MAPCONFIG = {
 	gm_fork = {
-		weaponsc = {18,14,13,15,16},
+		weaponsc = {18,14,13,11,16},
 		zone_radius = 40000,
 		playerspawns = {
 			Vector(-3470.166015625, 6060.5224609375, -10073.42578125),
@@ -318,7 +318,7 @@ MAPCONFIG = {
 		}
 	},
 	gm_valley = {
-		weaponsc = {13,10,10,10,11},
+		weaponsc = {13,10,10,7,11},
 		zone_radius = 35000,
 		playerspawns = {
 			Vector(-3203.3842773438, -4181.4638671875, 24.931304931641),
@@ -494,7 +494,7 @@ MAPCONFIG = {
 		}
 	},
 	rp_wasteland = {
-		weaponsc = {18,13,18,18,16},
+		weaponsc = {18,13,18,13,16},
 		zone_radius = 40000,
 		playerspawns = {
 			Vector(-3794.065186, -13012.571289, -60.031250),
@@ -732,7 +732,7 @@ MAPCONFIG = {
 		}
 	},
 	rp_city17_build210 = {
-		weaponsc = {16,10,16,18,15},
+		weaponsc = {16,10,16,13,15},
 		zone_radius = 30000,
 		playerspawns = {
 			Vector(1132.766724, -66.260406, 140.031250),
@@ -964,7 +964,7 @@ MAPCONFIG = {
 		}
 	},
 	gm_marsh = {
-		weaponsc = {17,8,17,16,18},
+		weaponsc = {17,8,17,11,18},
 		zone_radius = 40000,
 		playerspawns = {
 			Vector(6628.689453, 205.435822, -115.968750),
@@ -1178,7 +1178,7 @@ MAPCONFIG = {
 		}
 	},
 	rp_ineu_pass_v1e = {
-		weaponsc = {24,19,18,18,21},
+		weaponsc = {24,19,18,13,21},
 		zone_radius = 80000,
 		initialspawns = {
 			Vector(5728.365234375, -7494.8256835938, 179.35067749023),
@@ -1445,7 +1445,7 @@ MAPCONFIG = {
 		}
 	},
 	rp_pripyat_cop = {
-		weaponsc = {45,25,34,40,40},
+		weaponsc = {45,25,34,28,40},
 		zone_radius = 40000,
 		initialspawns = {
 			Vector(3637.197510, 11620.471680, 64.031250),
