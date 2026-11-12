@@ -429,7 +429,7 @@ local function invTile( parent, slot )
 		net.WriteUInt( src.Slot, 4 )
 		net.WriteUInt( self.Slot, 4 )
 		net.SendToServer()
-		surface.PlaySound( "common/wpn_moveselect.wav" )
+		LocalPlayer():EmitSound( "weapons/shotgun/shotgun_cock.wav", 0, 110, 0.45, CHAN_STATIC ) // weapon handling sound
 	end )
 	t.Weapon = function( self )
 		if not inGame() then return end
