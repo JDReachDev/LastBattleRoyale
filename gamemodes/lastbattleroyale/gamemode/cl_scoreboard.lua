@@ -411,7 +411,8 @@ local function sideHeader( parent, label, rightFn )
 	return p
 end
 
-// one inventory slot: drag it on another slot to swap, right click to drop
+// one inventory slot: drag it on another slot to swap, right click for the menu
+// (drop the weapon / unload its ammo in a box)
 local function invTile( parent, slot )
 	local t = vgui.Create( "DButton", parent )
 	t:SetText( "" )
@@ -440,11 +441,26 @@ local function invTile( parent, slot )
 		return self.BagIndex and LBR.INV_EQUIP + self.BagIndex or self.Slot
 	end
 	t.DoRightClick = function( self )
-		if not IsValid( self:Weapon() ) then return end
-		net.Start( "LBR_InvDrop" )
-		net.WriteUInt( self:GetSlot(), 4 )
-		net.SendToServer()
-		surface.PlaySound( "ui/buttonclick.wav" )
+		local wep = self:Weapon()
+		if not IsValid( wep ) then return end
+		local slot = self:GetSlot()
+		local function send( msg )
+			net.Start( msg )
+			net.WriteUInt( slot, 4 )
+			net.SendToServer()
+			surface.PlaySound( "ui/buttonclick.wav" )
+		end
+		local m = DermaMenu()
+		m:AddOption( "Drop weapon", function() send( "LBR_InvDrop" ) end ):SetIcon( "icon16/arrow_down.png" )
+		// only weapons with a magazine and some ammo of that caliber
+		local id = wep:GetPrimaryAmmoType()
+		if id >= 0 and wep:GetMaxClip1() > 0 then
+			local total = math.max( wep:Clip1(), 0 ) + LocalPlayer():GetAmmoCount( id )
+			if total > 0 then
+				m:AddOption( "Unload ammo (" .. total .. ")", function() send( "LBR_InvUnload" ) end ):SetIcon( "icon16/box.png" )
+			end
+		end
+		m:Open()
 	end
 	t.Paint = function( self, w, h )
 		local wep = self:Weapon()
@@ -604,7 +620,7 @@ local function buildSide( f )
 	hint:Dock( TOP )
 	hint:SetTall( S( 18 ) )
 	hint.Paint = function( self, w, h )
-		UI.Text( "Drag to move  -  Right click to drop  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( "Drag to move  -  Right click: drop / unload ammo  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 	local lastE, lastB, lastH
 	inv.Think = function( self )

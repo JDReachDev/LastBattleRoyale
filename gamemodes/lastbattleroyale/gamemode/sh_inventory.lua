@@ -9,6 +9,31 @@
 LBR = LBR or {}
 
 LBR.INV_EQUIP_MAX = 6
+
+// ammo groups for the unloaded ammo boxes: a box from an AR also loads an AK.
+// Every caliber of the weapon packs goes in one group; an unknown ammo type
+// only fits weapons with that same type.
+local AMMO_GROUPS = {
+	pistol = { "pistol", "357", "alyxgun", "smg1", ".22lr", ".32 acp", ".357 magnum", ".357 sig", ".38 special",
+		".44 magnum", ".45 acp", ".45 long colt", ".50 ae", "9x17mm", "9x18mm", "9x19mm", "9x21mm",
+		"7.62x25mm", "5.7x28mm", "4.6x30mm" },
+	rifle = { "ar2", "5.56x45mm", "5.45x39mm", "7.62x39mm", "9x39mm", ".30 carbine", ".30-06" },
+	sniper = { "sniperround", "sniperpenetratedround", "7.62x51mm", "7.62x54mmr", ".338 lapua", ".50 bmg", ".416 barrett" },
+	shotgun = { "buckshot", "12 gauge", ".410 bore", "four-bore cartridge" },
+}
+LBR.AmmoGroupNames = { pistol = "Pistol / SMG ammo", rifle = "Rifle ammo", sniper = "Sniper ammo", shotgun = "Shotgun ammo" }
+local groupOf = {}
+for g, list in pairs( AMMO_GROUPS ) do
+	for _, name in ipairs( list ) do groupOf[name] = g end
+end
+
+// group of an ammo type id ("pistol", "rifle"...), or "#<name>" for an unknown type
+function LBR.AmmoGroup( id )
+	if not id or id < 0 then return nil end
+	local name = game.GetAmmoName( id )
+	if not name then return nil end
+	return groupOf[string.lower( name )] or ( "#" .. name )
+end
 LBR.INV_BAG_MAX = 6
 
 if not ConVarExists( "lbr_inv_equipment" ) then

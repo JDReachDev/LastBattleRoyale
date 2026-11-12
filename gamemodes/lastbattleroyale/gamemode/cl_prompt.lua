@@ -40,6 +40,12 @@ local function describe( lp, ent )
 
 	if SPECIAL[class] then return SPECIAL[class][1], SPECIAL[class][2] end
 
+	if class == "lbr_ammo_box" then
+		local label = ent:GetAmount() .. " " .. ent:GroupName()
+		if not ent:WeaponFor( lp ) then return "NO WEAPON FOR THIS AMMO", label end
+		return "TAKE AMMO", label
+	end
+
 	if ent:IsWeapon() then
 		if IsValid( ent:GetOwner() ) then return end
 		if lp:HasWeapon( class ) then return "TAKE AMMO", niceName( ent ) end

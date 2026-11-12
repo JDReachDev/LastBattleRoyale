@@ -4,6 +4,7 @@
 
 util.AddNetworkString( "LBR_InvMove" )
 util.AddNetworkString( "LBR_InvDrop" )
+util.AddNetworkString( "LBR_InvUnload" )
 
 local function layout( ply )
 	ply.LBR_Inv = ply.LBR_Inv or {}
@@ -182,6 +183,40 @@ net.Receive( "LBR_InvMove", function( _, ply )
 	inv[a], inv[b] = inv[b], inv[a]
 	send( ply )
 	LBR.InvCheckActive( ply )
+end )
+
+// right click > Unload ammo: the magazine and all the reserve of that caliber go
+// in a box on the ground, anyone with a weapon of the same group takes it with E
+net.Receive( "LBR_InvUnload", function( _, ply )
+	local s = net.ReadUInt( 4 )
+	if not ply:Alive() or ( ply.LBR_UnloadNext or 0 ) > CurTime() then return end
+	ply.LBR_UnloadNext = CurTime() + 0.5
+	LBR.InvSync( ply )
+	local w = layout( ply )[s]
+	if not IsValid( w ) or w:GetOwner() ~= ply then return end
+	local id = w:GetPrimaryAmmoType()
+	if id < 0 or w:GetMaxClip1() <= 0 then
+		LBR.Notify( ply, "This weapon has no ammo to unload", "bad", 2 )
+		return
+	end
+	local total = math.max( w:Clip1(), 0 ) + ply:GetAmmoCount( id )
+	if total <= 0 then
+		LBR.Notify( ply, "No ammo to unload", "bad", 2 )
+		return
+	end
+	local box = ents.Create( "lbr_ammo_box" )
+	if not IsValid( box ) then return end
+	w:SetClip1( 0 )
+	ply:SetAmmo( 0, id )
+	box:SetPos( ply:GetShootPos() + ply:GetAimVector() * 20 )
+	box:SetAngles( Angle( 0, ply:EyeAngles().y, 0 ) )
+	box:SetAmmoID( id )
+	box:SetAmount( total )
+	box:Spawn()
+	local phys = box:GetPhysicsObject()
+	if IsValid( phys ) then phys:SetVelocity( ply:GetVelocity() + ply:GetAimVector() * 250 ) end
+	ply:EmitSound( "items/ammo_pickup.wav", 60, 80 )
+	LBR.Notify( ply, "Unloaded " .. total .. " " .. box:GroupName(), "event", 2 )
 end )
 
 net.Receive( "LBR_InvDrop", function( _, ply )

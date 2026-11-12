@@ -7,7 +7,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots by default (the server can set 1-6 + 0-6). Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop. Mouse wheel and the number keys switch instantly, melee always last
+[*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots by default (the server can set 1-6 + 0-6). Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop the weapon or unload its ammo in a box (anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with E). Mouse wheel and the number keys switch instantly, melee always last
 [*][b]New TAB menu[/b]: scoreboard, inventory, your stats (class, level, EXP, kills) and buttons for classes, squad and map
 [*][b]Map[/b] (M or the TAB button): the whole map seen from above, up to its borders, on any map (also the ones you configure yourself)
 [list]
@@ -60,7 +60,7 @@ Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows 
 
 [h2]Keys[/h2]
 [list]
-[*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop), stats
+[*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop the weapon or unload its ammo), stats
 [*][b]M[/b] - map of the whole map: you, your squad, the safe zone, supply drops, nuke and the A-H / 1-8 grid (also from the MAP button in TAB). [b]Left click[/b] on it places a marker for your squad, [b]right click[/b] removes it
 [*][b]Mouse wheel / 1-5[/b] - switch between the equipment slots (6: melee; with more or fewer slots the keys follow)
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops

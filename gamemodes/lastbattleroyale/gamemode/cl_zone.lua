@@ -285,7 +285,7 @@ local nextScan = 0
 local haloColor = Color( 50, 250, 180 )
 
 local function track( ent )
-	if IsValid( ent ) and LBR.IsLootClass( ent:GetClass() ) then
+	if IsValid( ent ) and ( LBR.IsLootClass( ent:GetClass() ) or ent:GetClass() == "lbr_ammo_box" ) then
 		candidates[ent] = true
 	end
 end

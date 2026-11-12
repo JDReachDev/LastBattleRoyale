@@ -33,7 +33,7 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
+| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop the weapon or **unload its ammo** in a box on the ground: anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with `E`), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
 | `M` | **Map**: the whole map seen from above, up to its borders (found automatically on any map), with a battleship grid (A–H / 1–8), you, your squad (even far away), the safe zone with its timer and a dashed line to it when you are outside (outside the zone the map is darker and striped in the zone color), supply drops still to open, the nuke target and where teammates fell. **Left click** places a marker for your squad (also on the compass and on screen with the distance), **right click** removes it. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
