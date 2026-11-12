@@ -360,7 +360,7 @@ local function drawInfo( lp, ply )
 
 	if LBR.IsZoneActive() then
 		local radius = LBR.GetZoneRadius()
-		local dist = ply:GetPos():Distance( LBR.GetZonePos() )
+		local dist = LBR.ZoneDist( ply:GetPos() )
 		local toEdge = dist - radius
 		local w, h = S( 240 ), S( 62 )
 		local zcol = LBR.GetZoneColor and LBR.GetZoneColor() or colZone

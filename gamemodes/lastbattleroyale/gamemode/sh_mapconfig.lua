@@ -200,6 +200,12 @@ function LBR.CountWeapons( cfg )
 	return n
 end
 
+// all the loot of a match (weapons, items, ammo, attachment kits...): the number shown in the editor
+function LBR.CountLoot( cfg )
+	local wc = cfg.weaponsc or {}
+	return LBR.CountWeapons( cfg ) + ( wc[6] or LBR.DefaultAttachmentKits( wc ) )
+end
+
 // errors = the map can not be played, warnings = it works but something is off
 function LBR.ValidateMapConfig( cfg )
 	local errors, warnings = {}, {}
@@ -221,10 +227,10 @@ function LBR.ValidateMapConfig( cfg )
 	if ( cfg.zone_radius or 0 ) <= 0 then errors[#errors + 1] = "Zone radius is 0" end
 
 	if count( "initialspawns" ) == 0 then warnings[#warnings + 1] = "No lobby spawns (map spawn points are used)" end
-	local need = LBR.CountWeapons( cfg )
+	local need = LBR.CountLoot( cfg )
 	local have = count( "weaponspawns" )
 	if have > 0 and have < need then
-		warnings[#warnings + 1] = "Loot positions " .. have .. " < items to spawn " .. need .. " (less loot)"
+		warnings[#warnings + 1] = "Loot spots " .. have .. " < loot " .. need .. ": add " .. ( need - have ) .. " spots"
 	end
 	if count( "playerspawns" ) > 0 and count( "playerspawns" ) < 8 then
 		warnings[#warnings + 1] = "Only " .. count( "playerspawns" ) .. " player spawns (players will share them)"

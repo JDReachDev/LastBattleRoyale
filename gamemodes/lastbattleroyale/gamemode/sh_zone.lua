@@ -38,11 +38,19 @@ function LBR.GetZoneTimeLeft()
 	return LBR.GetZoneStartsIn() + LBR.GetZoneRadius() / speed
 end
 
+// flat distance from the zone center: the zone is a vertical wall (a cylinder), so the
+// height must not count (3D distance hurt players visibly inside when above or below the center)
+function LBR.ZoneDist( pos )
+	local c = LBR.GetZonePos()
+	local dx, dy = pos.x - c.x, pos.y - c.y
+	return math.sqrt( dx * dx + dy * dy )
+end
+
 function LBR.IsPosInZone( pos )
 	if not LBR.IsZoneActive() then return true end
 	local r = LBR.GetZoneRadius()
 	if r < 1 then return false end
-	return pos:DistToSqr( LBR.GetZonePos() ) <= r * r
+	return LBR.ZoneDist( pos ) <= r
 end
 
 // 0 = far from the end, 1 = zone fully closed. Used for the color shift.
