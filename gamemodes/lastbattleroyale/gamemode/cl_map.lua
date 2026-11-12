@@ -45,10 +45,73 @@ local needBuild = false
 // Map area
 ------------------------------------------------------------------------
 
+// in the map editor the area also covers the points being placed (saved or not),
+// like the server does for the saved ones (sv_map.lua): their box plus a margin,
+// up to the sky ceiling above them. Recomputed twice a second.
+local ED_MARGIN = 2000
+local edMins, edMaxs, edNext = nil, nil, 0
+local edSky = {} // rounded point -> sky z above it (traced once)
+
+local function skyAbove( p )
+	local k = math.floor( p.x / 64 ) .. " " .. math.floor( p.y / 64 ) .. " " .. math.floor( p.z / 64 )
+	if edSky[k] == nil then
+		local start = p + Vector( 0, 0, 40 )
+		local tr = util.TraceLine( { start = start, endpos = start + Vector( 0, 0, 65536 ), mask = MASK_SOLID_BRUSHONLY } )
+		edSky[k] = ( tr.HitSky and not tr.StartSolid ) and tr.HitPos.z or false
+	end
+	return edSky[k] or nil
+end
+
+local function editorBounds()
+	local ED = LBR.Editor
+	if not ( Map.edMode and ED and ED.active and ED.cfg ) then return nil end
+	if CurTime() < edNext then return edMins, edMaxs end
+	edNext = CurTime() + 0.5
+	local mins, maxs, sky
+	local n = 0
+	for _, cat in ipairs( LBR.MapCategories ) do
+		// supply drops are high in the sky: they do not make the ground area bigger
+		if not cat.eye then
+			for _, p in ipairs( LBR.GetCategoryList( ED.cfg, cat ) ) do
+				n = n + 1
+				if not mins then
+					mins, maxs = Vector( p ), Vector( p )
+				else
+					mins.x, mins.y, mins.z = math.min( mins.x, p.x ), math.min( mins.y, p.y ), math.min( mins.z, p.z )
+					maxs.x, maxs.y, maxs.z = math.max( maxs.x, p.x ), math.max( maxs.y, p.y ), math.max( maxs.z, p.z )
+				end
+				if n % 8 == 1 then
+					local z = skyAbove( p )
+					if z then sky = math.max( sky or z, z ) end
+				end
+			end
+		end
+	end
+	if not mins then
+		edMins, edMaxs = nil, nil
+		return nil
+	end
+	if not sky or sky < maxs.z then sky = maxs.z + 3000 end
+	edMins = Vector( mins.x - ED_MARGIN, mins.y - ED_MARGIN, mins.z - 1000 )
+	edMaxs = Vector( maxs.x + ED_MARGIN, maxs.y + ED_MARGIN, sky )
+	return edMins, edMaxs
+end
+
 local function getBounds()
 	local mins = GetGlobalVector( "LBR_MapMins", vector_origin )
 	local maxs = GetGlobalVector( "LBR_MapMaxs", vector_origin )
-	if maxs.x - mins.x < 100 or maxs.y - mins.y < 100 then return nil end
+	local ok = maxs.x - mins.x >= 100 and maxs.y - mins.y >= 100
+	local emins, emaxs = editorBounds()
+	if emins then
+		if ok then
+			mins = Vector( math.min( mins.x, emins.x ), math.min( mins.y, emins.y ), math.min( mins.z, emins.z ) )
+			maxs = Vector( math.max( maxs.x, emaxs.x ), math.max( maxs.y, emaxs.y ), math.max( maxs.z, emaxs.z ) )
+		else
+			mins, maxs = emins, emaxs
+		end
+		ok = true
+	end
+	if not ok then return nil end
 	return mins, maxs
 end
 
@@ -649,7 +712,7 @@ local function drawMap()
 	end
 
 	if not mins then
-		label( ED and "Place some points and save (Q) to draw the map" or "No map for this map yet: it has no configured points",
+		label( ED and "Place some points to draw the map" or "No map for this map yet: it has no configured points",
 			"LBR_UI_Text", sw / 2, sh / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		return
 	end

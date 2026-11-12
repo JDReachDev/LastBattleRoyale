@@ -322,7 +322,7 @@ local function drawRing( center, radius, col )
 end
 
 hook.Add( "PostDrawTranslucentRenderables", "LBR_EditorDraw", function( depth, skybox )
-	if depth or skybox or not ED.active or not ED.cfg then return end
+	if depth or skybox or not ED.active or not ED.cfg or LBR.MapRendering then return end
 	local eye = EyePos()
 	ED.hoverIdx = findHovered()
 	render.SetColorMaterial()
