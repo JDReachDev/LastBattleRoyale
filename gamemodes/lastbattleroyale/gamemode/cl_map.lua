@@ -17,7 +17,7 @@ LBR.Map = Map
 Map.open = Map.open or false
 
 local RT_SIZE = 2048
-local GRID = 8
+local GRID = 8 // cells on the long side; the short side gets as many as fit (square cells)
 local LETTERS = { "A", "B", "C", "D", "E", "F", "G", "H" }
 
 local colMe = Color( 255, 255, 255 )
@@ -61,7 +61,7 @@ local function build()
 		} )
 	end
 
-	local half = ( maxs.x - mins.x ) / 2
+	local halfX, halfY = ( maxs.x - mins.x ) / 2, ( maxs.y - mins.y ) / 2
 	local skyZ = maxs.z
 	// above the sky (outside the map the engine draws everything, no visibility culling);
 	// the near plane starts just under the sky ceiling so the sky does not cover the map
@@ -76,7 +76,8 @@ local function build()
 		angles = Angle( 90, 90, 0 ), // looking down, north (+y) up, east (+x) right
 		x = 0, y = 0, w = RT_SIZE, h = RT_SIZE,
 		aspect = 1,
-		ortho = { left = -half, right = half, top = -half, bottom = half },
+		// a rectangle squeezed into the square texture, stretched back when drawn
+		ortho = { left = -halfX, right = halfX, top = -halfY, bottom = halfY },
 		znear = camZ - skyZ + 24,
 		zfar = camZ - mins.z + 4000,
 		drawhud = false, drawviewmodel = false, drawmonitors = false,
@@ -231,16 +232,23 @@ local function drawMap()
 	surface.SetDrawColor( 0, 0, 0, 170 )
 	surface.DrawRect( 0, 0, sw, sh )
 
-	local size = math.floor( math.min( sh - S( 150 ), sw - S( 80 ) ) )
-	local mx, my = math.floor( ( sw - size ) / 2 ), math.floor( ( sh - size ) / 2 ) + S( 10 )
+	// map rectangle with the map's own proportions, as big as the screen allows
+	local spanX = mins and maxs.x - mins.x or 1
+	local spanY = mins and maxs.y - mins.y or 1
+	local maxW, maxH = sw - S( 120 ), sh - S( 160 )
+	local scale = math.min( maxW / spanX, maxH / spanY )
+	local mw, mh = math.floor( spanX * scale ), math.floor( spanY * scale )
+	if not mins then mw, mh = math.floor( maxH ), math.floor( maxH ) end
+	mw = math.max( mw, S( 420 ) ) // room for the title and the legend
+	local mx, my = math.floor( ( sw - mw ) / 2 ), math.floor( ( sh - mh ) / 2 ) + S( 10 )
 	local pad = S( 26 )
 
 	// frame
-	UI.Box( mx - pad, my - S( 58 ), size + pad * 2, size + S( 58 ) + S( 40 ), C.bg )
-	UI.Box( mx - pad, my - S( 58 ), size + pad * 2, S( 3 ), C.accent )
+	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, mh + S( 58 ) + S( 40 ), C.bg )
+	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, S( 3 ), C.accent )
 	label( "MAP", "LBR_UI_Head", mx, my - S( 50 ), C.text, TEXT_ALIGN_LEFT )
-	label( string.upper( game.GetMap() ), "LBR_UI_Tiny", mx + size, my - S( 44 ), C.dim, TEXT_ALIGN_RIGHT )
-	label( "M  close", "LBR_UI_Tiny", mx + size, my + size + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
+	label( string.upper( game.GetMap() ), "LBR_UI_Tiny", mx + mw, my - S( 44 ), C.dim, TEXT_ALIGN_RIGHT )
+	label( "M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
 
 	if not mins then
 		label( "No map for this map yet: it has no configured points", "LBR_UI_Text", sw / 2, sh / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
@@ -253,30 +261,31 @@ local function drawMap()
 		return
 	end
 
-	local span = maxs.x - mins.x
+	// the frame can be wider than the map (very tall maps): center the map in it
+	local imgW = math.floor( spanX * scale )
+	local ix = mx + math.floor( ( mw - imgW ) / 2 )
 	local function toMap( x, y )
-		return mx + ( x - mins.x ) / span * size, my + ( maxs.y - y ) / span * size
+		return ix + ( x - mins.x ) / spanX * imgW, my + ( maxs.y - y ) / spanY * mh
 	end
 
 	surface.SetDrawColor( 255, 255, 255 )
 	surface.SetMaterial( rtMat )
-	surface.DrawTexturedRect( mx, my, size, size )
+	surface.DrawTexturedRect( ix, my, imgW, mh )
 
-	render.SetScissorRect( mx, my, mx + size, my + size, true )
+	render.SetScissorRect( ix, my, ix + imgW, my + mh, true )
 
-	// grid
+	// grid: square cells, GRID of them on the long side
+	local cols = math.Clamp( math.Round( GRID * spanX / math.max( spanX, spanY ) ), 1, GRID )
+	local rows = math.Clamp( math.Round( GRID * spanY / math.max( spanX, spanY ) ), 1, GRID )
 	surface.SetDrawColor( colGrid )
-	for i = 1, GRID - 1 do
-		local o = math.floor( size * i / GRID )
-		surface.DrawRect( mx + o, my, 1, size )
-		surface.DrawRect( mx, my + o, size, 1 )
-	end
+	for i = 1, cols - 1 do surface.DrawRect( ix + math.floor( imgW * i / cols ), my, 1, mh ) end
+	for i = 1, rows - 1 do surface.DrawRect( ix, my + math.floor( mh * i / rows ), imgW, 1 ) end
 
 	// zone
 	if LBR.IsZoneActive() then
 		local zp = LBR.GetZonePos()
 		local zx, zy = toMap( zp.x, zp.y )
-		local zr = LBR.GetZoneRadius() / span * size
+		local zr = LBR.GetZoneRadius() * scale
 		local zc = LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 )
 		if zr > 1 then
 			ring( zx, zy, zr, Color( zc.r, zc.g, zc.b, 255 ), S( 3 ) )
@@ -312,14 +321,15 @@ local function drawMap()
 	render.SetScissorRect( 0, 0, 0, 0, false )
 
 	// grid labels
-	for i = 1, GRID do
-		local o = ( i - 0.5 ) * size / GRID
-		label( LETTERS[i], "LBR_UI_Tiny", mx + o, my - S( 14 ), C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-		label( tostring( i ), "LBR_UI_Tiny", mx - S( 13 ), my + o, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+	for i = 1, cols do
+		label( LETTERS[i], "LBR_UI_Tiny", ix + ( i - 0.5 ) * imgW / cols, my - S( 14 ), C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+	end
+	for i = 1, rows do
+		label( tostring( i ), "LBR_UI_Tiny", ix - S( 13 ), my + ( i - 0.5 ) * mh / rows, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 
 	// legend
-	local ly = my + size + S( 14 )
+	local ly = my + mh + S( 14 )
 	arrow( mx + S( 8 ), ly + S( 7 ), 90, S( 8 ), colMe )
 	label( "You", "LBR_UI_Tiny", mx + S( 20 ), ly, C.text, TEXT_ALIGN_LEFT )
 	arrow( mx + S( 70 ), ly + S( 7 ), 90, S( 8 ), colMate )
