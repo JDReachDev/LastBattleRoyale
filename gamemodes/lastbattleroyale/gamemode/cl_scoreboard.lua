@@ -241,6 +241,74 @@ local function ammoText( wep )
 	if ammoType >= 0 then return tostring( reserve ) end
 end
 
+// weapon icons: CW 2.0 weapons use a letter of the Counter-Strike icon font
+// (IconLetter) or their own texture (SelectIcon); other weapons their
+// selection texture or spawn menu icon. Returns false when there is none.
+local function createIconFonts()
+	surface.CreateFont( "LBR_InvIcon", { font = "csd", size = S( 44 ), weight = 500, antialias = true } )
+	surface.CreateFont( "LBR_InvIcon2", { font = "HalfLife2", size = S( 40 ), weight = 500, antialias = true } )
+end
+createIconFonts()
+hook.Add( "OnScreenSizeChanged", "LBR_InvIconFonts", createIconFonts )
+
+local hl2Letters = {
+	weapon_pistol = "d", weapon_357 = "e", weapon_smg1 = "a", weapon_ar2 = "l",
+	weapon_shotgun = "b", weapon_crossbow = "g", weapon_rpg = "i", weapon_frag = "k",
+	weapon_slam = "o", weapon_bugbait = "j", weapon_crowbar = "c", weapon_stunstick = "n",
+}
+local defaultSelect = surface.GetTextureID( "weapons/swep" )
+local iconCache = {}
+
+local function iconOf( wep )
+	local class = wep:GetClass()
+	local c = iconCache[class]
+	if c then return c end
+	if isnumber( wep.SelectIcon ) and wep.SelectIcon > 0 then
+		c = { tex = wep.SelectIcon }
+	elseif isstring( wep.IconLetter ) and wep.IconLetter ~= "" then
+		c = { letter = wep.IconLetter, font = wep.SelectFont == "CW_SelectIcons2" and "LBR_InvIcon2" or "LBR_InvIcon" }
+	elseif hl2Letters[class] then
+		c = { letter = hl2Letters[class], font = "LBR_InvIcon2" }
+	elseif isnumber( wep.WepSelectIcon ) and wep.WepSelectIcon > 0 and wep.WepSelectIcon ~= defaultSelect then
+		c = { tex = wep.WepSelectIcon, color = true }
+	else
+		local m = Material( "entities/" .. class .. ".png", "smooth" )
+		c = m:IsError() and { none = true } or { mat = m }
+	end
+	iconCache[class] = c
+	return c
+end
+
+local function drawWeaponIcon( wep, x, y, w, h, col )
+	local c = iconOf( wep )
+	if c.none then return false end
+	if c.letter then
+		UI.Text( c.letter, c.font, x + w / 2, y + h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		return true
+	end
+	local s = h
+	if c.tex then
+		surface.SetTexture( c.tex )
+		if c.color then surface.SetDrawColor( 255, 255, 255, 255 ) else surface.SetDrawColor( col ) end
+	else
+		surface.SetMaterial( c.mat )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+	end
+	surface.DrawTexturedRect( x + ( w - s ) / 2, y, s, s )
+	return true
+end
+
+// small backpack symbol for the backpack slots
+local function drawBag( x, y, s, col )
+	local t = math.max( 2, math.floor( s / 12 ) )
+	surface.SetDrawColor( col )
+	surface.DrawOutlinedRect( x + s * 0.34, y + s * 0.04, s * 0.32, s * 0.2, t ) // handle
+	draw.RoundedBox( math.floor( s * 0.16 ), x + s * 0.14, y + s * 0.2, s * 0.72, s * 0.78, col ) // body
+	draw.RoundedBox( math.floor( s * 0.08 ), x + s * 0.28, y + s * 0.6, s * 0.44, s * 0.26, Color( 10, 14, 24, 200 ) ) // pocket
+	surface.SetDrawColor( 10, 14, 24, 200 )
+	surface.DrawRect( x + s * 0.14, y + s * 0.42, s * 0.72, t ) // flap
+end
+
 local function inGame()
 	local lp = LocalPlayer()
 	return IsValid( lp ) and lp:Alive() and lp:Team() == TEAM_CONT
@@ -271,7 +339,7 @@ local function invTile( parent, slot )
 	local t = vgui.Create( "DButton", parent )
 	t:SetText( "" )
 	t:Dock( TOP )
-	t:SetTall( S( 44 ) )
+	t:SetTall( S( 52 ) )
 	t:DockMargin( 0, 0, 0, S( 3 ) )
 	t.Slot = slot
 	t:Droppable( "LBR_Inv" )
@@ -307,18 +375,34 @@ local function invTile( parent, slot )
 		if active then UI.Accent( 0, 0, h, C.accent ) end
 		if self:IsDragging() then UI.Box( 0, 0, w, h, Color( 255, 210, 70, 25 ) ) end
 
-		// key / slot number
-		local key = bag and "B" .. ( self.Slot - LBR.INV_EQUIP ) or tostring( self.Slot )
-		UI.Text( key, "LBR_UI_Small", S( 14 ), h / 2, bag and C.dim or C.accent, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		// left: key you press (equipment) or a backpack (backpack)
+		local ks = S( 28 )
+		local kx, ky = S( 10 ), math.floor( ( h - ks ) / 2 )
+		if bag then
+			drawBag( kx, ky, ks, IsValid( wep ) and C.dim or Color( C.dim.r, C.dim.g, C.dim.b, 90 ) )
+		else
+			local kc = active and C.accent or ( IsValid( wep ) and C.text or C.dim )
+			surface.SetDrawColor( kc.r, kc.g, kc.b, IsValid( wep ) and 200 or 70 )
+			surface.DrawOutlinedRect( kx, ky, ks, ks, 2 )
+			UI.Text( tostring( self.Slot ), "LBR_UI_Text", kx + ks / 2, h / 2, Color( kc.r, kc.g, kc.b, IsValid( wep ) and 255 or 90 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		end
 		if not IsValid( wep ) then
-			UI.Text( "EMPTY", "LBR_UI_Tiny", S( 44 ), h / 2, Color( C.dim.r, C.dim.g, C.dim.b, 90 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+			UI.Text( "EMPTY", "LBR_UI_Tiny", S( 56 ), h / 2, Color( C.dim.r, C.dim.g, C.dim.b, 90 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 			return
 		end
+
+		// weapon icon
+		local ix, iw = S( 50 ), S( 120 )
+		local hasIcon = drawWeaponIcon( wep, ix, S( 3 ), iw, h - S( 6 ), active and C.accent or C.text )
+		local tx = hasIcon and ix + iw + S( 10 ) or S( 56 )
+
+		// name + ammo
 		local ammo = ammoText( wep )
-		surface.SetFont( "LBR_UI_Small" )
-		local aw = ammo and surface.GetTextSize( ammo ) + S( 14 ) or 0
-		UI.Text( UI.Fit( weaponName( wep ), "LBR_UI_Text", w - S( 54 ) - aw ), "LBR_UI_Text", S( 44 ), h / 2, active and C.accent or C.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-		if ammo then UI.Text( ammo, "LBR_UI_Small", w - S( 12 ), h / 2, C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER ) end
+		UI.Text( UI.Fit( weaponName( wep ), "LBR_UI_Small", w - tx - S( 10 ) ), "LBR_UI_Small", tx, h / 2 - ( ammo and S( 8 ) or 0 ), active and C.accent or C.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		if ammo then
+			local empty = string.match( ammo, "^0 / 0$" ) or ammo == "0"
+			UI.Text( ammo, "LBR_UI_Tiny", tx, h / 2 + S( 9 ), empty and C.bad or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		end
 	end
 	return t
 end
@@ -326,7 +410,7 @@ end
 local function buildSide( f )
 	local side = vgui.Create( "DPanel", f )
 	side:Dock( RIGHT )
-	side:SetWide( math.min( S( 400 ), math.floor( f:GetWide() * 0.42 ) ) )
+	side:SetWide( math.min( S( 560 ), math.floor( f:GetWide() * 0.5 ) ) )
 	side:DockMargin( S( 16 ), 0, 0, 0 )
 	side.Paint = nil
 
@@ -442,8 +526,8 @@ local function buildSide( f )
 end
 
 local function createBoard()
-	local w = math.min( S( 1320 ), ScrW() - S( 40 ) )
-	local h = math.min( S( 760 ), ScrH() - S( 80 ) )
+	local w = math.min( S( 1440 ), ScrW() - S( 40 ) )
+	local h = math.min( S( 840 ), ScrH() - S( 80 ) )
 
 	local f = vgui.Create( "EditablePanel" )
 	f:SetSize( w, h )
@@ -574,3 +658,26 @@ end )
 function ShowScoreBoard()
 	GAMEMODE:ScoreboardShow()
 end
+
+// tell new players about TAB: when they join and when a match starts
+// (the match hint is shown in the first few matches only)
+hook.Add( "InitPostEntity", "LBR_TabHint", function()
+	timer.Simple( 6, function()
+		if LBR.NotifyLocal then LBR.NotifyLocal( "Hold TAB: players, your stats, classes and squad", "info", 7 ) end
+	end )
+end )
+
+local wasInGame = false
+timer.Create( "LBR_TabHint", 1, 0, function()
+	local lp = LocalPlayer()
+	if not IsValid( lp ) then return end
+	local now = lp:Alive() and lp:Team() == TEAM_CONT
+	if now and not wasInGame then
+		local shown = cookie.GetNumber( "lbr_tabhint", 0 )
+		if shown < 5 and LBR.NotifyLocal then
+			cookie.Set( "lbr_tabhint", tostring( shown + 1 ) )
+			LBR.NotifyLocal( "Hold TAB for your inventory: 5 equipment + 3 backpack slots", "info", 7 )
+		end
+	end
+	wasInGame = now
+end )

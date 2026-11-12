@@ -30,9 +30,9 @@ LBR.GetZoneColor = updateZoneColor
 // Zone wall
 // Before: two spheres as big as the zone. The far side went past the map draw
 // distance (the white "hole" in the sky), the inside tinted the whole sky and the
-// sphere cut through the hills. Now: a vertical wall that follows the terrain, solid
-// at the ground and fading upwards, drawn only near the player (fading out with
-// distance), with a glowing line on the ground.
+// sphere cut through the hills. Now: a simple cylinder, brightest at your eye height
+// and fading up and down from there, drawn only near the player (fading out with
+// distance). No ground traces: it looks the same on every map.
 ------------------------------------------------------------------------
 
 // Triangle pattern: big triangles (4 per texture repeat) with thick white lines on
@@ -63,49 +63,27 @@ local matGlow = CreateMaterial( "LBR_ZoneGlow", "UnlitGeneric", {
 
 local WALL_UP = 2000       // fades to nothing this far above your eyes
 local WALL_DOWN = 1400     // and this far below them
+local GLOW = 160           // half height of the bright band at your eyes
 local TEX_SCALE = 1400     // world units per texture repeat
 local segmentsByQuality = { [1] = 40, [2] = 64, [3] = 96 }
 
 // wall rows: height from your eyes, alpha (0..1). Strongest at your height,
-// fading up and down (the terrain hides the part under the ground)
+// fading up and down
 local rows = {
 	{ -WALL_DOWN, 0 },
+	{ -WALL_DOWN * 0.35, 0.35 },
 	{ 0, 1 },
-	{ WALL_UP * 0.4, 0.45 },
+	{ WALL_UP * 0.3, 0.35 },
 	{ WALL_UP, 0 },
 }
-
-// ground height cache: index on the circle -> { z, r }
-local ground = {}
-local groundN = 0
-
-local function groundZ( i, x, y, radius, eyeZ )
-	local c = ground[i]
-	if c and math.abs( c.r - radius ) < 48 then return c.z end
-	// start under the first ceiling above eye height: starting a fixed 3000 units
-	// up could land in other rooms of the map (city maps) and put the wall on
-	// their floor, high above the street
-	local top = eyeZ + 3000
-	local up = util.TraceLine( { start = Vector( x, y, eyeZ + 40 ), endpos = Vector( x, y, top ), mask = MASK_SOLID_BRUSHONLY } )
-	if up.Hit and not up.StartSolid then top = up.HitPos.z - 8 end
-	local tr = util.TraceLine( { start = Vector( x, y, top ), endpos = Vector( x, y, eyeZ - 10000 ), mask = MASK_SOLID_BRUSHONLY } )
-	if tr.StartSolid then
-		tr = util.TraceLine( { start = Vector( x, y, eyeZ + 100 ), endpos = Vector( x, y, eyeZ - 10000 ), mask = MASK_SOLID_BRUSHONLY } )
-	end
-	local z = ( tr.Hit and not tr.StartSolid ) and tr.HitPos.z or ( c and c.z or eyeZ - 64 )
-	ground[i] = { z = z, r = radius }
-	return z
-end
 
 local cols = {} // reused every frame
 
 local function buildColumns( center, radius, eye, viewDist, segs )
-	// power of two segment count for the whole circle: the ground cache stays
-	// valid until the zone halves
+	// power of two segment count for the whole circle
 	local segLen = ( viewDist * 2 ) / segs
 	local n = 32
 	while n < 8192 and ( 2 * math.pi * radius ) / n > segLen do n = n * 2 end
-	if n ~= groundN then ground = {} groundN = n end
 	local step = 2 * math.pi / n
 
 	local first, last
@@ -130,7 +108,6 @@ local function buildColumns( center, radius, eye, viewDist, segs )
 		local c = cols[count] or {}
 		cols[count] = c
 		c.x, c.y = x, y
-		c.z = groundZ( i % n, x, y, radius, eye.z )
 		c.u = i * step * radius / TEX_SCALE
 		c.fade = 1 - math.Clamp( ( d - fadeStart ) / ( viewDist - fadeStart ), 0, 1 )
 	end
@@ -167,22 +144,21 @@ local function drawWall( count, col, alphaMul, scroll, eyeZ )
 	mesh.End()
 end
 
-// glowing line where the wall meets the ground
-local function drawGroundGlow( count, col, alphaMul )
+// bright band at your eye height, fading up and down
+local function drawEyeGlow( count, col, alphaMul, eyeZ )
 	local pulse = 0.75 + math.sin( CurTime() * 3 ) * 0.25
 	mesh.Begin( MATERIAL_QUADS, ( count - 1 ) * 2 )
 	for i = 1, count - 1 do
 		local c1, c2 = cols[i], cols[i + 1]
 		local a1, a2 = 255 * c1.fade * alphaMul * pulse, 255 * c2.fade * alphaMul * pulse
-		// bright line: fades in from under the ground, then out
-		vert( c1.x, c1.y, c1.z - 60, 0, 0, col, 0 )
-		vert( c1.x, c1.y, c1.z + 10, 0, 0, col, a1 )
-		vert( c2.x, c2.y, c2.z + 10, 0, 0, col, a2 )
-		vert( c2.x, c2.y, c2.z - 60, 0, 0, col, 0 )
-		vert( c1.x, c1.y, c1.z + 10, 0, 0, col, a1 )
-		vert( c1.x, c1.y, c1.z + 200, 0, 0, col, 0 )
-		vert( c2.x, c2.y, c2.z + 200, 0, 0, col, 0 )
-		vert( c2.x, c2.y, c2.z + 10, 0, 0, col, a2 )
+		vert( c1.x, c1.y, eyeZ - GLOW, 0, 0, col, 0 )
+		vert( c1.x, c1.y, eyeZ, 0, 0, col, a1 )
+		vert( c2.x, c2.y, eyeZ, 0, 0, col, a2 )
+		vert( c2.x, c2.y, eyeZ - GLOW, 0, 0, col, 0 )
+		vert( c1.x, c1.y, eyeZ, 0, 0, col, a1 )
+		vert( c1.x, c1.y, eyeZ + GLOW, 0, 0, col, 0 )
+		vert( c2.x, c2.y, eyeZ + GLOW, 0, 0, col, 0 )
+		vert( c2.x, c2.y, eyeZ, 0, 0, col, a2 )
 	end
 	mesh.End()
 end
@@ -210,7 +186,7 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_DrawZone", function( depth, sky
 		drawWall( count, col, 160, CurTime() * 0.03, eye.z )
 	end
 	render.SetMaterial( matGlow )
-	drawGroundGlow( count, col, q >= 3 and 1 or 0.7 )
+	drawEyeGlow( count, col, q >= 3 and 0.8 or 0.6, eye.z )
 end )
 
 ------------------------------------------------------------------------
