@@ -7,7 +7,12 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots by default (the server can set 1-6 + 0-6). Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop the weapon or unload a full magazine in a box (anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with E and gets one magazine of that weapon). Mouse wheel and the number keys switch instantly, melee always last
+[*][b]Inventory[/b] (hold TAB): weapon icons and ammo for every slot
+[list]
+[*]5 equipment slots + 3 backpack slots by default (the server can set 1-6 + 0-6). Mouse wheel and the number keys switch instantly, melee always last
+[*]Drag to move between equipment and backpack. When everything is full you must drop something first, so a weapon you kitted out is never swapped by mistake
+[*][b]Right click[/b] a weapon: drop it, or [b]unload a full magazine[/b] in an ammo box. Anyone with a weapon of the same type (pistol / SMG, rifle, sniper, shotgun) takes it with E and gets one magazine of their own weapon
+[/list]
 [*][b]New TAB menu[/b]: scoreboard, inventory, your stats (class, level, EXP, kills) and buttons for classes, squad and map
 [*][b]Map[/b] (M or the TAB button): the whole map seen from above, up to its borders, on any map (also the ones you configure yourself)
 [list]
@@ -25,6 +30,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
 [*][b]Interaction prompts[/b]: the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
+[*][b]Loot is easy to spot[/b]: nearby loot has an outline and a small light beam going up (only close by, not across the map)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn
 [*][b]Settings renamed[/b] from lst_* to lbr_* (the old names still work)
@@ -60,10 +66,10 @@ Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows 
 
 [h2]Keys[/h2]
 [list]
-[*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop the weapon or unload a magazine), stats
+[*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop or unload a magazine), stats
 [*][b]M[/b] - map of the whole map: you, your squad, the safe zone, supply drops, nuke and the A-H / 1-8 grid (also from the MAP button in TAB). [b]Left click[/b] on it places a marker for your squad, [b]right click[/b] removes it
-[*][b]Mouse wheel / 1-5[/b] - switch between the equipment slots (6: melee; with more or fewer slots the keys follow)
-[*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops
+[*][b]Mouse wheel / number keys[/b] - switch between the equipment slots (1-5 by default, the next key is melee)
+[*][b]E[/b] - pick up weapons and ammo boxes, use items, enter vehicles, open supply drops
 [*][b]Q[/b] - drop your active weapon
 [*][b]C[/b] - CW 2.0 customization: press the category number (1, 2, 3...) to mount the attachments you found
 [*][b]E (hold) + Left Click[/b] - throw grenades (with a CW 2.0 weapon)
