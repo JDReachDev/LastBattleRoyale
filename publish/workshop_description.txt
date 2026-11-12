@@ -7,7 +7,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]Inventory[/b] (hold TAB): 5 equipment + 3 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, mouse wheel / number keys switch instantly. [b]Right click[/b]: drop a weapon or [b]unload a full magazine[/b] in an ammo box: anyone with a weapon of the same type (pistol / SMG, rifle, sniper, shotgun) takes it with E and gets one magazine of their own weapon
+[*][b]Inventory[/b] (hold TAB): 4 equipment + 2 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, mouse wheel / number keys switch instantly. [b]Right click[/b]: drop a weapon or [b]unload a full magazine[/b] in an ammo box: anyone with a weapon of the same type (pistol / SMG, rifle, sniper, shotgun) takes it with E and gets one magazine of their own weapon
 [*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen)
 [*][b]Attachments are loot[/b]: attachment kits have their own loot category, about one kit every 3 weapons (set per map in the editor). In the C menu the missing ones are red
 [*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 2 minutes before shrinking and always starts outside the map. Inside it your health regenerates up to 20
@@ -72,7 +72,7 @@ Configs are in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share 
 
 [h2]Server settings[/h2]
 [list]
-[*][b]lbr_min_players[/b] (2) - [b]lbr_inv_equipment / lbr_inv_backpack[/b] (5 / 3)
+[*][b]lbr_min_players[/b] (2) - [b]lbr_inv_equipment / lbr_inv_backpack[/b] (4 / 2)
 [*][b]lbr_time_preparing / lbr_time_weapons_hot / lbr_time_postround[/b] (30 / 30 / 15)
 [*][b]lbr_zone_speed[/b] (0.75) - [b]lbr_zone_delay[/b] (120) - [b]lbr_zone_heal[/b] (1)
 [*][b]lbr_mapvote[/b] (1) - [b]lbr_mapvote_rounds / _time / _maps[/b] (1 / 20 / 8)

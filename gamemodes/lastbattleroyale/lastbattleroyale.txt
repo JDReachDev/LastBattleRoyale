@@ -117,7 +117,7 @@
 			"text"		"Equipment slots (1-6)"
 			"help"		"Weapons you can have in hand (keys 1-N). Applied in the lobby"
 			"type"		"Numeric"
-			"default"	"5"
+			"default"	"4"
 		}
 		15
 		{
@@ -125,7 +125,7 @@
 			"text"		"Backpack slots (0-6)"
 			"help"		"Extra items carried in the backpack. Applied in the lobby"
 			"type"		"Numeric"
-			"default"	"3"
+			"default"	"2"
 		}
 		16
 		{

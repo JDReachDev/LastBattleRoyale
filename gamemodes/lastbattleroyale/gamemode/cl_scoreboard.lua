@@ -798,7 +798,7 @@ timer.Create( "LBR_TabHint", 1, 0, function()
 		local shown = cookie.GetNumber( "lbr_tabhint", 0 )
 		if shown < 5 and LBR.NotifyLocal then
 			cookie.Set( "lbr_tabhint", tostring( shown + 1 ) )
-			LBR.NotifyLocal( "Hold TAB for your inventory: 5 equipment + 3 backpack slots", "info", 7 )
+			LBR.NotifyLocal( "Hold TAB for your inventory: " .. LBR.INV_EQUIP .. " equipment + " .. LBR.INV_BAG .. " backpack slots", "info", 7 )
 		end
 	end
 	wasInGame = now

@@ -1,7 +1,7 @@
 // Weapon selection made for the gamemode (replaces the Half-Life 2 menu).
 //  - mouse wheel: switch to the next / previous weapon right away
 //  - 1-N: switch to the weapon in that equipment slot (TAB inventory), N+1: hands
-//    (N = lbr_inv_equipment, 5 by default)
+//    (N = lbr_inv_equipment, 4 by default)
 //    (press again to cycle when more weapons share the key)
 //  - a strip of cards at the bottom shows your weapons for a few seconds after a
 //    switch or a pickup, with the slot number, name and ammo

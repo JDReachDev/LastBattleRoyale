@@ -1,6 +1,6 @@
 // Inventory: equipment slots (the weapons you switch between with the mouse
 // wheel and the number keys) + backpack slots (carried, not in the weapon bar).
-// 5 + 3 by default, set with lbr_inv_equipment (1-6) and lbr_inv_backpack (0-6);
+// 4 + 2 by default, set with lbr_inv_equipment (1-6) and lbr_inv_backpack (0-6);
 // a change is applied outside a match (lobby), never in the middle of one.
 // Weapons, medkits, adrenaline and grenades all take a slot. Melee / fists
 // from the class are the "hands": always there, outside the slots.
@@ -48,18 +48,18 @@ end
 LBR.INV_BAG_MAX = 6
 
 if not ConVarExists( "lbr_inv_equipment" ) then
-	CreateConVar( "lbr_inv_equipment", "5", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Equipment slots (weapons in hand, keys 1-N), 1 to 6" )
+	CreateConVar( "lbr_inv_equipment", "4", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Equipment slots (weapons in hand, keys 1-N), 1 to 6" )
 end
 if not ConVarExists( "lbr_inv_backpack" ) then
-	CreateConVar( "lbr_inv_backpack", "3", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Backpack slots, 0 to 6" )
+	CreateConVar( "lbr_inv_backpack", "2", { FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED }, "Backpack slots, 0 to 6" )
 end
 
 local function setSlots( equip, bag )
-	LBR.INV_EQUIP = math.Clamp( math.floor( tonumber( equip ) or 5 ), 1, LBR.INV_EQUIP_MAX )
-	LBR.INV_BAG = math.Clamp( math.floor( tonumber( bag ) or 3 ), 0, LBR.INV_BAG_MAX )
+	LBR.INV_EQUIP = math.Clamp( math.floor( tonumber( equip ) or 4 ), 1, LBR.INV_EQUIP_MAX )
+	LBR.INV_BAG = math.Clamp( math.floor( tonumber( bag ) or 2 ), 0, LBR.INV_BAG_MAX )
 	LBR.INV_SLOTS = LBR.INV_EQUIP + LBR.INV_BAG
 end
-setSlots( LBR.INV_EQUIP or 5, LBR.INV_BAG or 3 )
+setSlots( LBR.INV_EQUIP or 4, LBR.INV_BAG or 2 )
 
 if SERVER then
 	// the slot counts in use, sent to everyone; changed only outside a match
@@ -76,7 +76,7 @@ if SERVER then
 else
 	hook.Add( "Think", "LBR_InvSlots", function()
 		local e = GetGlobalInt( "LBR_InvEquip", 0 )
-		if e > 0 then setSlots( e, GetGlobalInt( "LBR_InvBag", 3 ) ) end
+		if e > 0 then setSlots( e, GetGlobalInt( "LBR_InvBag", 2 ) ) end
 	end )
 end
 

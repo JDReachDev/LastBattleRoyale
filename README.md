@@ -33,11 +33,11 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop the weapon or **unload a full magazine** in a box on the ground: anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with `E` and gets one magazine of that weapon), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
+| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (4 equipment + 2 backpack slots: drag to move, right click to drop the weapon or **unload a full magazine** in a box on the ground: anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with `E` and gets one magazine of that weapon), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
 | `M` | **Map**: the whole map seen from above, up to its borders (found automatically on any map), with a battleship grid (A–H / 1–8), you, your squad (even far away), the safe zone with its timer and a dashed line to it when you are outside (outside the zone the map is darker and striped in the zone color), supply drops still to open, the nuke target and where teammates fell. **Left click** places a marker for your squad (also on the compass and on screen with the distance), **right click** removes it. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
-| `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists; the keys follow `lbr_inv_equipment`). Weapons, medkits, adrenaline and grenades take a slot; with all slots full (8 by default) you must drop something to pick up more |
+| `Mouse wheel` / `1`–`4` | Switch between the 4 equipment slots (`5`: melee / fists; the keys follow `lbr_inv_equipment`). Weapons, medkits, adrenaline and grenades take a slot; with all slots full (6 by default) you must drop something to pick up more |
 | `C` | CW 2.0 weapon customization: put on the attachments you found (press the category number `1`, `2`, `3`…; the ones you don't have are red) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
@@ -128,8 +128,8 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | ConVar | Default | Description |
 |---|---|---|
 | `lbr_min_players` | `2` | Players needed to start a round |
-| `lbr_inv_equipment` | `5` | Equipment slots (weapons in hand, keys 1-N), 1 to 6; applied in the lobby |
-| `lbr_inv_backpack` | `3` | Backpack slots, 0 to 6; applied in the lobby |
+| `lbr_inv_equipment` | `4` | Equipment slots (weapons in hand, keys 1-N), 1 to 6; applied in the lobby |
+| `lbr_inv_backpack` | `2` | Backpack slots, 0 to 6; applied in the lobby |
 | `lbr_time_preparing` | `30` | Preparing time (seconds) |
 | `lbr_time_weapons_hot` | `30` | Time before the round goes live (seconds) |
 | `lbr_time_postround` | `15` | Time after the round ends (seconds) |
@@ -193,7 +193,7 @@ gamemodes/lastbattleroyale/
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
         cl_map.lua / sv_map.lua  M map: top-down view rendered once, map borders scan, squad positions and markers, supply drops, nuke, fallen teammates
         cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-N equipment, then hands)
-        sh_inventory.lua / sv_inventory.lua  inventory: 5 equipment + 3 backpack slots, pickup limit, swap and drop
+        sh_inventory.lua / sv_inventory.lua  inventory: 4 equipment + 2 backpack slots, pickup limit, swap and drop
         sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
         sv_mapvote.lua / cl_mapvote.lua  end of match map vote, F2 admin map menu
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
