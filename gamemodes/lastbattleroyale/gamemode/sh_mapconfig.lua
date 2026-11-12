@@ -24,6 +24,7 @@ LBR.MapCategories = {
 }
 
 LBR.WeaponCountNames = { "Better weapons", "Weapons", "Additional weapons", "Items", "Ammo", "Attachment kits" }
+LBR.WeaponCountIcons = { "icon16/star.png", "icon16/gun.png", "icon16/bomb.png", "icon16/heart.png", "icon16/box.png", "icon16/wrench.png" }
 
 // attachment kits of a map that does not set them (configs made before the 6th
 // number): one kit every 3 weapons

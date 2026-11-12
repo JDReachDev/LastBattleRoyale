@@ -611,9 +611,14 @@ function ED.OpenMenu()
 		row:DockMargin( 0, S( 1 ), S( 8 ), S( 1 ) )
 		row:SetTall( S( 28 ) )
 		row.Paint = function( self, w, h ) UI.Box( 0, 0, w, h, C.row ) end
+		local ic = vgui.Create( "DImage", row )
+		ic:Dock( LEFT )
+		ic:DockMargin( S( 8 ), S( 6 ), 0, S( 6 ) )
+		ic:SetWide( S( 16 ) )
+		ic:SetImage( LBR.WeaponCountIcons[i] or "icon16/box.png" )
 		local l = vgui.Create( "DLabel", row )
 		l:Dock( LEFT )
-		l:DockMargin( S( 10 ), 0, 0, 0 )
+		l:DockMargin( S( 8 ), 0, 0, 0 )
 		l:SetWide( S( 220 ) )
 		l:SetFont( "LBR_UI_Small" )
 		l:SetTextColor( C.text )
@@ -629,6 +634,21 @@ function ED.OpenMenu()
 			ED.cfg.weaponsc[i] = math.Clamp( math.floor( tonumber( v ) or 0 ), 0, 1000 )
 			markDirty()
 		end
+	end
+
+	// total of the numbers above against the loot spots placed (updates while typing)
+	local tot = scroll:Add( "DPanel" )
+	tot:Dock( TOP )
+	tot:DockMargin( 0, S( 4 ), S( 8 ), S( 1 ) )
+	tot:SetTall( S( 30 ) )
+	tot.Paint = function( self, w, h )
+		local loot, spots = LBR.CountLoot( ED.cfg ), #LBR.GetCategoryList( ED.cfg, cats[3] )
+		local ok = spots >= loot
+		local col = ok and colOk or colWarn
+		UI.Box( 0, 0, w, h, Color( col.r, col.g, col.b, 30 ) )
+		UI.Text( "Total loot: " .. loot, "LBR_UI_Text", S( 10 ), h / 2, colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		UI.Text( "Loot spots: " .. spots .. " / " .. loot .. ( ok and "  OK" or ( "  (add " .. ( loot - spots ) .. ")" ) ),
+			"LBR_UI_Small", w - S( 10 ), h / 2, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	end
 
 	button( "Loot and vehicles: which weapons / items / vehicles spawn...", function()
