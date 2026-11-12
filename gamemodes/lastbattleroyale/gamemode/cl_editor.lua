@@ -441,7 +441,9 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	y = line( cat.desc, "LBR_UI_Small", x, y, cat.color )
 	y = line( "Mode [R]: " .. ( isEyeMode() and "at your position" or "where you aim" ) .. "   Zone radius: " .. ( ED.cfg.zone_radius or 0 ), "LBR_UI_Small", x, y, C.text )
 	local loot, spots = LBR.CountLoot( ED.cfg ), #LBR.GetCategoryList( ED.cfg, cats[3] )
-	y = line( "Loot per match: " .. loot .. "   Loot spots: " .. spots, "LBR_UI_Small", x, y, spots < loot and colWarn or C.text )
+	// spots must be at least as many as the loot of a match, otherwise loot gets stacked
+	y = line( "Loot spots: " .. spots .. " / " .. loot .. " needed" .. ( spots < loot and ( "   (add " .. ( loot - spots ) .. ")" ) or "   OK" ),
+		"LBR_UI_Small", x, y, spots < loot and colWarn or colOk )
 	y = y + S( 6 )
 	for _, e in ipairs( ED.errors or {} ) do y = line( "X  " .. e, "LBR_UI_Small", x, y, colErr ) end
 	for _, wn in ipairs( ED.warnings or {} ) do y = line( "!  " .. wn, "LBR_UI_Small", x, y, colWarn ) end
