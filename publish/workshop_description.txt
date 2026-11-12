@@ -9,7 +9,14 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots, up to 8 items. Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop. Mouse wheel and 1-5 switch instantly, melee always last (6)
 [*][b]New TAB menu[/b]: scoreboard, inventory, your stats (class, level, EXP, kills) and buttons for classes, squad and map
-[*][b]Map[/b] (M or the TAB button): the whole map seen from above, up to its borders, on any map (also the ones you configure yourself). Battleship grid (A-H / 1-8) to call positions to your squad, you and your teammates (even far away), the safe zone with its timer and a line to it when you are outside (the map outside the zone is darker and striped in the zone color), supply drops still to open, the nuke target, where your teammates fell. [b]Click on the map to place a marker[/b] for your squad: it also shows on the compass and on screen with the distance (right click removes it)
+[*][b]Map[/b] (M or the TAB button): the whole map seen from above, up to its borders, on any map (also the ones you configure yourself)
+[list]
+[*]Battleship grid (A-H / 1-8) to call positions to your squad
+[*]You and your teammates, even when they are far away
+[*]Safe zone with its timer: outside it the map is darker and striped, and a line shows the way back in
+[*]Supply drops still to open, the nuke target, where your teammates fell
+[*][b]Click to place a marker[/b] for your squad: it also shows on the compass and on screen with the distance (right click removes it)
+[/list]
 [*][b]Attachments are loot[/b]: you start with none and find attachment kits around the map. In the C menu the ones you don't have are red
 [*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall, brightest at eye height and fading up and down, with a storm effect (fog, grey colors) when you are outside
 [*][b]New HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel. One clean style for HUD, menus and messages
@@ -30,7 +37,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
 [*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
-[*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
+[*][b]Squads[/b] of up to 4 players with teammate markers on compass, screen and map
 [*][b]Classes[/b] with their own loadout, unlocked by levelling up
 [/list]
 
@@ -39,7 +46,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Lobby[/b]: everyone waits until there are enough players (2 by default). Pick your class (F3) and make a squad (F4)
 [*][b]Preparing[/b]: a countdown starts (30 s), then all players are spread around the map
 [*][b]Loot[/b]: weapons can't be used for the first 30 s: find weapons, attachments, armor, medkits and vehicles. Pick up with [b]E[/b], hold TAB to sort your inventory
-[*][b]Zone[/b]: the safe zone shrinks over time. Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right
+[*][b]Zone[/b]: the safe zone shrinks over time. Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right, or open the map with [b]M[/b]
 [*][b]Win[/b]: the last player (or squad) alive wins. Then everyone goes back to the lobby, or votes the next map
 [/olist]
 Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows what each one needs). Dead players can spectate.
