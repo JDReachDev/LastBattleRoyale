@@ -163,7 +163,7 @@ Loot and vehicles are chosen in game too (`F8` → `Q` → *Loot and vehicles*, 
 Classes and the default loot tables are plain Lua: see
 **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**.
 
-Attachments are loot: players start with none and find them in the attachment packs (`lbr_cw_spawn_attachments 1` gives every attachment on spawn, as plain CW 2.0 does).
+Attachments are loot: players start with none and find them in the attachment kits, a loot category of their own (about one kit every 3 weapons, set per map in the editor; `lbr_cw_spawn_attachments 1` gives every attachment on spawn, as plain CW 2.0 does).
 
 ## Repository layout
 

@@ -220,7 +220,7 @@ Categories: player spawns, lobby spawns, loot spawns, cars, helicopters, zone ce
   "map": "gm_fork",
   "zone_radius": 40000,
   "zone_delay": 120,
-  "weaponsc": [18, 14, 13, 15, 16],
+  "weaponsc": [18, 14, 13, 15, 16, 15],
   "playermodels": ["models/player/group03/male_01.mdl"],
   "playerspawns": [[x, y, z], ...],
   "initialspawns": [...], "weaponspawns": [...], "vehiclepositions": [...],
@@ -229,12 +229,14 @@ Categories: player spawns, lobby spawns, loot spawns, cars, helicopters, zone ce
 }
 ```
 
-`weaponsc` = items to spawn for BETTERWEAPONS, WEAPONS, ADDITIONALWEAPONS, ITEMS, AMMO.
+`weaponsc` = items to spawn for BETTERWEAPONS, WEAPONS, ADDITIONALWEAPONS, ITEMS, AMMO, ATTACHMENTS
+(attachment kits). Without the 6th number a map gets one kit every 3 weapons.
 
 Rules:
 
 - Required: `playerspawns`, `weaponspawns`, `endpositions` and `zone_radius`.
-- `weaponspawns` should contain at least as many points as the sum of `weaponsc`.
+- `weaponspawns` should contain at least as many points as the sum of the first 5 numbers of `weaponsc`
+  (attachment kits use the free points, then spawn next to other loot).
 - `playerspawns` should have at least as many points as the max player count (extra players reuse points with a small offset).
 - `zone_radius` must cover the playable area from every `endpositions` point (the editor draws it).
 - `zone_delay` (optional) = seconds before the zone starts shrinking on this map; without it the

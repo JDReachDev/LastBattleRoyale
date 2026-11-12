@@ -9,7 +9,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*][b]Inventory[/b] (hold TAB): 5 equipment + 3 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, mouse wheel / number keys switch instantly. [b]Right click[/b]: drop a weapon or [b]unload a full magazine[/b] in an ammo box: anyone with a weapon of the same type (pistol / SMG, rifle, sniper, shotgun) takes it with E and gets one magazine of their own weapon
 [*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen)
-[*][b]Attachments are loot[/b]: find attachment kits around the map, in the C menu the missing ones are red
+[*][b]Attachments are loot[/b]: attachment kits have their own loot category, about one kit every 3 weapons (set per map in the editor). In the C menu the missing ones are red
 [*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 2 minutes before shrinking and always starts outside the map. Inside it your health regenerates up to 20
 [*][b]New HUD and menus[/b]: shield and health bars, compass with zone and teammates, squad panel, TAB menu with stats, F3 classes, F4 squad
 [*][b]Loot is easy to spot[/b]: outline and a small light beam on loot close by and in sight. The screen tells you what E does

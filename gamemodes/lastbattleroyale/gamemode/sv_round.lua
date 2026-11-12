@@ -361,7 +361,7 @@ function SpawnAllVehicles()
 	end
 end
 
-local itemCategories = { "BETTERWEAPONS", "WEAPONS", "ADDITIONALWEAPONS", "ITEMS", "AMMO" }
+local itemCategories = { "BETTERWEAPONS", "WEAPONS", "ADDITIONALWEAPONS", "ITEMS", "AMMO", "ATTACHMENTS" }
 
 function GetItemsToSpawn(...)
 	local counts = { ... }
@@ -380,13 +380,39 @@ end
 // Items are created a few per tick instead of all at once: less freeze on big maps
 local ITEMS_PER_TICK = 6
 
+// a point 30-45 units away from pos with no wall in between (else pos itself)
+function LBR.NextToLoot( pos )
+	local up = Vector( 0, 0, 16 )
+	for _ = 1, 6 do
+		local a = math.random() * math.pi * 2
+		local d = math.Rand( 30, 45 )
+		local p = pos + Vector( math.cos( a ) * d, math.sin( a ) * d, 0 )
+		local tr = util.TraceLine( { start = pos + up, endpos = p + up, mask = MASK_SOLID } )
+		if not tr.Hit then return p end
+	end
+	return pos
+end
+
 function NewSpawnAllItems()
 	timer.Remove( "LBR_SpawnItems" )
 	local wc = MapCfg().weaponsc or {}
 	local items = LBR.ShuffledCopy( GetItemsToSpawn( wc[1], wc[2], wc[3], wc[4], wc[5] ) )
 	local spawns = LBR.ShuffledCopy( CatList( "weaponspawns" ) )
 	local total = math.min( #items, #spawns )
-	if total == 0 then return end
+	if #spawns == 0 then return end
+	// attachment kits: on the loot positions still free, then next to other loot
+	local kits = GetItemsToSpawn( 0, 0, 0, 0, 0, wc[6] or LBR.DefaultAttachmentKits( wc ) )
+	local used = total
+	for _, kit in ipairs( kits ) do
+		used = used + 1
+		if used <= #spawns then
+			items[used] = kit
+		else
+			items[used] = kit
+			spawns[used] = LBR.NextToLoot( spawns[math.random( total > 0 and total or #spawns )] )
+		end
+	end
+	total = math.max( total, used )
 	local round = GetRoundNum()
 	local index = 0
 	timer.Create( "LBR_SpawnItems", 0, 0, function()

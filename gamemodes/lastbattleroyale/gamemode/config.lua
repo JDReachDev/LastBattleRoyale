@@ -106,10 +106,15 @@ ITEMS = {
 		"sg_medkit_fix",
 		"kevlar_armor",
 		"kevlar_armor",
-		"suit_ghillie",
+		"suit_ghillie"
+	},
+	// attachment kits (6th loot number): small = 1 attachment, medium = 2, big = 4
+	ATTACHMENTS = {
+		"cw_attpack_random_small",
 		"cw_attpack_random_medium",
 		"cw_attpack_random_medium",
-		"cw_attpack_random_medium"
+		"cw_attpack_random_medium",
+		"cw_attpack_random_big"
 	},
 	AMMO = {
 		"cw_ammo_kit_small",

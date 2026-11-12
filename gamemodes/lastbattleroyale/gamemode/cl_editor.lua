@@ -440,7 +440,7 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	local cat = curCat()
 	y = line( cat.desc, "LBR_UI_Small", x, y, cat.color )
 	y = line( "Mode [R]: " .. ( isEyeMode() and "at your position" or "where you aim" ) .. "   Zone radius: " .. ( ED.cfg.zone_radius or 0 ), "LBR_UI_Small", x, y, C.text )
-	y = line( "Loot to spawn: " .. LBR.CountWeapons( ED.cfg ) .. "   Lootable spots: " .. #LBR.GetCategoryList( ED.cfg, cats[3] ), "LBR_UI_Small", x, y, C.text )
+	y = line( "Loot to spawn: " .. LBR.CountWeapons( ED.cfg ) .. " + " .. ( ED.cfg.weaponsc[6] or 0 ) .. " att. kits   Lootable spots: " .. #LBR.GetCategoryList( ED.cfg, cats[3] ), "LBR_UI_Small", x, y, C.text )
 	y = y + S( 6 )
 	for _, e in ipairs( ED.errors or {} ) do y = line( "X  " .. e, "LBR_UI_Small", x, y, colErr ) end
 	for _, wn in ipairs( ED.warnings or {} ) do y = line( "!  " .. wn, "LBR_UI_Small", x, y, colWarn ) end

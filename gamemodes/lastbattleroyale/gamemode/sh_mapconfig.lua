@@ -23,7 +23,13 @@ LBR.MapCategories = {
 	{ key = "supplydrops",          name = "Supply drops",    desc = "Airdrops, place them high in the sky", parent = "events", color = Color( 240, 240, 240 ), offset = 0, hull = "small", eye = true },
 }
 
-LBR.WeaponCountNames = { "Better weapons", "Weapons", "Additional weapons", "Items", "Ammo" }
+LBR.WeaponCountNames = { "Better weapons", "Weapons", "Additional weapons", "Items", "Ammo", "Attachment kits" }
+
+// attachment kits of a map that does not set them (configs made before the 6th
+// number): one kit every 3 weapons
+function LBR.DefaultAttachmentKits( wc )
+	return math.Round( ( ( wc[1] or 0 ) + ( wc[2] or 0 ) + ( wc[3] or 0 ) ) / 3 )
+end
 
 LBR.DefaultPlayerModels = {
 	"models/player/group03/female_01.mdl",
@@ -75,7 +81,7 @@ end
 function LBR.NewMapConfig()
 	local cfg = {
 		zone_radius = 20000,
-		weaponsc = { 10, 10, 10, 10, 10 },
+		weaponsc = { 10, 10, 10, 10, 10, 10 },
 		playermodels = table.Copy( LBR.DefaultPlayerModels )
 	}
 	for _, cat in ipairs( LBR.MapCategories ) do
@@ -137,6 +143,7 @@ function LBR.SanitizeMapConfig( raw )
 	for i = 1, #LBR.WeaponCountNames do
 		cfg.weaponsc[i] = math.Clamp( math.floor( tonumber( wc[i] ) or 0 ), 0, 1000 )
 	end
+	if tonumber( wc[6] ) == nil then cfg.weaponsc[6] = LBR.DefaultAttachmentKits( cfg.weaponsc ) end
 
 	cfg.playermodels = {}
 	if istable( raw.playermodels ) then
@@ -185,9 +192,11 @@ function LBR.MapConfigFromJSON( str )
 	return cfg, isstring( raw.map ) and raw.map or nil
 end
 
+// items that need a loot position of their own: the attachment kits (6th number)
+// do not, when the positions are all taken they spawn next to other loot
 function LBR.CountWeapons( cfg )
 	local n = 0
-	for _, v in ipairs( cfg.weaponsc or {} ) do n = n + v end
+	for i = 1, 5 do n = n + ( ( cfg.weaponsc or {} )[i] or 0 ) end
 	return n
 end
 

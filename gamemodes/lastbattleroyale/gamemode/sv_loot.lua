@@ -18,6 +18,7 @@ function LBR.ApplyLoot( groups )
 	ITEMS.ADDITIONALWEAPONS = LBR.LootExpand( groups.ADDITIONALWEAPONS )
 	ITEMS.ITEMS             = LBR.LootExpand( groups.ITEMS )
 	ITEMS.AMMO              = LBR.LootExpand( groups.AMMO )
+	ITEMS.ATTACHMENTS       = LBR.LootExpand( groups.ATTACHMENTS )
 	VEHICLES                = LBR.LootExpand( groups.CARS )
 	FLYING_VEHICLES = FLYING_VEHICLES or {}
 	FLYING_VEHICLES.RARE     = LBR.LootExpand( groups.HELI_RARE )

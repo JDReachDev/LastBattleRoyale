@@ -26,8 +26,9 @@ LBR.LootGroups = {
 	{ id = "BETTERWEAPONS",     name = "Rare weapons",       desc = "Rifles, snipers, machine guns (amount per map: 1st loot number)" },
 	{ id = "WEAPONS",           name = "Weapons",            desc = "SMGs, shotguns, revolvers (2nd loot number)" },
 	{ id = "ADDITIONALWEAPONS", name = "Pistols & grenades", desc = "Pistols, grenades, molotov (3rd loot number)" },
-	{ id = "ITEMS",             name = "Items",              desc = "Medkits, adrenaline, armor, ghillie, attachments (4th loot number)" },
+	{ id = "ITEMS",             name = "Items",              desc = "Medkits, adrenaline, armor, ghillie (4th loot number)" },
 	{ id = "AMMO",              name = "Ammo",               desc = "Ammo kits (5th loot number)" },
+	{ id = "ATTACHMENTS",       name = "Attachments",        desc = "CW 2.0 attachment kits (6th loot number)" },
 	{ id = "CARS",              name = "Cars",               desc = "One random car on every car point", vehicle = true },
 	{ id = "HELI_RARE",         name = "Helicopters (50%)",  desc = "Half of the helicopter points pick from this list", vehicle = true },
 	{ id = "HELI_VERYRARE",     name = "Helicopters (50%) armed", desc = "The other half picks from this list", vehicle = true },
@@ -75,6 +76,7 @@ function LBR.LootFromTables( items, vehicles, flying )
 		ADDITIONALWEAPONS = fromList( items.ADDITIONALWEAPONS ),
 		ITEMS             = fromList( items.ITEMS ),
 		AMMO              = fromList( items.AMMO ),
+		ATTACHMENTS       = fromList( items.ATTACHMENTS ),
 		CARS              = fromList( vehicles ),
 		HELI_RARE         = fromList( flying.RARE ),
 		HELI_VERYRARE     = fromList( flying.VERYRARE ),
@@ -129,6 +131,10 @@ function LBR.LootFromJSON( json )
 					}
 				end
 			end
+		end
+		// a group the file does not have yet (saved by an older version): the defaults
+		if not istable( src ) and LBR.LootDefaults and LBR.LootDefaults[g.id] then
+			list = table.Copy( LBR.LootDefaults[g.id] )
 		end
 		groups[g.id] = list
 	end
