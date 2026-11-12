@@ -223,6 +223,48 @@ local function label( str, font, x, y, col, ax, ay )
 	draw.SimpleTextOutlined( str, font, x, y, col, ax or TEXT_ALIGN_CENTER, ay or TEXT_ALIGN_TOP, 1, colShadow )
 end
 
+// Everything in the rectangle except the zone circle: the circle is written into the
+// stencil buffer first (no color), then the tint and stripes are drawn where it is not.
+local function drawStorm( x, y, w, h, zx, zy, zr, zc )
+	render.ClearStencil()
+	render.SetStencilEnable( true )
+	render.SetStencilWriteMask( 255 )
+	render.SetStencilTestMask( 255 )
+	render.SetStencilReferenceValue( 1 )
+	render.SetStencilFailOperation( STENCIL_KEEP )
+	render.SetStencilZFailOperation( STENCIL_KEEP )
+
+	if zr > 1 then
+		render.SetStencilCompareFunction( STENCIL_ALWAYS )
+		render.SetStencilPassOperation( STENCIL_REPLACE )
+		render.OverrideColorWriteEnable( true, false )
+		circle( zx, zy, zr, color_white, math.Clamp( math.floor( zr / 4 ), 48, 256 ) )
+		render.OverrideColorWriteEnable( false )
+	end
+
+	render.SetStencilCompareFunction( STENCIL_NOTEQUAL )
+	render.SetStencilPassOperation( STENCIL_KEEP )
+
+	surface.SetDrawColor( 0, 0, 0, 90 )
+	surface.DrawRect( x, y, w, h )
+	surface.SetDrawColor( zc.r, zc.g, zc.b, 45 )
+	surface.DrawRect( x, y, w, h )
+
+	// diagonal stripes, bottom left to top right
+	local gap, thick = S( 26 ), S( 9 )
+	surface.SetDrawColor( zc.r, zc.g, zc.b, 110 )
+	for sx = x - h, x + w, gap do
+		polyBoth( {
+			{ x = sx, y = y + h },
+			{ x = sx + h, y = y },
+			{ x = sx + h + thick, y = y },
+			{ x = sx + thick, y = y + h },
+		} )
+	end
+
+	render.SetStencilEnable( false )
+end
+
 local function drawMap()
 	local lp = LocalPlayer()
 	if not IsValid( lp ) then return end
@@ -273,6 +315,14 @@ local function drawMap()
 	surface.DrawTexturedRect( ix, my, imgW, mh )
 
 	render.SetScissorRect( ix, my, ix + imgW, my + mh, true )
+
+	// outside the safe zone: darker, tinted with the zone color, diagonal stripes
+	if LBR.IsZoneActive() then
+		local zp = LBR.GetZonePos()
+		local zx, zy = toMap( zp.x, zp.y )
+		drawStorm( ix, my, imgW, mh, zx, zy, LBR.GetZoneRadius() * scale,
+			LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 ) )
+	end
 
 	// grid: square cells, GRID of them on the long side
 	local cols = math.Clamp( math.Round( GRID * spanX / math.max( spanX, spanY ) ), 1, GRID )
