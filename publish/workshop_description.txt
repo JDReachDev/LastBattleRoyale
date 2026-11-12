@@ -1,6 +1,5 @@
 [h1]Last Battle Royale 2.0[/h1]
 A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attachments and armor, team up with your squad and survive the shrinking zone until only one is left.
-Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [b]Support the project:[/b] [url=https://ko-fi.com/jdreach]Ko-fi[/url]
 [b]Source code (open source):[/b] [url=https://github.com/JDReachDev/LastBattleRoyale]github.com/JDReachDev/LastBattleRoyale[/url]
