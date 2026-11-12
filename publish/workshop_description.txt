@@ -9,6 +9,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*][b]Inventory[/b]: 5 equipment slots + 3 backpack slots, up to 8 items. Hold TAB to see it with weapon icons and ammo, drag to move, right click to drop. Mouse wheel and 1-5 switch instantly, melee always last (6)
 [*][b]New TAB menu[/b]: scoreboard, inventory, your stats (class, level, EXP, kills) and buttons for classes, squad and map
+[*][b]Map[/b] (M or the TAB button): the map seen from above with a battleship grid (A-H / 1-8), you, your squad and the safe zone
 [*][b]Attachments are loot[/b]: you start with none and find attachment kits around the map. In the C menu the ones you don't have are red
 [*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall, brightest at eye height and fading up and down, with a storm effect (fog, grey colors) when you are outside
 [*][b]New HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel. One clean style for HUD, menus and messages
@@ -53,6 +54,7 @@ Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows 
 [h2]Keys[/h2]
 [list]
 [*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop), stats
+[*][b]M[/b] - map: you, your squad, the safe zone and the A-H / 1-8 grid
 [*][b]Mouse wheel / 1-5[/b] - switch between the equipment slots (6: melee)
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops
 [*][b]Q[/b] - drop your active weapon
