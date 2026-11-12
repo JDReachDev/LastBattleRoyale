@@ -210,6 +210,8 @@ function Map.Toggle( state )
 	if state == Map.open then return end
 	Map.open = state
 	Map.edMode = state and LBR.Editor and LBR.Editor.active or false
+	// the map opens on the category chosen in the editor (unless it shows all of them)
+	if Map.edMode and ( Map.edFilter or 0 ) > 0 then Map.edFilter = LBR.Editor.cat or Map.edFilter end
 	gui.EnableScreenClicker( state )
 	editorCapture( state and Map.edMode )
 end
@@ -218,6 +220,9 @@ end
 function Map.EdFilter( f )
 	local n = #LBR.MapCategories + 1
 	Map.edFilter = ( ( math.floor( f ) % n ) + n ) % n
+	// same category in the editor and on the map (0 = all categories keeps the editor one)
+	local ED = LBR.Editor
+	if ED and ED.active and Map.edFilter > 0 then ED.cat = Map.edFilter end
 	surface.PlaySound( "buttons/lightswitch2.wav" )
 end
 

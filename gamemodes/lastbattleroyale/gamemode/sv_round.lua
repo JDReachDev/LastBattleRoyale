@@ -350,6 +350,33 @@ function HurtPlayers()
 end
 timer.Create("HurtAllPlayers", 0.36, 0, HurtPlayers)
 
+// some cars (the SCars junkers) have the model origin in the middle, not at the
+// bottom: spawned at the point they sank into the ground. Once the car and its wheels
+// exist, the lowest point of all its parts is moved above the ground.
+local function LiftAboveGround( car, spawn )
+	if not IsValid( car ) then return end
+	local ground = LBR.FindGround( spawn, MASK_SOLID_BRUSHONLY )
+	if not ground then return end
+	local parts = constraint.GetAllConstrainedEntities( car ) or {}
+	parts[car] = car
+	local bottom = math.huge
+	for _, e in pairs( parts ) do
+		if IsValid( e ) then
+			local mins = e:WorldSpaceAABB()
+			bottom = math.min( bottom, mins.z )
+		end
+	end
+	if bottom == math.huge or bottom >= ground.z - 2 then return end
+	local lift = Vector( 0, 0, ground.z + 6 - bottom )
+	for _, e in pairs( parts ) do
+		if IsValid( e ) then
+			e:SetPos( e:GetPos() + lift )
+			local phys = e:GetPhysicsObject()
+			if IsValid( phys ) then phys:Wake() end
+		end
+	end
+end
+
 function SpawnAllVehicles()
 	if #VEHICLES == 0 then return end
 	for _, spawn in ipairs( CatList( "vehiclepositions" ) ) do
@@ -357,6 +384,8 @@ function SpawnAllVehicles()
 		if IsValid( car ) then
 			car:SetPos( LBR.VehicleSpawnPos( spawn, 30 ) )
 			car:Spawn()
+			// the wheels are made right after the spawn
+			timer.Simple( 0.2, function() LiftAboveGround( car, spawn ) end )
 		end
 	end
 end
