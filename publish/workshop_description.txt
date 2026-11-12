@@ -14,7 +14,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]New HUD and menus[/b]: shield and health bars, compass with zone and teammates, squad panel, TAB menu with stats, F3 classes, F4 squad
 [*][b]Loot is easy to spot[/b]: outline and a small light beam on loot close by and in sight. The screen tells you what E does
 [*][b]Supply drops[/b] land only inside the safe zone
-[*][b]Map vote[/b] at the end of the match, admins change map with F2
+[*][b]Map vote[/b] at the end of the match, admins change level with F2
 [*][b]In-game map editor and loot editor[/b] (F8): set up any map and choose what spawns, no code needed
 [*][b]Much better performance on big maps[/b], safe spawns, settings renamed from lst_* to lbr_* (old names still work), many bug fixes
 [/list]
@@ -23,7 +23,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*]Random loot every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*]Vehicles: cars (SCars) and helicopters (WAC)
-[*]Events: supply airdrops, optional nuclear strike and implosion (built in, no extra addons)
+[*]Events: supply airdrops, optional nuclear strike (20 s warning, red area on the map) and implosion when the zone closes (built in, no extra addons)
 [*]Squads of up to 4 players
 [*]Classes with their own loadout, unlocked by levelling up
 [/list]
@@ -48,7 +48,7 @@ Kills and wins give EXP to your class: level up to unlock new classes. Dead play
 [*][b]C[/b] - CW 2.0 attachments: press the category number to mount the ones you found
 [*][b]E (hold) + Left Click[/b] - throw grenades
 [*][b]F3[/b] class menu / [b]F4[/b] squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite)
-[*][b]F2[/b] / [b]F8[/b] / [b]!start[/b] - [i]admins:[/i] change map / map editor / start now (even alone)
+[*][b]F2[/b] / [b]F8[/b] / [b]!start[/b] - [i]admins:[/i] change level / map editor / start now (even alone)
 [/list]
 
 [h2]How to start a server[/h2]
