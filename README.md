@@ -20,6 +20,7 @@ add maps/weapons and run it on their own server.
 - Random supply airdrops, optional nuclear strike event and optional implosion bomb at the end
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
+- **Map** (`M`): the whole map seen from above on any map, with a battleship grid, your squad and the safe zone
 - **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers; configs are plain `.txt` files you can share
 - **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons, items and vehicles spawn and how often, pick them from the installed addons; saved in `data/lastbattleroyale/loot.txt`
 - **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
@@ -33,7 +34,7 @@ add maps/weapons and run it on their own server.
 | Key | Action |
 |---|---|
 | `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
-| `M` | **Map** seen from above with a battleship grid (A–H / 1–8): you, your squad and the safe zone. Also from the *MAP* button in `TAB` |
+| `M` | **Map**: the whole map seen from above, up to its borders (found automatically on any map), with a battleship grid (A–H / 1–8), you, your squad (even far away) and the safe zone; outside the zone it is darker and striped in the zone color. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
@@ -186,6 +187,7 @@ gamemodes/lastbattleroyale/
         cl_scoreboard.lua        TAB: scoreboard, inventory, stats
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
+        cl_map.lua / sv_map.lua  M map: top-down view rendered once, map borders scan, squad positions
         cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-5 equipment, 6 hands)
         sh_inventory.lua / sv_inventory.lua  inventory: 5 equipment + 3 backpack slots, pickup limit, swap and drop
         sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
