@@ -405,8 +405,16 @@ local function drawMap()
 	label( "Safe zone", "LBR_UI_Tiny", mx + S( 160 ), ly, C.text, TEXT_ALIGN_LEFT )
 end
 
-hook.Add( "HUDPaint", "LBR_Map", function()
+// drawn after everything else (HUD, weapon crosshairs, weapon selection, chat), so
+// the map is on top of the whole HUD; not over the pause menu or the console
+hook.Add( "DrawOverlay", "LBR_Map", function()
 	if not Map.open then return end
 	if LBR.Editor and LBR.Editor.active then return end
+	if gui.IsGameUIVisible() or gui.IsConsoleVisible() then return end
 	drawMap()
+end )
+
+// no crosshair while the map is open
+hook.Add( "HUDShouldDraw", "LBR_MapCrosshair", function( name )
+	if Map.open and name == "CHudCrosshair" then return false end
 end )
