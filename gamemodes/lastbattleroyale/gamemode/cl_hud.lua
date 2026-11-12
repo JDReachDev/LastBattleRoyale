@@ -247,6 +247,12 @@ local function drawCompass( lp )
 			marker( mate:GetPos(), colGold, S( 6 ) )
 		end
 	end
+	// squad markers placed on the map (cl_map.lua)
+	if LBR.Map and LBR.Map.GetPings then
+		for _, pg in ipairs( LBR.Map.GetPings() ) do
+			marker( pg.pos, pg.col, S( 7 ), units2m( eye:Distance( pg.pos ) ) .. "m" )
+		end
+	end
 	render.SetScissorRect( 0, 0, 0, 0, false )
 
 	// center notch + heading

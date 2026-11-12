@@ -1,5 +1,7 @@
 // Map (M, or the MAP button in the TAB menu): the map seen from above with you,
-// your squad and the safe zone.
+// your squad, the safe zone, supply drops, the nuke target, where teammates fell and
+// the squad markers (left click on the map sets yours, right click removes it; they
+// also show on the compass and on screen).
 //
 // The picture is rendered only once (the first time the map is opened, and again
 // only if the map area changes) into a texture: an orthographic camera above the
@@ -24,6 +26,16 @@ local colMe = Color( 255, 255, 255 )
 local colMate = Color( 255, 210, 70 )
 local colShadow = Color( 0, 0, 0, 220 )
 local colGrid = Color( 255, 255, 255, 28 )
+local colPing = Color( 90, 200, 255 )
+local colDrop = Color( 255, 150, 40 )
+local colNuke = Color( 255, 60, 50 )
+local colDead = Color( 175, 180, 190 )
+
+local function units2m( u ) return math.Round( u * 0.01905 ) end
+local function fmtTime( t )
+	t = math.max( math.ceil( t ), 0 )
+	return string.format( "%d:%02d", math.floor( t / 60 ), t % 60 )
+end
 
 local rt, rtMat
 local builtSig // map area the texture was rendered for
@@ -114,9 +126,12 @@ concommand.Add( "lbr_map_rebuild", function() builtSig = nil end )
 // Open / close
 ------------------------------------------------------------------------
 
+// the mouse cursor is on while the map is open (to place the squad marker)
 function Map.Toggle( state )
 	if state == nil then state = not Map.open end
+	if state == Map.open then return end
 	Map.open = state
+	gui.EnableScreenClicker( state )
 end
 
 concommand.Add( "lbr_map", function() Map.Toggle() end )
@@ -133,6 +148,14 @@ hook.Add( "Think", "LBR_MapKey", function()
 		Map.Toggle()
 	end
 	keyWasDown = down
+
+	if Map.open then
+		if LBR.Editor and LBR.Editor.active then
+			Map.Toggle( false )
+		elseif not vgui.CursorVisible() and not gui.IsGameUIVisible() then
+			gui.EnableScreenClicker( true ) // the TAB menu turned it off when it closed
+		end
+	end
 end )
 
 ------------------------------------------------------------------------
@@ -149,6 +172,90 @@ net.Receive( "LBR_MatePos", function()
 		local x, y = net.ReadFloat(), net.ReadFloat()
 		local yaw = net.ReadInt( 10 )
 		matePos[sid] = { x = x, y = y, yaw = yaw, t = now }
+	end
+end )
+
+// supply drops still to open, squad markers, where teammates fell
+local drops = {}       // { { x, y }, ... }
+Map.pings = {}         // steamid64 -> Vector
+local deaths = {}      // steamid64 -> { x, y }
+
+net.Receive( "LBR_MapDrops", function()
+	drops = {}
+	for i = 1, net.ReadUInt( 5 ) do
+		drops[i] = { x = net.ReadFloat(), y = net.ReadFloat() }
+	end
+end )
+
+net.Receive( "LBR_MapPing", function()
+	local sid = net.ReadString()
+	if net.ReadBool() then
+		Map.pings[sid] = net.ReadVector()
+		surface.PlaySound( "buttons/blip1.wav" )
+	else
+		Map.pings[sid] = nil
+	end
+end )
+
+net.Receive( "LBR_MateDeath", function()
+	local sid = net.ReadString()
+	deaths[sid] = { x = net.ReadFloat(), y = net.ReadFloat() }
+end )
+
+// a new round phase clears markers and fallen teammates
+local lastState
+hook.Add( "Think", "LBR_MapState", function()
+	local st = GetGlobalInt( "state" )
+	if st ~= lastState then
+		lastState = st
+		Map.pings, deaths = {}, {}
+	end
+end )
+
+local function inSquad( sid )
+	for _, s in ipairs( TEAMERSTAB or {} ) do
+		if s == sid then return true end
+	end
+	return false
+end
+
+// markers to show: yours and your squad's ( { pos, col, nick, mine } )
+function Map.GetPings()
+	local out = {}
+	local lp = LocalPlayer()
+	if not IsValid( lp ) then return out end
+	local mySid = lp:SteamID64()
+	for sid, pos in pairs( Map.pings ) do
+		local mine = sid == mySid
+		if mine or inSquad( sid ) then
+			local pl = player.GetBySteamID64( sid )
+			out[#out + 1] = { pos = pos, col = mine and colPing or colMate, nick = IsValid( pl ) and pl:Nick() or "", mine = mine }
+		end
+	end
+	return out
+end
+
+local function sendPing( x, y )
+	net.Start( "LBR_MapPing" )
+		net.WriteBool( x ~= nil )
+		if x then
+			net.WriteFloat( x )
+			net.WriteFloat( y )
+		end
+	net.SendToServer()
+end
+
+// click on the map: left sets your marker, right removes it
+hook.Add( "GUIMousePressed", "LBR_MapPing", function( code )
+	local L = Map.open and Map.layout
+	if not L then return end
+	if code == MOUSE_RIGHT then
+		sendPing()
+	elseif code == MOUSE_LEFT then
+		local cx, cy = gui.MousePos()
+		if cx < L.x or cx > L.x + L.w or cy < L.y or cy > L.y + L.h then return end
+		sendPing( L.mins.x + ( cx - L.x ) / L.w * ( L.maxs.x - L.mins.x ),
+			L.maxs.y - ( cy - L.y ) / L.h * ( L.maxs.y - L.mins.y ) )
 	end
 end )
 
@@ -223,6 +330,59 @@ local function label( str, font, x, y, col, ax, ay )
 	draw.SimpleTextOutlined( str, font, x, y, col, ax or TEXT_ALIGN_CENTER, ay or TEXT_ALIGN_TOP, 1, colShadow )
 end
 
+// thick segment from (x1, y1) to (x2, y2)
+local function segment( x1, y1, x2, y2, thick )
+	local dx, dy = x2 - x1, y2 - y1
+	local len = math.sqrt( dx * dx + dy * dy )
+	if len < 0.5 then return end
+	local px, py = -dy / len * thick / 2, dx / len * thick / 2
+	polyBoth( {
+		{ x = x1 + px, y = y1 + py }, { x = x2 + px, y = y2 + py },
+		{ x = x2 - px, y = y2 - py }, { x = x1 - px, y = y1 - py },
+	} )
+end
+
+local function dashed( x1, y1, x2, y2, col, thick )
+	local dx, dy = x2 - x1, y2 - y1
+	local len = math.sqrt( dx * dx + dy * dy )
+	if len < 1 then return end
+	dx, dy = dx / len, dy / len
+	local dash, gap = S( 9 ), S( 6 )
+	surface.SetDrawColor( col )
+	for d = 0, len, dash + gap do
+		local e = math.min( d + dash, len )
+		segment( x1 + dx * d, y1 + dy * d, x1 + dx * e, y1 + dy * e, thick )
+	end
+end
+
+local function xMark( x, y, size, col, thick )
+	surface.SetDrawColor( col )
+	segment( x - size, y - size, x + size, y + size, thick )
+	segment( x - size, y + size, x + size, y - size, thick )
+end
+
+// supply crate: orange box with a dark border
+local function crate( x, y, size )
+	surface.SetDrawColor( colShadow )
+	surface.DrawRect( x - size - 2, y - size - 2, size * 2 + 4, size * 2 + 4 )
+	surface.SetDrawColor( colDrop )
+	surface.DrawRect( x - size, y - size, size * 2, size * 2 )
+	surface.SetDrawColor( 120, 60, 10, 255 )
+	surface.DrawRect( x - size, y - 1, size * 2, 2 )
+end
+
+// marker pin: the tip is on the point
+local function pin( x, y, size, col )
+	local hy = y - size * 2
+	surface.SetDrawColor( colShadow )
+	polyBoth( { { x = x, y = y + 2 }, { x = x - size - 2, y = hy }, { x = x + size + 2, y = hy } } )
+	circle( x, hy, size + 2, colShadow, 16 )
+	surface.SetDrawColor( col )
+	polyBoth( { { x = x, y = y }, { x = x - size, y = hy }, { x = x + size, y = hy } } )
+	circle( x, hy, size, col, 16 )
+	circle( x, hy, size * 0.4, colShadow, 10 )
+end
+
 // Everything in the rectangle except the zone circle: the circle is written into the
 // stencil buffer first (no color), then the tint and stripes are drawn where it is not.
 local function drawStorm( x, y, w, h, zx, zy, zr, zc )
@@ -289,7 +449,7 @@ local function drawMap()
 	local scale = math.max( aScale, bScale )
 	local mw, mh = math.floor( spanX * scale ), math.floor( spanY * scale )
 	if not mins then mw, mh = math.floor( aH ), math.floor( aH ) end
-	mw = math.max( mw, S( 420 ) ) // room for the title and the legend
+	mw = math.max( mw, S( 720 ) ) // room for the title, the legend and the help
 	local mx = math.floor( ( sw - mw ) / 2 )
 	local my
 	if aScale >= bScale or not mins then
@@ -303,7 +463,13 @@ local function drawMap()
 	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, S( 3 ), C.accent )
 	label( "MAP", "LBR_UI_Head", mx, my - S( 50 ), C.text, TEXT_ALIGN_LEFT )
 	label( string.upper( game.GetMap() ), "LBR_UI_Tiny", mx + mw, my - S( 44 ), C.dim, TEXT_ALIGN_RIGHT )
-	label( "M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
+	label( "LEFT CLICK  marker      RIGHT CLICK  remove      M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
+	Map.layout = nil
+	if LBR.IsZoneActive() then
+		local zc = LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 )
+		local t = LBR.GetZoneRadius() > 0 and ( "ZONE CLOSING  " .. fmtTime( LBR.GetZoneTimeLeft() ) ) or "ZONE CLOSED"
+		label( t, "LBR_UI_Text", mx + mw / 2, my - S( 47 ), Color( zc.r, zc.g, zc.b, 255 ), TEXT_ALIGN_CENTER )
+	end
 
 	if not mins then
 		label( "No map for this map yet: it has no configured points", "LBR_UI_Text", sw / 2, sh / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
@@ -321,6 +487,13 @@ local function drawMap()
 	local ix = mx + math.floor( ( mw - imgW ) / 2 )
 	local function toMap( x, y )
 		return ix + ( x - mins.x ) / spanX * imgW, my + ( maxs.y - y ) / spanY * mh
+	end
+	Map.layout = { x = ix, y = my, w = imgW, h = mh, mins = mins, maxs = maxs }
+
+	// you (or the player you are spectating)
+	local me = lp
+	if lp:GetObserverMode() ~= OBS_MODE_NONE and IsValid( lp:GetObserverTarget() ) and lp:GetObserverTarget():IsPlayer() then
+		me = lp:GetObserverTarget()
 	end
 
 	surface.SetDrawColor( 255, 255, 255 )
@@ -357,6 +530,57 @@ local function drawMap()
 			ring( zx, zy, zr, Color( zc.r, zc.g, zc.b, 255 ), S( 3 ) )
 		end
 		circle( zx, zy, S( 4 ), Color( zc.r, zc.g, zc.b, 255 ), 12 )
+
+		// outside the zone: dashed line to the nearest point of its edge
+		local zr = LBR.GetZoneRadius()
+		if me:Alive() and zr > 0 then
+			local p = me:GetPos()
+			local dx, dy = p.x - zp.x, p.y - zp.y
+			local d = math.sqrt( dx * dx + dy * dy )
+			if d > zr then
+				local ex, ey = toMap( zp.x + dx / d * zr, zp.y + dy / d * zr )
+				local px, py = toMap( p.x, p.y )
+				dashed( px, py, ex, ey, colShadow, S( 4 ) + 2 )
+				dashed( px, py, ex, ey, Color( 255, 255, 255, 230 ), S( 4 ) )
+				circle( ex, ey, S( 5 ), Color( 255, 255, 255, 230 ), 12 )
+			end
+		end
+	end
+
+	local pulse = 0.5 + math.sin( CurTime() * 4 ) * 0.5
+
+	// nuke target
+	if CurTime() < GetGlobalFloat( "LBR_NukeUntil", 0 ) then
+		local np = GetGlobalVector( "LBR_NukePos", vector_origin )
+		local nx, ny = toMap( np.x, np.y )
+		local nr = GetGlobalFloat( "LBR_NukeRadius", 3500 ) * scale
+		circle( nx, ny, nr, Color( colNuke.r, colNuke.g, colNuke.b, 40 + pulse * 50 ), 48 )
+		ring( nx, ny, nr, colNuke, 2 )
+		xMark( nx, ny, S( 7 ), colNuke, S( 3 ) )
+		label( "NUKE", "LBR_UI_Tiny", nx, ny + S( 10 ), colNuke )
+	end
+
+	// supply drops
+	for _, d in ipairs( drops ) do
+		local px, py = toMap( d.x, d.y )
+		circle( px, py, S( 10 ) + pulse * S( 8 ), Color( colDrop.r, colDrop.g, colDrop.b, 70 * ( 1 - pulse ) ), 20 )
+		crate( px, py, S( 6 ) )
+	end
+
+	// where teammates fell
+	for sid, d in pairs( deaths ) do
+		if inSquad( sid ) and not mateInfo( sid, lp ) then
+			local px, py = toMap( d.x, d.y )
+			xMark( px, py, S( 6 ), colShadow, S( 4 ) + 2 )
+			xMark( px, py, S( 6 ), colDead, S( 4 ) )
+		end
+	end
+
+	// squad markers
+	for _, pg in ipairs( Map.GetPings() ) do
+		local px, py = toMap( pg.pos.x, pg.pos.y )
+		pin( px, py, S( 8 ), pg.col )
+		if not pg.mine then label( string.sub( pg.nick, 1, 16 ), "LBR_UI_Tiny", px, py + S( 3 ), pg.col ) end
 	end
 
 	// squad
@@ -370,15 +594,10 @@ local function drawMap()
 		end
 	end
 
-	// you (or the player you are spectating)
-	local me = lp
-	if lp:GetObserverMode() ~= OBS_MODE_NONE and IsValid( lp:GetObserverTarget() ) and lp:GetObserverTarget():IsPlayer() then
-		me = lp:GetObserverTarget()
-	end
+	// you
 	if me:Alive() then
 		local p = me:GetPos()
 		local px, py = toMap( p.x, p.y )
-		local pulse = 0.5 + math.sin( CurTime() * 4 ) * 0.5
 		circle( px, py, S( 14 ) + pulse * S( 6 ), Color( 255, 255, 255, 40 * ( 1 - pulse ) + 15 ), 24 )
 		arrow( px, py, me:EyeAngles().y, S( 13 ) + 2, colShadow )
 		arrow( px, py, me:EyeAngles().y, S( 13 ), colMe )
@@ -403,6 +622,10 @@ local function drawMap()
 	local zc = LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 )
 	ring( mx + S( 148 ), ly + S( 7 ), S( 6 ), Color( zc.r, zc.g, zc.b, 255 ), 2 )
 	label( "Safe zone", "LBR_UI_Tiny", mx + S( 160 ), ly, C.text, TEXT_ALIGN_LEFT )
+	crate( mx + S( 238 ), ly + S( 7 ), S( 5 ) )
+	label( "Supply", "LBR_UI_Tiny", mx + S( 250 ), ly, C.text, TEXT_ALIGN_LEFT )
+	pin( mx + S( 307 ), ly + S( 13 ), S( 5 ), colPing )
+	label( "Marker", "LBR_UI_Tiny", mx + S( 318 ), ly, C.text, TEXT_ALIGN_LEFT )
 end
 
 // drawn after everything else (HUD, weapon crosshairs, weapon selection, chat), so
@@ -412,6 +635,21 @@ hook.Add( "DrawOverlay", "LBR_Map", function()
 	if LBR.Editor and LBR.Editor.active then return end
 	if gui.IsGameUIVisible() or gui.IsConsoleVisible() then return end
 	drawMap()
+end )
+
+// squad markers on screen (when the map is closed): pin and distance
+hook.Add( "HUDPaint", "LBR_MapPings", function()
+	if Map.open then return end
+	local eye = EyePos()
+	for _, pg in ipairs( Map.GetPings() ) do
+		local sp = ( pg.pos + Vector( 0, 0, 60 ) ):ToScreen()
+		if sp.visible then
+			local x = math.Clamp( sp.x, S( 20 ), ScrW() - S( 20 ) )
+			local y = math.Clamp( sp.y, S( 40 ), ScrH() - S( 20 ) )
+			pin( x, y, S( 7 ), pg.col )
+			label( units2m( eye:Distance( pg.pos ) ) .. "m", "LBR_UI_Tiny", x, y + S( 3 ), pg.col )
+		end
+	end
 end )
 
 // no crosshair while the map is open

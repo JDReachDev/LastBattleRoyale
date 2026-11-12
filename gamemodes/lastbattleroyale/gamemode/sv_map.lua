@@ -166,3 +166,95 @@ timer.Create( "LBR_MatePos", 0.25, 0, function()
 		end
 	end
 end )
+
+------------------------------------------------------------------------
+// Map marks: supply drops, nuke target, squad markers (pings), fallen teammates
+------------------------------------------------------------------------
+
+util.AddNetworkString( "LBR_MapDrops" )
+util.AddNetworkString( "LBR_MapPing" )
+util.AddNetworkString( "LBR_MateDeath" )
+
+// supply drops still to open (a far crate is not sent by the engine): sent when the
+// list changes, and every 5 s for players who just joined
+local lastDrops, nextDropsSend = "", 0
+timer.Create( "LBR_MapDrops", 1, 0, function()
+	local list = {}
+	for _, e in ipairs( ents.FindByClass( "ent_supplydrop_fix" ) ) do
+		if not e.LBR_Looted then list[#list + 1] = e:GetPos() end
+		if #list >= 31 then break end
+	end
+	local sig = ""
+	for _, p in ipairs( list ) do sig = sig .. math.floor( p.x / 64 ) .. "," .. math.floor( p.y / 64 ) .. ";" end
+	if sig == lastDrops and CurTime() < nextDropsSend then return end
+	lastDrops, nextDropsSend = sig, CurTime() + 5
+	net.Start( "LBR_MapDrops" )
+		net.WriteUInt( #list, 5 )
+		for _, p in ipairs( list ) do
+			net.WriteFloat( p.x )
+			net.WriteFloat( p.y )
+		end
+	net.Broadcast()
+end )
+
+// nuke target (sv_round.lua RunEvents): shown until a while after the blast
+function LBR.MapMarkNuke( nuke, pos )
+	local r = tonumber( nuke.ExplosionRadius ) or tonumber( nuke.ShockwaveRadius ) or 0
+	if r < 500 then r = 3500 end
+	SetGlobalVector( "LBR_NukePos", pos )
+	SetGlobalFloat( "LBR_NukeRadius", math.min( r, 12000 ) )
+	SetGlobalFloat( "LBR_NukeUntil", CurTime() + 90 )
+	local id = "LBR_NukeMark" .. nuke:EntIndex()
+	timer.Create( id, 1, 0, function()
+		if IsValid( nuke ) then return end
+		timer.Remove( id )
+		SetGlobalFloat( "LBR_NukeUntil", math.min( GetGlobalFloat( "LBR_NukeUntil", 0 ), CurTime() + 15 ) )
+	end )
+end
+
+// players of the squad of ply (ply included)
+local function squadOf( ply )
+	local out = { ply }
+	for _, sid in ipairs( ply.TeamingPlayers or {} ) do
+		local pl = player.GetBySteamID64( sid )
+		if IsValid( pl ) and pl ~= ply then out[#out + 1] = pl end
+	end
+	return out
+end
+
+// squad marker: left click on the map sets it, right click removes it
+net.Receive( "LBR_MapPing", function( len, ply )
+	if ( ply.LBR_PingNext or 0 ) > CurTime() then return end
+	ply.LBR_PingNext = CurTime() + 0.25
+	local set = net.ReadBool()
+	local pos
+	if set then
+		local x, y = net.ReadFloat(), net.ReadFloat()
+		local mins, maxs = GetGlobalVector( "LBR_MapMins" ), GetGlobalVector( "LBR_MapMaxs" )
+		if maxs.x - mins.x < 100 or x ~= x or y ~= y then return end
+		x, y = math.Clamp( x, mins.x, maxs.x ), math.Clamp( y, mins.y, maxs.y )
+		// ground under the marker, for the marker on screen
+		local tr = util.TraceLine( { start = Vector( x, y, maxs.z - 8 ), endpos = Vector( x, y, mins.z - 6000 ), mask = MASK_SOLID_BRUSHONLY } )
+		local z = ( tr.Hit and not tr.StartSolid ) and tr.HitPos.z or ply:GetPos().z
+		pos = Vector( x, y, z )
+	end
+	net.Start( "LBR_MapPing" )
+		net.WriteString( ply:SteamID64() or "" )
+		net.WriteBool( pos ~= nil )
+		if pos then net.WriteVector( pos ) end
+	net.Send( squadOf( ply ) )
+end )
+
+// where a teammate fell
+hook.Add( "PlayerDeath", "LBR_MapMateDeath", function( victim )
+	if not IsValid( victim ) or not victim.TeamingPlayers or #victim.TeamingPlayers == 0 then return end
+	local p = victim:GetPos()
+	local to = squadOf( victim )
+	table.remove( to, 1 )
+	if #to == 0 then return end
+	net.Start( "LBR_MateDeath" )
+		net.WriteString( victim:SteamID64() or "" )
+		net.WriteFloat( p.x )
+		net.WriteFloat( p.y )
+	net.Send( to )
+end )

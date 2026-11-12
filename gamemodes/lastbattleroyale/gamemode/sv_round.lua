@@ -109,9 +109,11 @@ function RunEvents(num)
 		if not IsValid( nuke ) then return end
 		LBR.Chat( nil, "Nuclear airstrike inbound" )
 		LBR.Notify( nil, "Nuclear airstrike inbound!", "bad", 6 )
-		nuke:SetPos( nukes[math.random( #nukes )] )
+		local target = nukes[math.random( #nukes )]
+		nuke:SetPos( target )
 		nuke:Spawn()
 		nuke:Arm()
+		if LBR.MapMarkNuke then LBR.MapMarkNuke( nuke, target ) end
 		// lua_run RunEvents(2)
 	elseif num == 2 then
 		if #drops == 0 then return end
