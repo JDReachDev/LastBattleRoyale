@@ -82,7 +82,13 @@ local groundN = 0
 local function groundZ( i, x, y, radius, eyeZ )
 	local c = ground[i]
 	if c and math.abs( c.r - radius ) < 48 then return c.z end
-	local tr = util.TraceLine( { start = Vector( x, y, eyeZ + 3000 ), endpos = Vector( x, y, eyeZ - 10000 ), mask = MASK_SOLID_BRUSHONLY } )
+	// start under the first ceiling above eye height: starting a fixed 3000 units
+	// up could land in other rooms of the map (city maps) and put the wall on
+	// their floor, high above the street
+	local top = eyeZ + 3000
+	local up = util.TraceLine( { start = Vector( x, y, eyeZ + 40 ), endpos = Vector( x, y, top ), mask = MASK_SOLID_BRUSHONLY } )
+	if up.Hit and not up.StartSolid then top = up.HitPos.z - 8 end
+	local tr = util.TraceLine( { start = Vector( x, y, top ), endpos = Vector( x, y, eyeZ - 10000 ), mask = MASK_SOLID_BRUSHONLY } )
 	if tr.StartSolid then
 		tr = util.TraceLine( { start = Vector( x, y, eyeZ + 100 ), endpos = Vector( x, y, eyeZ - 10000 ), mask = MASK_SOLID_BRUSHONLY } )
 	end
@@ -164,19 +170,24 @@ end
 // glowing line where the wall meets the ground
 local function drawGroundGlow( count, col, alphaMul )
 	local pulse = 0.75 + math.sin( CurTime() * 3 ) * 0.25
-	mesh.Begin( MATERIAL_QUADS, ( count - 1 ) * 2 )
+	mesh.Begin( MATERIAL_QUADS, ( count - 1 ) * 3 )
 	for i = 1, count - 1 do
 		local c1, c2 = cols[i], cols[i + 1]
 		local a1, a2 = 255 * c1.fade * alphaMul * pulse, 255 * c2.fade * alphaMul * pulse
-		// lower half fades in from under the ground, upper half fades out
+		// bright line: fades in from under the ground, then out
 		vert( c1.x, c1.y, c1.z - 60, 0, 0, col, 0 )
 		vert( c1.x, c1.y, c1.z + 10, 0, 0, col, a1 )
 		vert( c2.x, c2.y, c2.z + 10, 0, 0, col, a2 )
 		vert( c2.x, c2.y, c2.z - 60, 0, 0, col, 0 )
 		vert( c1.x, c1.y, c1.z + 10, 0, 0, col, a1 )
-		vert( c1.x, c1.y, c1.z + 140, 0, 0, col, 0 )
-		vert( c2.x, c2.y, c2.z + 140, 0, 0, col, 0 )
+		vert( c1.x, c1.y, c1.z + 200, 0, 0, col, 0 )
+		vert( c2.x, c2.y, c2.z + 200, 0, 0, col, 0 )
 		vert( c2.x, c2.y, c2.z + 10, 0, 0, col, a2 )
+		// soft haze rising from the ground
+		vert( c1.x, c1.y, c1.z, 0, 0, col, a1 * 0.35 )
+		vert( c1.x, c1.y, c1.z + 900, 0, 0, col, 0 )
+		vert( c2.x, c2.y, c2.z + 900, 0, 0, col, 0 )
+		vert( c2.x, c2.y, c2.z, 0, 0, col, a2 * 0.35 )
 	end
 	mesh.End()
 end
@@ -256,6 +267,37 @@ hook.Add( "RenderScreenspaceEffects", "LBR_ZoneStorm", function()
 	cm["$pp_colour_contrast"] = 1 - 0.1 * storm
 	cm["$pp_colour_brightness"] = -0.04 * storm
 	DrawColorModify( cm )
+end )
+
+// zone damage: the default red damage flash mixed with the zone fog looked
+// purple. Outside the zone the flash is drawn on the screen edges in the zone color.
+hook.Add( "HUDShouldDraw", "LBR_ZoneHurt", function( name )
+	if name == "CHudDamageIndicator" and storm > 0.3 then return false end
+end )
+
+local matGradL = Material( "gui/gradient" )
+local matGradU = Material( "gui/gradient_up" )
+local matGradD = Material( "gui/gradient_down" )
+local lastLife, hurtFlash = 0, 0
+hook.Add( "HUDPaint", "LBR_ZoneHurt", function()
+	local lp = LocalPlayer()
+	if not IsValid( lp ) then return end
+	local life = lp:Alive() and ( lp:Health() + lp:Armor() ) or 0
+	if life < lastLife and storm > 0.3 then hurtFlash = 1 end
+	lastLife = life
+	if hurtFlash <= 0 then return end
+	hurtFlash = math.max( hurtFlash - FrameTime() * 2.5, 0 )
+
+	local w, h = ScrW(), ScrH()
+	local size = math.floor( math.min( w, h ) * 0.22 )
+	surface.SetDrawColor( zoneCol.r, zoneCol.g, zoneCol.b, 150 * hurtFlash )
+	surface.SetMaterial( matGradL )
+	surface.DrawTexturedRect( 0, 0, size, h )
+	surface.DrawTexturedRectUV( w - size, 0, size, h, 1, 0, 0, 1 )
+	surface.SetMaterial( matGradD )
+	surface.DrawTexturedRect( 0, 0, w, size )
+	surface.SetMaterial( matGradU )
+	surface.DrawTexturedRect( 0, h - size, w, size )
 end )
 
 ------------------------------------------------------------------------

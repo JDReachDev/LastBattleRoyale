@@ -23,6 +23,7 @@ local colWarn = Color( 255, 80, 70 )
 local showUntil = 0
 local pending // weapon we asked to switch to (highlighted before the switch finishes)
 local pendingUntil = 0
+local nextRetry = 0
 
 local function weaponList( ply )
 	local list = {}
@@ -47,20 +48,24 @@ local function canSelect( ply )
 	return true
 end
 
+local function requestSwitch( wep )
+	input.SelectWeapon( wep )
+	// CW 2.0 keeps switching to the weapon chosen when the holster animation
+	// started: point it to the new choice (here and on the server)
+	local act = LocalPlayer():GetActiveWeapon()
+	if IsValid( act ) and act.CW20Weapon and IsValid( act.SwitchWep ) and act.SwitchWep ~= wep then
+		act.SwitchWep = wep
+		RunConsoleCommand( "lbr_switchweapon", tostring( wep:EntIndex() ) )
+	end
+end
+
 local function selectWeapon( wep )
 	if not IsValid( wep ) then return end
 	pending = wep
-	pendingUntil = CurTime() + 2
+	pendingUntil = CurTime() + 3
 	showUntil = CurTime() + SHOW_TIME
 	if wep ~= LocalPlayer():GetActiveWeapon() then
-		input.SelectWeapon( wep )
-		// CW 2.0 keeps switching to the weapon chosen when the holster animation
-		// started: point it to the new choice (here and on the server)
-		local act = LocalPlayer():GetActiveWeapon()
-		if IsValid( act ) and act.CW20Weapon and IsValid( act.SwitchWep ) then
-			act.SwitchWep = wep
-			RunConsoleCommand( "lbr_switchweapon", tostring( wep:EntIndex() ) )
-		end
+		requestSwitch( wep )
 		LocalPlayer():EmitSound( "common/wpn_moveselect.wav", 0, 100, 0.25, CHAN_STATIC )
 	end
 end
@@ -141,6 +146,12 @@ hook.Add( "Think", "LBR_WeaponSelectWatch", function()
 	end
 	if IsValid( pending ) and pending == lp:GetActiveWeapon() then pending = nil end
 	if pending and CurTime() > pendingUntil then pending = nil end // switch refused (reload...)
+	// a switch asked while the weapon is still being drawn (or holstered) is
+	// refused by CW 2.0: ask again until it happens
+	if IsValid( pending ) and pending ~= lp:GetActiveWeapon() and pending:GetOwner() == lp and CurTime() > nextRetry then
+		nextRetry = CurTime() + 0.1
+		requestSwitch( pending )
+	end
 end )
 
 local function shortName( wep )

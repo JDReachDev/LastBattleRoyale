@@ -1,8 +1,8 @@
 // CW 2.0 customization menu (C) with attachments as loot.
 // CW 2.0 draws every attachment of the weapon the same way, owned or not, so it
-// looks like you have them all. Here the menu shows only the attachments you
-// own (plus the ones already mounted), and a small panel says how many you have
-// for that weapon and how to mount them.
+// looks like you have them all. Here (without touching CW 2.0) the ones you do
+// not own are drawn grey, and a small panel says how many you have for that
+// weapon and how to mount them.
 
 LBR = LBR or {}
 
@@ -28,19 +28,27 @@ local function patchMenu()
 	if tab.LBR_Patched then return true end
 	tab.LBR_Patched = true
 
+	// the icons of attachments you do not own are drawn grey and see-through
+	// (CW 2.0 sets the color, then the icon texture, then draws it)
 	local orig = tab.drawFunc
+	local setTexture = surface.SetTexture
 	tab.drawFunc = function( wep, ... )
 		if not filterOn() then return orig( wep, ... ) end
 		local ply = LocalPlayer()
-		local tbl = wep:GetTable()
-		local prev = rawget( tbl, "isAttachmentEligible" )
-		local base = wep.isAttachmentEligible
-		tbl.isAttachmentEligible = function( w, name, active )
-			if not owns( ply, name, w ) then return false end
-			return base( w, name, active )
+		local dim = {}
+		for _, cat in pairs( wep.Attachments or {} ) do
+			for _, name in pairs( cat.atts or {} ) do
+				local att = cw.registeredAttachmentsSKey[name]
+				if att and att.displayIcon and not owns( ply, name, wep ) then dim[att.displayIcon] = true end
+			end
+		end
+		local alpha = wep.CustomizeMenuAlpha or 1
+		surface.SetTexture = function( id )
+			setTexture( id )
+			if dim[id] then surface.SetDrawColor( 70, 70, 70, 110 * alpha ) end
 		end
 		local ok, err = pcall( orig, wep, ... )
-		tbl.isAttachmentEligible = prev
+		surface.SetTexture = setTexture
 		if not ok then ErrorNoHalt( "[LBR] CW menu: " .. tostring( err ) .. "\n" ) end
 	end
 	return true
