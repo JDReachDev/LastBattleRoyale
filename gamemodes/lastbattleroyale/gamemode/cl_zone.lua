@@ -38,12 +38,20 @@ LBR.GetZoneColor = updateZoneColor
 // Triangle pattern: big triangles (4 per texture repeat) with thick white lines on
 // black, drawn additive so only the lines glow in the zone color. Dense patterns
 // blur into a flat color through the mipmaps: keep the cells big.
-local patternTex = Material( "lastbattleroyale/zone_pattern.png", "noclamp smooth mips" ):GetTexture( "$basetexture" )
-local matWall = CreateMaterial( "LBR_ZoneWall2", "UnlitGeneric", {
-	["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
-	["$additive"] = 1, ["$nocull"] = 1,
-} )
-if patternTex and not patternTex:IsError() then matWall:SetTexture( "$basetexture", patternTex ) end
+// The PNG material is used directly: copying its texture into a CreateMaterial one
+// (SetTexture) left the white placeholder, so the wall was a flat bright color.
+// Vertex color + vertex alpha + additive + no cull are set through $flags.
+local matWall = Material( "lastbattleroyale/zone_pattern.png", "noclamp smooth mips" )
+if matWall:IsError() then
+	matWall = CreateMaterial( "LBR_ZoneWall3", "UnlitGeneric", {
+		["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
+		["$additive"] = 1, ["$nocull"] = 1,
+	} )
+else
+	// 16 vertexcolor, 32 vertexalpha, 128 additive, 8192 nocull
+	matWall:SetInt( "$flags", bit.bor( matWall:GetInt( "$flags" ) or 0, 16, 32, 128, 8192 ) )
+	matWall:Recompute()
+end
 local matFill = CreateMaterial( "LBR_ZoneFill", "UnlitGeneric", {
 	["$basetexture"] = "color/white", ["$vertexcolor"] = 1, ["$vertexalpha"] = 1,
 	["$translucent"] = 1, ["$nocull"] = 1,

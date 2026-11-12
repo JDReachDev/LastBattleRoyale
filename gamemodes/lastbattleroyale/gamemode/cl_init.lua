@@ -12,6 +12,7 @@ include( "cl_menus.lua" )
 include( "cl_prompt.lua" )
 include( "cl_loot.lua" )
 include( "cl_weaponselect.lua" )
+include( "cl_attachments.lua" )
 include( "cl_mapvote.lua" )
 
 TEAM_PLAYER = 1

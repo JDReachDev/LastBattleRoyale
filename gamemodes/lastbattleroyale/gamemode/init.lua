@@ -18,6 +18,7 @@ AddCSLuaFile( "cl_perf.lua" )
 AddCSLuaFile( "cl_prompt.lua" )
 AddCSLuaFile( "cl_loot.lua" )
 AddCSLuaFile( "cl_weaponselect.lua" )
+AddCSLuaFile( "cl_attachments.lua" )
 AddCSLuaFile( "cl_mapvote.lua" )
 
 include( "shared.lua" )
@@ -732,3 +733,9 @@ function GM:IsSpawnpointSuitable( ply, spawnpointent, bMakeSuitable )
 	return true
 
 end
+
+// sound when a weapon is picked up from the ground with E
+hook.Add( "WeaponEquip", "LBR_PickupSound", function( wep, ply )
+	if not wep.kanadelootable or not IsValid( ply ) then return end
+	ply:EmitSound( "items/ammo_pickup.wav", 65, 100, 0.8 )
+end )

@@ -22,6 +22,7 @@ local colWarn = Color( 255, 80, 70 )
 
 local showUntil = 0
 local pending // weapon we asked to switch to (highlighted before the switch finishes)
+local pendingUntil = 0
 
 local function weaponList( ply )
 	local list = {}
@@ -49,10 +50,18 @@ end
 local function selectWeapon( wep )
 	if not IsValid( wep ) then return end
 	pending = wep
+	pendingUntil = CurTime() + 2
 	showUntil = CurTime() + SHOW_TIME
 	if wep ~= LocalPlayer():GetActiveWeapon() then
 		input.SelectWeapon( wep )
-		surface.PlaySound( "common/wpn_hudoff.wav" )
+		// CW 2.0 keeps switching to the weapon chosen when the holster animation
+		// started: point it to the new choice (here and on the server)
+		local act = LocalPlayer():GetActiveWeapon()
+		if IsValid( act ) and act.CW20Weapon and IsValid( act.SwitchWep ) then
+			act.SwitchWep = wep
+			RunConsoleCommand( "lbr_switchweapon", tostring( wep:EntIndex() ) )
+		end
+		LocalPlayer():EmitSound( "common/wpn_moveselect.wav", 0, 100, 0.25, CHAN_STATIC )
 	end
 end
 
@@ -77,9 +86,9 @@ hook.Add( "PlayerBindPress", "LBR_WeaponSelect", function( ply, bind, pressed )
 	local slot = tonumber( string.match( bind, "^slot(%d)$" ) or "" )
 	if not isNext and not isPrev and not slot then return end
 	if weaponIsCustomizing( ply:GetActiveWeapon() ) then
-		// CW 2.0 reads the number keys on release: swallow the press so the
-		// engine does not switch weapon, let the wheel through
-		if slot then return true end
+		// CW 2.0 uses 1-9 to mount attachments and blocks the weapon switch itself
+		local w = ply:GetActiveWeapon()
+		if slot and not ( istable( w.Attachments ) and w.Attachments[slot] ) then return true end
 		return
 	end
 
@@ -131,6 +140,7 @@ hook.Add( "Think", "LBR_WeaponSelectWatch", function()
 		lastCount = n
 	end
 	if IsValid( pending ) and pending == lp:GetActiveWeapon() then pending = nil end
+	if pending and CurTime() > pendingUntil then pending = nil end // switch refused (reload...)
 end )
 
 local function shortName( wep )

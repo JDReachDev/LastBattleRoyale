@@ -49,3 +49,15 @@ end )
 cvars.AddChangeCallback( "lbr_cw_spawn_attachments", function( _, _, new )
 	if tonumber( new ) == 0 then stripSpawnAttachments() end
 end, "LBR_CWAttachments" )
+
+// weapon bar: a new choice made while a CW 2.0 weapon is still holstering
+// (CW 2.0 would otherwise keep switching to the first one chosen)
+concommand.Add( "lbr_switchweapon", function( ply, _, args )
+	if not IsValid( ply ) or not ply:Alive() then return end
+	local wep = Entity( tonumber( args[1] ) or 0 )
+	if not IsValid( wep ) or not wep:IsWeapon() or wep:GetOwner() ~= ply then return end
+	local act = ply:GetActiveWeapon()
+	if IsValid( act ) and act.CW20Weapon and IsValid( act.SwitchWep ) and act ~= wep then
+		act.SwitchWep = wep
+	end
+end )
