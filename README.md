@@ -21,7 +21,7 @@ add maps/weapons and run it on their own server.
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
 - **Map** (`M`): the whole map seen from above on any map, with a battleship grid, your squad, the safe zone, supply drops and the nuke target; click to place a marker for your squad
-- **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers; configs are plain `.txt` files you can share
+- **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers, and check them all from above on the map (`M`); configs are plain `.txt` files you can share
 - **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons, items and vehicles spawn and how often, pick them from the installed addons; saved in `data/lastbattleroyale/loot.txt`
 - **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
 - On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop

@@ -88,6 +88,7 @@ As admin between rounds press [b]F8[/b] (or [b]lbr_editor[/b] in console): you f
 [*][b]Left click[/b] place a point / [b]Right click[/b] remove it
 [*][b]Mouse wheel / 1-8[/b] choose what to place: player spawns, lobby spawns, loot, cars, helicopters, zone centers, nuke targets, supply drops
 [*][b]R[/b] place where you aim / at your position - [b]E[/b] next point - [b]Z[/b] undo
+[*][b]M[/b] map from above with every point: mouse wheel / 0-8 to see all the categories or one at a time, left click to fly there, right click to remove a point
 [*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
 [/list]
 The panel tells you what is still missing. Configs are saved in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share them, drop one in that folder and the map is ready. The supported maps are there too, so you can edit them ("Reset" restores the original).

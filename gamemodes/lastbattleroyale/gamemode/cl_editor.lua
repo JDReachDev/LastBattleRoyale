@@ -9,6 +9,8 @@
 //   E              fly to the next point of the category
 //   Z (undo bind)  undo
 //   Q              editor menu: save, zone radius, loot amounts, player models, import/export...
+//   M              map from above with the points (wheel / 0-8: all or one category,
+//                  left click: fly there, right click: remove a point), see cl_map.lua
 
 LBR = LBR or {}
 
@@ -214,6 +216,17 @@ function ED.Remove()
 	surface.PlaySound( "buttons/button15.wav" )
 end
 
+// remove point idx of category ci (right click on the editor map)
+function ED.RemovePoint( ci, idx )
+	local l = list( cats[ci] )
+	local pos = l[idx]
+	if not pos then return end
+	table.remove( l, idx )
+	table.insert( ED.undo, { op = "remove", cat = ci, pos = pos, idx = idx } )
+	markDirty()
+	surface.PlaySound( "buttons/button15.wav" )
+end
+
 function ED.Undo()
 	local u = table.remove( ED.undo )
 	if not u then
@@ -278,6 +291,8 @@ hook.Add( "PlayerBindPress", "LBR_EditorBinds", function( ply, bind, pressed )
 	local slot = string.match( bind, "^slot(%d)$" )
 	if slot then
 		slot = tonumber( slot )
+		// on the map: 0 = every category, 1-8 = only that one
+		if LBR.Map and LBR.Map.open and slot <= #cats then LBR.Map.EdFilter( slot ) end
 		if slot >= 1 and slot <= #cats then ED.SetCategory( slot ) end
 		return true
 	end
@@ -433,11 +448,11 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	// controls
 	local help = {
 		{ { "LMB", "add" }, { "RMB", "remove" }, { "1-8 / WHEEL", "category" } },
-		{ { "R", "aim / position" }, { "E", "next point" }, { "Z", "undo" } },
+		{ { "R", "aim / position" }, { "E", "next point" }, { "Z", "undo" }, { "M", "map" } },
 		{ { "Q", "menu (save)" }, { "F8", "exit" }, { "SHIFT", "fly fast" } },
 	}
 	local lineH = S( 26 )
-	local bw, bh = S( 520 ), #help * lineH + S( 14 )
+	local bw, bh = S( 560 ), #help * lineH + S( 14 )
 	local bx, by = ScrW() / 2 - bw / 2, ScrH() - S( 20 ) - bh
 	UI.Box( bx, by, bw, bh, C.bg )
 	UI.Box( bx, by, bw, S( 2 ), C.accent )

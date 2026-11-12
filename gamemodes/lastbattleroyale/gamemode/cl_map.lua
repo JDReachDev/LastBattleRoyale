@@ -126,12 +126,41 @@ concommand.Add( "lbr_map_rebuild", function() builtSig = nil end )
 // Open / close
 ------------------------------------------------------------------------
 
+// in the map editor the map shows the editor points: a transparent panel over the
+// screen takes the mouse wheel (category filter) and the clicks
+local function editorCapture( on )
+	if on then
+		if IsValid( Map.edPanel ) then return end
+		local p = vgui.Create( "DPanel" )
+		p:SetPos( 0, 0 )
+		p:SetSize( ScrW(), ScrH() )
+		p:SetMouseInputEnabled( true )
+		p:SetKeyboardInputEnabled( false )
+		p.Paint = function() end
+		p.OnMouseWheeled = function( _, d ) Map.EdFilter( ( Map.edFilter or 0 ) - d ) end
+		p.OnMousePressed = function( _, code ) Map.EdClick( code ) end
+		Map.edPanel = p
+	elseif IsValid( Map.edPanel ) then
+		Map.edPanel:Remove()
+		Map.edPanel = nil
+	end
+end
+
 // the mouse cursor is on while the map is open (to place the squad marker)
 function Map.Toggle( state )
 	if state == nil then state = not Map.open end
 	if state == Map.open then return end
 	Map.open = state
+	Map.edMode = state and LBR.Editor and LBR.Editor.active or false
 	gui.EnableScreenClicker( state )
+	editorCapture( state and Map.edMode )
+end
+
+// editor map: 0 = every category, 1-8 = only that one
+function Map.EdFilter( f )
+	local n = #LBR.MapCategories + 1
+	Map.edFilter = ( ( math.floor( f ) % n ) + n ) % n
+	surface.PlaySound( "buttons/lightswitch2.wav" )
 end
 
 concommand.Add( "lbr_map", function() Map.Toggle() end )
@@ -150,7 +179,8 @@ hook.Add( "Think", "LBR_MapKey", function()
 	keyWasDown = down
 
 	if Map.open then
-		if LBR.Editor and LBR.Editor.active then
+		// opened in the editor and the editor closed, or the other way round
+		if Map.edMode ~= ( LBR.Editor and LBR.Editor.active or false ) then
 			Map.Toggle( false )
 		elseif not vgui.CursorVisible() and not gui.IsGameUIVisible() then
 			gui.EnableScreenClicker( true ) // the TAB menu turned it off when it closed
@@ -247,7 +277,7 @@ end
 
 // click on the map: left sets your marker, right removes it
 hook.Add( "GUIMousePressed", "LBR_MapPing", function( code )
-	local L = Map.open and Map.layout
+	local L = Map.open and not Map.edMode and Map.layout
 	if not L then return end
 	if code == MOUSE_RIGHT then
 		sendPing()
@@ -425,6 +455,143 @@ local function drawStorm( x, y, w, h, zx, zy, zr, zc )
 	render.SetStencilEnable( false )
 end
 
+------------------------------------------------------------------------
+// Map editor (F8, then M): the points of the config seen from above
+------------------------------------------------------------------------
+
+local colHover = Color( 255, 255, 255 )
+
+local function drawEditorPoints( ED, toMap, scale, lp )
+	local f = Map.edFilter or 0
+	local cx, cy = gui.MousePos()
+	local hov, hovD = nil, S( 10 ) ^ 2
+	for ci, cat in ipairs( LBR.MapCategories ) do
+		if f == 0 or f == ci then
+			local col = cat.color
+			local pts = LBR.GetCategoryList( ED.cfg, cat )
+			// zone centers: the start circle of the zone
+			if cat.hull == "zone" and ( ED.cfg.zone_radius or 0 ) > 0 then
+				for _, p in ipairs( pts ) do
+					local px, py = toMap( p.x, p.y )
+					ring( px, py, ED.cfg.zone_radius * scale, Color( col.r, col.g, col.b, f == ci and 160 or 70 ), 2 )
+				end
+			end
+			local sz = f == 0 and S( 3 ) or S( 4 )
+			for i, p in ipairs( pts ) do
+				local px, py = toMap( p.x, p.y )
+				surface.SetDrawColor( 0, 0, 0, 230 )
+				surface.DrawRect( px - sz - 1, py - sz - 1, sz * 2 + 2, sz * 2 + 2 )
+				surface.SetDrawColor( col )
+				surface.DrawRect( px - sz, py - sz, sz * 2, sz * 2 )
+				local d = ( px - cx ) ^ 2 + ( py - cy ) ^ 2
+				if d < hovD then hovD, hov = d, { ci = ci, i = i, x = px, y = py, p = p } end
+			end
+		end
+	end
+
+	// you
+	local p = lp:GetPos()
+	local px, py = toMap( p.x, p.y )
+	arrow( px, py, lp:EyeAngles().y, S( 13 ) + 2, colShadow )
+	arrow( px, py, lp:EyeAngles().y, S( 13 ), colMe )
+
+	Map.edHover = hov
+	if hov then
+		local cat = LBR.MapCategories[hov.ci]
+		local sz = S( 6 )
+		surface.SetDrawColor( colHover )
+		surface.DrawOutlinedRect( hov.x - sz, hov.y - sz, sz * 2, sz * 2, 2 )
+		local t = cat.name .. " #" .. hov.i .. "   z " .. math.Round( hov.p.z )
+		surface.SetFont( "LBR_UI_Tiny" )
+		local tw, th = surface.GetTextSize( t )
+		UI.Box( hov.x + S( 10 ), hov.y - th / 2 - S( 3 ), tw + S( 12 ), th + S( 6 ), C.bg )
+		label( t, "LBR_UI_Tiny", hov.x + S( 16 ), hov.y - th / 2, cat.color, TEXT_ALIGN_LEFT )
+	end
+end
+
+// categories with their counts, left of the map (inside it when there is no room);
+// a click on a row shows only that category
+local function drawEditorLegend( ED, fx, fy, fh )
+	local f = Map.edFilter or 0
+	local rowH, w = S( 26 ), S( 220 )
+	local rows = { { f = 0, name = "All categories", col = C.text } }
+	local total = 0
+	for ci, cat in ipairs( LBR.MapCategories ) do
+		local n = #LBR.GetCategoryList( ED.cfg, cat )
+		total = total + n
+		rows[#rows + 1] = { f = ci, name = cat.name, col = cat.color, n = n }
+	end
+	rows[1].n = total
+	local h = #rows * rowH + S( 16 )
+	local x = fx - w - S( 12 )
+	if x < S( 10 ) then x = fx + S( 10 ) end
+	local y = fy + math.max( math.floor( ( fh - h ) / 2 ), 0 )
+	UI.Box( x, y, w, h, C.bg )
+	UI.Box( x, y, w, S( 3 ), C.accent )
+	Map.edRows = {}
+	local ry = y + S( 10 )
+	for _, r in ipairs( rows ) do
+		local cur = r.f == f
+		UI.Box( x + S( 6 ), ry, w - S( 12 ), rowH - S( 3 ), cur and Color( r.col.r, r.col.g, r.col.b, 50 ) or C.row )
+		surface.SetDrawColor( r.col )
+		surface.DrawRect( x + S( 14 ), ry + ( rowH - S( 3 ) ) / 2 - S( 4 ), S( 8 ), S( 8 ) )
+		label( r.f .. "  " .. r.name, "LBR_UI_Tiny", x + S( 30 ), ry + ( rowH - S( 3 ) ) / 2, cur and colHover or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		label( tostring( r.n ), "LBR_UI_Tiny", x + w - S( 14 ), ry + ( rowH - S( 3 ) ) / 2, r.n > 0 and colHover or C.locked, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+		Map.edRows[#Map.edRows + 1] = { f = r.f, x = x, y = ry, w = w, h = rowH }
+		ry = ry + rowH
+	end
+end
+
+// editor map clicks: legend row = filter, left = fly there (to the point under the
+// cursor, else above the ground), right = remove the point under the cursor
+function Map.EdClick( code )
+	local ED = LBR.Editor
+	if not ( ED and ED.active and ED.cfg ) then return end
+	local cx, cy = gui.MousePos()
+	for _, r in ipairs( Map.edRows or {} ) do
+		if cx >= r.x and cx <= r.x + r.w and cy >= r.y and cy <= r.y + r.h then
+			Map.EdFilter( r.f )
+			return
+		end
+	end
+	local L = Map.layout
+	if not L then return end
+	local hov = Map.edHover
+	if code == MOUSE_RIGHT then
+		if hov and ED.RemovePoint then ED.RemovePoint( hov.ci, hov.i ) end
+		return
+	end
+	if code ~= MOUSE_LEFT then return end
+	if cx < L.x or cx > L.x + L.w or cy < L.y or cy > L.y + L.h then return end
+	local target
+	if hov then
+		target = hov.p + Vector( 0, 0, 80 )
+	else
+		local x = L.mins.x + ( cx - L.x ) / L.w * ( L.maxs.x - L.mins.x )
+		local y = L.maxs.y - ( cy - L.y ) / L.h * ( L.maxs.y - L.mins.y )
+		// down from the sky to the first ground (skipping sky / nodraw brushes)
+		local z, ground = L.maxs.z, nil
+		for _ = 1, 6 do
+			local tr = util.TraceLine( { start = Vector( x, y, z ), endpos = Vector( x, y, L.mins.z ), mask = MASK_SOLID_BRUSHONLY } )
+			if tr.StartSolid then
+				z = z - 256
+			elseif not tr.Hit then
+				break
+			elseif tr.HitSky or tr.HitNoDraw then
+				z = tr.HitPos.z - 16
+			else
+				ground = tr.HitPos.z
+				break
+			end
+		end
+		target = Vector( x, y, ground and ground + 120 or L.maxs.z - 200 )
+	end
+	net.Start( "LBR_Editor_Goto" )
+		net.WriteVector( target )
+	net.SendToServer()
+	Map.Toggle( false )
+end
+
 local function drawMap()
 	local lp = LocalPlayer()
 	if not IsValid( lp ) then return end
@@ -461,18 +628,29 @@ local function drawMap()
 	// frame
 	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, mh + S( 58 ) + S( 40 ), C.bg )
 	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, S( 3 ), C.accent )
-	label( "MAP", "LBR_UI_Head", mx, my - S( 50 ), C.text, TEXT_ALIGN_LEFT )
+	local ED = Map.edMode and LBR.Editor
+	if ED and not ED.cfg then ED = nil end
+	label( ED and "MAP EDITOR" or "MAP", "LBR_UI_Head", mx, my - S( 50 ), ED and C.accent or C.text, TEXT_ALIGN_LEFT )
 	label( string.upper( game.GetMap() ), "LBR_UI_Tiny", mx + mw, my - S( 44 ), C.dim, TEXT_ALIGN_RIGHT )
-	label( "LEFT CLICK  marker      RIGHT CLICK  remove      M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
+	label( ED and "WHEEL / 0-8  categories      LEFT CLICK  fly there      RIGHT CLICK  remove point      M  close"
+		or "LEFT CLICK  marker      RIGHT CLICK  remove      M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
 	Map.layout = nil
-	if LBR.IsZoneActive() then
+	Map.edHover = nil
+	Map.edRows = nil
+	if ED then
+		local f = Map.edFilter or 0
+		local cat = LBR.MapCategories[f]
+		local t = cat and ( cat.name .. "  (" .. #LBR.GetCategoryList( ED.cfg, cat ) .. ")" ) or "ALL CATEGORIES"
+		label( t, "LBR_UI_Text", mx + mw / 2, my - S( 47 ), cat and cat.color or C.text, TEXT_ALIGN_CENTER )
+	elseif LBR.IsZoneActive() then
 		local zc = LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 )
 		local t = LBR.GetZoneRadius() > 0 and ( "ZONE CLOSING  " .. fmtTime( LBR.GetZoneTimeLeft() ) ) or "ZONE CLOSED"
 		label( t, "LBR_UI_Text", mx + mw / 2, my - S( 47 ), Color( zc.r, zc.g, zc.b, 255 ), TEXT_ALIGN_CENTER )
 	end
 
 	if not mins then
-		label( "No map for this map yet: it has no configured points", "LBR_UI_Text", sw / 2, sh / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		label( ED and "Place some points and save (Q) to draw the map" or "No map for this map yet: it has no configured points",
+			"LBR_UI_Text", sw / 2, sh / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		return
 	end
 
@@ -519,6 +697,13 @@ local function drawMap()
 	surface.SetDrawColor( colGrid )
 	for i = 1, cols - 1 do surface.DrawRect( ix + math.floor( imgW * i / cols ), my, 1, mh ) end
 	for i = 1, rows - 1 do surface.DrawRect( ix, my + math.floor( mh * i / rows ), imgW, 1 ) end
+
+	if ED then
+		drawEditorPoints( ED, toMap, scale, lp )
+		render.SetScissorRect( 0, 0, 0, 0, false )
+		drawEditorLegend( ED, mx - pad, my - S( 58 ), mh + S( 98 ) )
+		return
+	end
 
 	// zone
 	if LBR.IsZoneActive() then
@@ -632,7 +817,6 @@ end
 // the map is on top of the whole HUD; not over the pause menu or the console
 hook.Add( "DrawOverlay", "LBR_Map", function()
 	if not Map.open then return end
-	if LBR.Editor and LBR.Editor.active then return end
 	if gui.IsGameUIVisible() or gui.IsConsoleVisible() then return end
 	drawMap()
 end )
