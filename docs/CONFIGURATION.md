@@ -201,7 +201,8 @@ Join the map as admin (or in singleplayer / listen server) between rounds and pr
 | `E` | Teleport to the next point of the category |
 | `Z` | Undo |
 | `M` | Map from above with the points: mouse wheel / `0`–`8` (or a click on the list) show all the categories or only one, left click flies there, right click removes the point under the cursor |
-| `Q` | Menu: save, zone radius, loot amounts, **Loot and vehicles** panel, player models, copy/import JSON, reload, reset |
+| `W` `A` `S` `D` | Fly (noclip); `SHIFT` faster, `CTRL` slower |
+| `Q` | Menu: save, zone radius and shrink delay, loot amounts, **Loot and vehicles** panel, player models, copy/import JSON, reload, reset |
 | `F8` | Close (asks to save if there are unsaved changes) |
 
 The panel on the left shows the point counts and what is still missing for the map to be playable.

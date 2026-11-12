@@ -8,6 +8,7 @@
 //   R              toggle "place at aim" / "place at my position"
 //   E              fly to the next point of the category
 //   Z (undo bind)  undo
+//   WASD / SHIFT / CTRL  fly (noclip), faster, slower
 //   Q              editor menu: save, zone radius, loot amounts, player models, import/export...
 //   M              map from above with the points (wheel / 0-8: all or one category,
 //                  left click: fly there, right click: remove a point), see cl_map.lua
@@ -449,7 +450,8 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	local help = {
 		{ { "LMB", "add" }, { "RMB", "remove" }, { "1-8 / WHEEL", "category" } },
 		{ { "R", "aim / position" }, { "E", "next point" }, { "Z", "undo" }, { "M", "map" } },
-		{ { "Q", "menu (save)" }, { "F8", "exit" }, { "SHIFT", "fly fast" } },
+		{ { "Q", "menu (save, zone)" }, { "F8", "exit" } },
+		{ { "WASD", "fly" }, { "SHIFT", "faster" }, { "CTRL", "slower" } },
 	}
 	local lineH = S( 26 )
 	local bw, bh = S( 560 ), #help * lineH + S( 14 )

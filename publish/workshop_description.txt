@@ -23,6 +23,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Click to place a marker[/b] for your squad: it also shows on the compass and on screen with the distance (right click removes it)
 [/list]
 [*][b]Attachments are loot[/b]: you start with none and find attachment kits around the map. In the C menu the ones you don't have are red
+[*][b]Zone delay[/b]: the safe zone waits 2 minutes (server setting, or per map in the editor) before it starts shrinking, so nobody is cut off right after landing
 [*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall, brightest at eye height and fading up and down, with a storm effect (fog, grey colors) when you are outside
 [*][b]New HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel. One clean style for HUD, menus and messages
 [*][b]New menus[/b]: F3 class menu (stats, loadout, level and unlocks), F4 squad menu (invite and remove players with the mouse)
@@ -39,7 +40,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 
 [h2]Features[/h2]
 [list]
-[*][b]Shrinking safe zone[/b] with storm effect and damage outside, synced for every player
+[*][b]Shrinking safe zone[/b] with storm effect and damage outside, synced for every player. Inside it your health slowly regenerates up to 20
 [*][b]Random loot[/b] every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*][b]Vehicles[/b]: cars (SCars) and helicopters (WAC) around the map
 [*][b]Events[/b]: supply airdrops (always inside the safe zone), optional nuclear strike and implosion bomb
@@ -52,7 +53,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Lobby[/b]: everyone waits until there are enough players (2 by default). Pick your class (F3) and make a squad (F4)
 [*][b]Preparing[/b]: a countdown starts (30 s), then all players are spread around the map
 [*][b]Loot[/b]: weapons can't be used for the first 30 s: find weapons, attachments, armor, medkits and vehicles. Pick up with [b]E[/b], hold TAB to sort your inventory
-[*][b]Zone[/b]: the safe zone shrinks over time. Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right, or open the map with [b]M[/b]
+[*][b]Zone[/b]: after 2 minutes the safe zone starts shrinking (the HUD shows ZONE STARTS IN). Outside it you lose health and the screen gets stormy. Follow the zone marker on the compass and the timer on the top right, or open the map with [b]M[/b]
 [*][b]Win[/b]: the last player (or squad) alive wins. Then everyone goes back to the lobby, or votes the next map
 [/olist]
 Kills and wins give EXP to your class. Level up to unlock new classes (F3 shows what each one needs). Dead players can spectate.
@@ -87,9 +88,10 @@ As admin between rounds press [b]F8[/b] (or [b]lbr_editor[/b] in console): you f
 [list]
 [*][b]Left click[/b] place a point / [b]Right click[/b] remove it
 [*][b]Mouse wheel / 1-8[/b] choose what to place: player spawns, lobby spawns, loot, cars, helicopters, zone centers, nuke targets, supply drops
-[*][b]R[/b] place where you aim / at your position - [b]E[/b] next point - [b]Z[/b] undo
+[*][b]R[/b] place where you aim / at your position - [b]E[/b] fly to the next point - [b]Z[/b] undo
+[*][b]WASD[/b] fly (noclip), [b]SHIFT[/b] faster, [b]CTRL[/b] slower
 [*][b]M[/b] map from above with every point: mouse wheel / 0-8 to see all the categories or one at a time, left click to fly there, right click to remove a point
-[*][b]Q[/b] menu: save, zone size, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
+[*][b]Q[/b] menu: save, zone size and shrink delay, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
 [/list]
 The panel tells you what is still missing. Configs are saved in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share them, drop one in that folder and the map is ready. The supported maps are there too, so you can edit them ("Reset" restores the original).
 
@@ -99,11 +101,14 @@ The panel tells you what is still missing. Configs are saved in [b]garrysmod/dat
 [list]
 [*][b]lbr_min_players[/b] - players needed to start (default 2)
 [*][b]lbr_inv_equipment / lbr_inv_backpack[/b] - equipment slots (1-6) and backpack slots (0-6), default 5 / 3, applied in the lobby
-[*][b]lbr_time_preparing / lbr_time_weapons_hot[/b] - lobby countdown and no-attack time (default 30 / 30)
+[*][b]lbr_time_preparing / lbr_time_weapons_hot / lbr_time_postround[/b] - lobby countdown, no-attack time and time before going back to the lobby (default 30 / 30 / 15)
 [*][b]lbr_zone_speed[/b] - zone shrink speed (default 0.75)
 [*][b]lbr_zone_delay[/b] - seconds before the zone starts shrinking (default 120, a map can set its own in the editor)
-[*][b]lbr_mapvote[/b] - map vote at the end of the match (1/0), [b]lbr_mapvote_rounds[/b] matches before the vote (default 1)
+[*][b]lbr_zone_heal[/b] - health regenerates up to 20 inside the zone (1/0)
+[*][b]lbr_mapvote[/b] - map vote at the end of the match (1/0), [b]lbr_mapvote_rounds[/b] matches before the vote (default 1), [b]lbr_mapvote_time[/b] seconds to vote (20), [b]lbr_mapvote_maps[/b] max maps in the vote (8)
 [*][b]lbr_event_nuke / lbr_event_implosion[/b] - nuke and implosion events (1/0)
+[*][b]lbr_exp_scale / lbr_level_exp[/b] - EXP multiplier (1) and EXP for the next level = next level x this (25)
+[*][b]lbr_css_armor[/b] - CS:S models for armor and ghillie, needs CS:S mounted (1/0)
 [*][b]lbr_cw_spawn_attachments[/b] - 1 = all attachments on spawn, as plain CW 2.0
 [*][b]lbr_cull_loot_distance[/b] - loot farther than this is not sent to players (default 4000, 0 = off)
 [*][b]lbr_editor_superadminonly[/b] - only superadmins can use the map editor (1/0)
@@ -111,6 +116,7 @@ The panel tells you what is still missing. Configs are saved in [b]garrysmod/dat
 [*][b]lbr_outline / lbr_loot_beam / lbr_outline_distance[/b] - client: outline and light beam on loot (1/0) and their max distance (default 1500)
 [*][b]lbr_zone_view_distance / lbr_cull_vehicle_distance[/b] - client: how far the zone and parked vehicles are drawn (9000 / 8000)
 [/list]
+[b]Admin commands[/b]: [b]lbr_start[/b] start now, [b]lbr_mapvote_start[/b] map vote now (after a match), [b]lbr_map_reload[/b] reload the map config from its file, [b]lbr_loot_reload[/b] reload the loot tables, [b]lbr_map_info[/b] map area info, [b]lbr_cull_stats[/b] how much loot is culled.
 Old [b]lst_*[/b] names still work. Full list on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
 
 [h2]Tips and problems[/h2]
