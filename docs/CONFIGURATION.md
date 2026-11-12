@@ -27,6 +27,7 @@ shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/last
 | `lbr_time_weapons_hot` | `lst_time_actionpreparing` | `30` | Time before players can attack (seconds) |
 | `lbr_time_postround` | `lst_time_postround` | `15` | Post round phase (seconds) |
 | `lbr_zone_speed` | `lst_zonespeed` | `0.75` | Radius removed from the zone every tick |
+| `lbr_zone_delay` | `lst_zonedelay` | `120` | Seconds after the start before the zone starts shrinking (a map can set its own `zone_delay`) |
 | `lbr_zone_heal` | `lst_healhealth` | `1` | Regenerate health up to 20 HP while inside the zone |
 | `lbr_css_armor` | `lst_usecssarmor` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
 | `lbr_event_nuke` | `lst_event_enablenuke` | `0` | Random nuclear strike event during the round |
@@ -73,6 +74,7 @@ lbr_time_preparing 30
 lbr_time_weapons_hot 30
 lbr_time_postround 15
 lbr_zone_speed 0.75
+lbr_zone_delay 120
 lbr_zone_heal 1
 lbr_css_armor 1
 lbr_event_nuke 0
@@ -216,6 +218,7 @@ Categories: player spawns, lobby spawns, loot spawns, cars, helicopters, zone ce
   "version": 1,
   "map": "gm_fork",
   "zone_radius": 40000,
+  "zone_delay": 120,
   "weaponsc": [18, 14, 13, 15, 16],
   "playermodels": ["models/player/group03/male_01.mdl"],
   "playerspawns": [[x, y, z], ...],
@@ -233,6 +236,8 @@ Rules:
 - `weaponspawns` should contain at least as many points as the sum of `weaponsc`.
 - `playerspawns` should have at least as many points as the max player count (extra players reuse points with a small offset).
 - `zone_radius` must cover the playable area from every `endpositions` point (the editor draws it).
+- `zone_delay` (optional) = seconds before the zone starts shrinking on this map; without it the
+  server option `lbr_zone_delay` is used. In the editor: "Shrink delay", -1 = server option.
 
 The old `MAPCONFIG` table in `config.lua` still works: it is only used as the source of the
 built-in files.

@@ -26,11 +26,16 @@ function LBR.GetZoneRadius()
 	return math.max( start - elapsed * LBR.GetZoneSpeed(), 0 )
 end
 
-// seconds until the zone reaches radius 0
+// seconds before the zone starts shrinking (0 once it is shrinking)
+function LBR.GetZoneStartsIn()
+	return math.max( GetGlobalFloat( "LBR_ZoneStartTime", 0 ) - CurTime(), 0 )
+end
+
+// seconds until the zone reaches radius 0 (the wait before it starts included)
 function LBR.GetZoneTimeLeft()
 	local speed = LBR.GetZoneSpeed()
 	if speed <= 0 then return 0 end
-	return LBR.GetZoneRadius() / speed
+	return LBR.GetZoneStartsIn() + LBR.GetZoneRadius() / speed
 end
 
 function LBR.IsPosInZone( pos )

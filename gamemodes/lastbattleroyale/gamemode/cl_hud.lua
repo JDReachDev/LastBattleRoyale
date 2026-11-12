@@ -366,8 +366,14 @@ local function drawInfo( lp, ply )
 		local zcol = LBR.GetZoneColor and LBR.GetZoneColor() or colZone
 		panel( x - w, y, w, h, Color( zcol.r, zcol.g, zcol.b, 255 ) )
 		local tl = LBR.GetZoneTimeLeft()
-		ptext( radius > 0 and "ZONE CLOSING" or "ZONE CLOSED", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
-		if radius > 0 then ptext( fmtTime( tl ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT ) end
+		local wait = LBR.GetZoneStartsIn()
+		if wait > 0 then
+			ptext( "ZONE STARTS IN", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
+			ptext( fmtTime( wait ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT )
+		else
+			ptext( radius > 0 and "ZONE CLOSING" or "ZONE CLOSED", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
+			if radius > 0 then ptext( fmtTime( tl ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT ) end
+		end
 		if toEdge > 0 then
 			ptext( "OUTSIDE: " .. units2m( toEdge ) .. "m to safety", "LBR_HUD_Small", x - w + S( 14 ), y + S( 34 ), colWarn )
 		else

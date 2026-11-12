@@ -582,6 +582,23 @@ function ED.OpenMenu()
 		markDirty()
 	end
 
+	// -1 = use the server option lbr_zone_delay
+	local zd = scroll:Add( "DNumSlider" )
+	zd:Dock( TOP )
+	zd:DockMargin( S( 2 ), 0, S( 8 ), 0 )
+	zd:SetText( "Shrink delay (s, -1 = server)" )
+	zd.Label:SetFont( "LBR_UI_Small" )
+	zd.Label:SetTextColor( C.text )
+	zd:GetTextArea():SetTextColor( C.text )
+	zd:SetMinMax( -1, 600 )
+	zd:SetDecimals( 0 )
+	zd:SetValue( ED.cfg.zone_delay or -1 )
+	zd.OnValueChanged = function( _, v )
+		v = math.floor( v )
+		ED.cfg.zone_delay = v >= 0 and v or nil
+		markDirty()
+	end
+
 	label( "Loot amount per round" )
 	for i, name in ipairs( LBR.WeaponCountNames ) do
 		local row = scroll:Add( "DPanel" )

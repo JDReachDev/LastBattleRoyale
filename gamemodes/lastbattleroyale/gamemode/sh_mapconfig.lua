@@ -128,6 +128,9 @@ function LBR.SanitizeMapConfig( raw )
 	end
 
 	cfg.zone_radius = math.Clamp( math.floor( tonumber( raw.zone_radius ) or 20000 ), 100, 500000 )
+	// seconds before the zone starts shrinking on this map; none = lbr_zone_delay
+	local zd = tonumber( raw.zone_delay )
+	cfg.zone_delay = ( zd and zd >= 0 ) and math.min( math.floor( zd ), 3600 ) or nil
 
 	cfg.weaponsc = {}
 	local wc = istable( raw.weaponsc ) and raw.weaponsc or {}
@@ -157,6 +160,7 @@ function LBR.MapConfigToJSON( cfg, map )
 		version = 1,
 		map = map or game.GetMap(),
 		zone_radius = cfg.zone_radius,
+		zone_delay = cfg.zone_delay,
 		weaponsc = cfg.weaponsc,
 		playermodels = cfg.playermodels
 	}

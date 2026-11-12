@@ -47,6 +47,7 @@ LBR.ConVars = {
 	{ "lbr_time_weapons_hot", "lst_time_actionpreparing", "30", "Seconds after the start before players can attack" },
 	{ "lbr_time_postround", "lst_time_postround", "15", "Seconds before going back to the lobby" },
 	{ "lbr_zone_speed", "lst_zonespeed", "0.75", "Zone radius removed every tick" },
+	{ "lbr_zone_delay", "lst_zonedelay", "120", "Seconds after the start before the zone starts shrinking (a map can set its own)" },
 	{ "lbr_zone_heal", "lst_healhealth", "1", "Health regenerates up to 20 inside the zone" },
 	{ "lbr_css_armor", "lst_usecssarmor", "1", "Use CS:S models for armor (needs CS:S mounted)" },
 	{ "lbr_event_nuke", "lst_event_enablenuke", "0", "Random nuclear strike during the match" },

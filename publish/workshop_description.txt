@@ -101,6 +101,7 @@ The panel tells you what is still missing. Configs are saved in [b]garrysmod/dat
 [*][b]lbr_inv_equipment / lbr_inv_backpack[/b] - equipment slots (1-6) and backpack slots (0-6), default 5 / 3, applied in the lobby
 [*][b]lbr_time_preparing / lbr_time_weapons_hot[/b] - lobby countdown and no-attack time (default 30 / 30)
 [*][b]lbr_zone_speed[/b] - zone shrink speed (default 0.75)
+[*][b]lbr_zone_delay[/b] - seconds before the zone starts shrinking (default 120, a map can set its own in the editor)
 [*][b]lbr_mapvote[/b] - map vote at the end of the match (1/0), [b]lbr_mapvote_rounds[/b] matches before the vote (default 1)
 [*][b]lbr_event_nuke / lbr_event_implosion[/b] - nuke and implosion events (1/0)
 [*][b]lbr_cw_spawn_attachments[/b] - 1 = all attachments on spawn, as plain CW 2.0

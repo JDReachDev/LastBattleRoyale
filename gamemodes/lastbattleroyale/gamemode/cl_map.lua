@@ -702,7 +702,9 @@ local function drawMap()
 		label( t, "LBR_UI_Text", mx + mw / 2, my - S( 47 ), cat and cat.color or C.text, TEXT_ALIGN_CENTER )
 	elseif LBR.IsZoneActive() then
 		local zc = LBR.GetZoneColor and LBR.GetZoneColor() or Color( 0, 255, 180 )
-		local t = LBR.GetZoneRadius() > 0 and ( "ZONE CLOSING  " .. fmtTime( LBR.GetZoneTimeLeft() ) ) or "ZONE CLOSED"
+		local wait = LBR.GetZoneStartsIn()
+		local t = wait > 0 and ( "ZONE STARTS IN  " .. fmtTime( wait ) )
+			or LBR.GetZoneRadius() > 0 and ( "ZONE CLOSING  " .. fmtTime( LBR.GetZoneTimeLeft() ) ) or "ZONE CLOSED"
 		label( t, "LBR_UI_Text", mx + mw / 2, my - S( 47 ), Color( zc.r, zc.g, zc.b, 255 ), TEXT_ALIGN_CENTER )
 	end
 

@@ -33,6 +33,7 @@ function SetState(num)
 end
 
 local cvZoneSpeed = GetConVar("lbr_zone_speed")
+local cvZoneDelay = GetConVar("lbr_zone_delay")
 local cvHeal = GetConVar("lbr_zone_heal")
 local cvImplosion = GetConVar("lbr_event_implosion")
 local cvNuke = GetConVar("lbr_event_nuke")
@@ -310,7 +311,9 @@ function SetupZone()
 
 	SetGlobalVector( "LBR_ZonePos", pos )
 	SetGlobalFloat( "LBR_ZoneStartRadius", MapCfg().zone_radius or 20000 )
-	SetGlobalFloat( "LBR_ZoneStartTime", CurTime() )
+	// the zone waits before shrinking: the map's own delay, else lbr_zone_delay
+	local delay = tonumber( MapCfg().zone_delay ) or ( cvZoneDelay and cvZoneDelay:GetFloat() ) or 0
+	SetGlobalFloat( "LBR_ZoneStartTime", CurTime() + math.max( delay, 0 ) )
 	SetGlobalFloat( "LBR_ZoneSpeed", GetZoneSpeed() * tickrate )
 
 	zone = ents.Create( "ent_zone" )
