@@ -1,7 +1,7 @@
-// Ammo unloaded from a weapon (right click in the TAB inventory > Unload ammo).
-// Anyone with a weapon of the same ammo group (pistol / SMG, rifle, sniper,
-// shotgun: see LBR.AmmoGroup) takes it with E and gets it as the ammo of that
-// weapon. It disappears after a while so the ground does not fill up.
+// Magazine unloaded from a weapon (right click in the TAB inventory > Unload a
+// magazine). Anyone with a weapon of the same ammo group (pistol / SMG, rifle,
+// sniper, shotgun: see LBR.AmmoGroup) takes it with E and gets one magazine of
+// that weapon (Amount = magazines, not rounds). It disappears after a while so the ground does not fill up.
 
 AddCSLuaFile()
 
@@ -14,18 +14,18 @@ local LIFETIME = 120
 
 function ENT:SetupDataTables()
 	self:NetworkVar( "Int", 0, "AmmoID" )
-	self:NetworkVar( "Int", 1, "Amount" )
+	self:NetworkVar( "Int", 1, "Amount" ) // magazines
 end
 
 function ENT:Group()
 	return LBR.AmmoGroup( self:GetAmmoID() )
 end
 
-// "Rifle ammo", or the caliber name for an ammo type outside the groups
+// "Rifle magazine", or the caliber name for an ammo type outside the groups
 function ENT:GroupName()
 	local g = self:Group()
-	if g and LBR.AmmoGroupNames[g] then return LBR.AmmoGroupNames[g] end
-	return ( game.GetAmmoName( self:GetAmmoID() ) or "ammo" ) .. " ammo"
+	if g and LBR.AmmoGroupNames[g] then return LBR.AmmoGroupNames[g] .. " magazine" end
+	return ( game.GetAmmoName( self:GetAmmoID() ) or "ammo" ) .. " magazine"
 end
 
 // the weapon of ply that takes this ammo: the one in hand first
@@ -66,7 +66,7 @@ if SERVER then
 			return
 		end
 		self.Taken = true
-		ply:GiveAmmo( self:GetAmount(), w:GetPrimaryAmmoType() )
+		ply:GiveAmmo( self:GetAmount() * math.max( w:GetMaxClip1(), 1 ), w:GetPrimaryAmmoType() )
 		self:EmitSound( "items/ammo_pickup.wav" )
 		self:Remove()
 	end

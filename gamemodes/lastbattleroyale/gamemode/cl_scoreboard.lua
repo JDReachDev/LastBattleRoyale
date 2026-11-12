@@ -455,10 +455,11 @@ local function invTile( parent, slot )
 		// only weapons with a magazine and some ammo of that caliber
 		local id = wep:GetPrimaryAmmoType()
 		if id >= 0 and wep:GetMaxClip1() > 0 then
-			local total = LBR.UnloadAmount( LocalPlayer(), wep )
-			if total > 0 then
-				m:AddOption( "Unload a magazine (" .. total .. ")", function() send( "LBR_InvUnload" ) end ):SetIcon( "icon16/box.png" )
-			end
+			// whole magazines only: greyed out until you have a full one
+			local size, have = LBR.UnloadInfo( LocalPlayer(), wep )
+			local o = m:AddOption( "Unload a magazine (" .. have .. " / " .. size .. ")", function() send( "LBR_InvUnload" ) end )
+			o:SetIcon( "icon16/box.png" )
+			if have < size then o:SetEnabled( false ) end
 		end
 		m:Open()
 	end

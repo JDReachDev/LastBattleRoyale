@@ -21,22 +21,22 @@ local AMMO_GROUPS = {
 	sniper = { "sniperround", "sniperpenetratedround", "7.62x51mm", "7.62x54mmr", ".338 lapua", ".50 bmg", ".416 barrett" },
 	shotgun = { "buckshot", "12 gauge", ".410 bore", "four-bore cartridge" },
 }
-LBR.AmmoGroupNames = { pistol = "Pistol / SMG ammo", rifle = "Rifle ammo", sniper = "Sniper ammo", shotgun = "Shotgun ammo" }
+LBR.AmmoGroupNames = { pistol = "Pistol / SMG", rifle = "Rifle", sniper = "Sniper", shotgun = "Shotgun" }
 local groupOf = {}
 for g, list in pairs( AMMO_GROUPS ) do
 	for _, name in ipairs( list ) do groupOf[name] = g end
 end
 
 // group of an ammo type id ("pistol", "rifle"...), or "#<name>" for an unknown type
-// ammo that Unload takes out: the magazine in the weapon, or one magazine's
-// worth from the reserve when it is empty
-function LBR.UnloadAmount( ply, wep )
+// Unload drops whole magazines only: the box holds a magazine, not rounds, and
+// whoever takes it gets one magazine of their own weapon (a 20 round pistol
+// magazine becomes 7 rounds in a Desert Eagle). Returns the magazine size and
+// the rounds you have (magazine + reserve); you can unload while have >= size
+function LBR.UnloadInfo( ply, wep )
 	local id = wep:GetPrimaryAmmoType()
-	local max = wep:GetMaxClip1()
-	if id < 0 or max <= 0 then return 0, false end
-	local clip = math.max( wep:Clip1(), 0 )
-	if clip > 0 then return clip, true end
-	return math.min( max, ply:GetAmmoCount( id ) ), false
+	local size = wep:GetMaxClip1()
+	if id < 0 or size <= 0 then return 0, 0 end
+	return size, math.max( wep:Clip1(), 0 ) + ply:GetAmmoCount( id )
 end
 
 function LBR.AmmoGroup( id )

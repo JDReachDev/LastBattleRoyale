@@ -41,9 +41,11 @@ local function describe( lp, ent )
 	if SPECIAL[class] then return SPECIAL[class][1], SPECIAL[class][2] end
 
 	if class == "lbr_ammo_box" then
-		local label = ent:GetAmount() .. " " .. ent:GroupName()
-		if not ent:WeaponFor( lp ) then return "NO WEAPON FOR THIS AMMO", label end
-		return "TAKE AMMO", label
+		local label = ent:GroupName()
+		local w = ent:WeaponFor( lp )
+		if not IsValid( w ) then return "NO WEAPON FOR THIS AMMO", label end
+		// what you get: magazines of the weapon that takes it
+		return "TAKE AMMO", label .. " (+" .. ent:GetAmount() * math.max( w:GetMaxClip1(), 1 ) .. ")"
 	end
 
 	if ent:IsWeapon() then

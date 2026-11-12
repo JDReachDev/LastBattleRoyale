@@ -185,7 +185,7 @@ net.Receive( "LBR_InvMove", function( _, ply )
 	LBR.InvCheckActive( ply )
 end )
 
-// right click > Unload ammo: one magazine (see LBR.UnloadAmount) goes in a box on the ground, anyone with a weapon of the same group takes it with E
+// right click > Unload a magazine: a full magazine (see LBR.UnloadInfo) goes in a box on the ground, anyone with a weapon of the same group takes it with E
 net.Receive( "LBR_InvUnload", function( _, ply )
 	local s = net.ReadUInt( 4 )
 	if not ply:Alive() or ( ply.LBR_UnloadNext or 0 ) > CurTime() then return end
@@ -198,23 +198,26 @@ net.Receive( "LBR_InvUnload", function( _, ply )
 		LBR.Notify( ply, "This weapon has no ammo to unload", "bad", 2 )
 		return
 	end
-	local total, fromClip = LBR.UnloadAmount( ply, w )
-	if total <= 0 then
-		LBR.Notify( ply, "No ammo to unload", "bad", 2 )
+	local size, have = LBR.UnloadInfo( ply, w )
+	if have < size then
+		LBR.Notify( ply, "Not enough ammo for a full magazine (" .. have .. " / " .. size .. ")", "bad", 2 )
 		return
 	end
 	local box = ents.Create( "lbr_ammo_box" )
 	if not IsValid( box ) then return end
-	if fromClip then w:SetClip1( 0 ) else ply:RemoveAmmo( total, id ) end
+	// the reserve first, the rest from the magazine in the weapon
+	local fromReserve = math.min( ply:GetAmmoCount( id ), size )
+	if fromReserve > 0 then ply:RemoveAmmo( fromReserve, id ) end
+	if size > fromReserve then w:SetClip1( math.max( w:Clip1(), 0 ) - ( size - fromReserve ) ) end
 	box:SetPos( ply:GetShootPos() + ply:GetAimVector() * 20 )
 	box:SetAngles( Angle( 0, ply:EyeAngles().y, 0 ) )
 	box:SetAmmoID( id )
-	box:SetAmount( total )
+	box:SetAmount( 1 )
 	box:Spawn()
 	local phys = box:GetPhysicsObject()
 	if IsValid( phys ) then phys:SetVelocity( ply:GetVelocity() + ply:GetAimVector() * 250 ) end
 	ply:EmitSound( "items/ammo_pickup.wav", 60, 80 )
-	LBR.Notify( ply, "Unloaded " .. total .. " " .. box:GroupName(), "event", 2 )
+	LBR.Notify( ply, "Unloaded a " .. box:GroupName() .. " (" .. size .. ")", "event", 2 )
 end )
 
 net.Receive( "LBR_InvDrop", function( _, ply )
