@@ -1,10 +1,11 @@
-// Client: safe zone rendering + loot outlines (halos).
+// Client: safe zone rendering + loot outlines (halos) and light beams over loot.
 
 LBR = LBR or {}
 
 local cvQuality = GetConVar( "lbr_zone_quality" )
 local cvOutline = GetConVar( "lbr_outline" )
-local cvHaloDist = CreateClientConVar( "lbr_outline_distance", "1500", true, false, "Max distance of loot outlines (lower = more FPS)" )
+local cvHaloDist = CreateClientConVar( "lbr_outline_distance", "1500", true, false, "Max distance of loot outlines and beams (lower = more FPS)" )
+local cvBeam = CreateClientConVar( "lbr_loot_beam", "1", true, false, "Small light beam going up from loot (1/0), same distance as the outline" )
 
 ------------------------------------------------------------------------
 // Zone
@@ -316,14 +317,50 @@ local function rebuildHalos()
 	end
 end
 
-hook.Add( "PreDrawHalos", "AddPropHalos", function()
-	if cvOutline:GetInt() ~= 1 then return end
-	if LBR.MapRendering or ( LBR.Editor and LBR.Editor.active ) then return end
+local function scanLoot()
 	if CurTime() > nextScan then
 		nextScan = CurTime() + 0.25
 		rebuildHalos()
 	end
+end
+
+hook.Add( "PreDrawHalos", "AddPropHalos", function()
+	if cvOutline:GetInt() ~= 1 then return end
+	if LBR.MapRendering or ( LBR.Editor and LBR.Editor.active ) then return end
+	scanLoot()
 	if #haloEnts > 0 then
 		halo.Add( haloEnts, haloColor, 2, 2, 1 )
+	end
+end )
+
+// light beam going up from the loot: soft, fading to the top, and fading out near
+// the outline distance (same items as the outline, nothing farther)
+local matBeam = Material( "sprites/light_glow02_add" )
+local BEAM_HEIGHT, BEAM_WIDTH = 110, 7
+hook.Add( "PostDrawTranslucentRenderables", "LBR_LootBeams", function( depth, skybox )
+	if depth or skybox then return end
+	if cvBeam:GetInt() ~= 1 then return end
+	if LBR.MapRendering or ( LBR.Editor and LBR.Editor.active ) then return end
+	scanLoot()
+	if #haloEnts == 0 then return end
+	local eye = EyePos()
+	local maxd = math.max( cvHaloDist:GetFloat(), 1 )
+	local pulse = 0.85 + math.sin( CurTime() * 2.5 ) * 0.15
+	render.SetMaterial( matBeam )
+	for _, ent in ipairs( haloEnts ) do
+		if IsValid( ent ) and not IsValid( ent:GetOwner() ) then
+			local base = ent:WorldSpaceCenter()
+			// fade in the last 30% of the distance
+			local f = math.Clamp( ( 1 - base:Distance( eye ) / maxd ) / 0.3, 0, 1 ) * pulse
+			if f > 0 then
+				// additive sprite: the color itself is dimmed (alpha alone may not fade it)
+				local function col( k ) k = k * f * 0.7 return Color( haloColor.r * k, haloColor.g * k, haloColor.b * k, 255 * k ) end
+				render.StartBeam( 3 )
+				render.AddBeam( base, BEAM_WIDTH, 0.5, col( 1 ) )
+				render.AddBeam( base + Vector( 0, 0, BEAM_HEIGHT * 0.4 ), BEAM_WIDTH, 0.5, col( 0.6 ) )
+				render.AddBeam( base + Vector( 0, 0, BEAM_HEIGHT ), BEAM_WIDTH, 0.5, col( 0 ) )
+				render.EndBeam()
+			end
+		end
 	end
 end )

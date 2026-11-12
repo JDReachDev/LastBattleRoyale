@@ -142,7 +142,8 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_level_exp` | `25` | EXP needed for the next level = next level × this value |
 | `lbr_zone_quality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |
 | `lbr_outline` | `1` | `1` = outline on loot |
-| `lbr_outline_distance` | `1500` | Client: max loot outline distance (lower = more FPS) |
+| `lbr_outline_distance` | `1500` | Client: max distance of loot outlines and light beams (lower = more FPS) |
+| `lbr_loot_beam` | `1` | Client: `1` = small light beam going up from loot, within the outline distance |
 | `lbr_zone_view_distance` | `9000` | Client: how far the zone wall is drawn (lower = more FPS) |
 | `lbr_cull_loot_distance` | `4000` | Loot farther than this is not sent to the player (big maps FPS), `0` = off |
 | `lbr_cull_vehicle_distance` | `8000` | Client: parked vehicles farther than this are not drawn, `0` = off |

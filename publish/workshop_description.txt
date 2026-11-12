@@ -100,7 +100,7 @@ The panel tells you what is still missing. Configs are saved in [b]garrysmod/dat
 [*][b]lbr_cull_loot_distance[/b] - loot farther than this is not sent to players (default 4000, 0 = off)
 [*][b]lbr_editor_superadminonly[/b] - only superadmins can use the map editor (1/0)
 [*][b]lbr_zone_quality[/b] - client: zone wall, 3 high, 2 medium, 1 low, 0 invisible
-[*][b]lbr_outline / lbr_outline_distance[/b] - client: outline on loot (1/0) and its max distance (default 1500)
+[*][b]lbr_outline / lbr_loot_beam / lbr_outline_distance[/b] - client: outline and light beam on loot (1/0) and their max distance (default 1500)
 [*][b]lbr_zone_view_distance / lbr_cull_vehicle_distance[/b] - client: how far the zone and parked vehicles are drawn (9000 / 8000)
 [/list]
 Old [b]lst_*[/b] names still work. Full list on [url=https://github.com/JDReachDev/LastBattleRoyale]GitHub[/url].
