@@ -424,27 +424,31 @@ local function invTile( parent, slot )
 		self.DropHover = not dropped
 		if not dropped then return end
 		local src = panels[1]
-		if not IsValid( src ) or src == self or not src.Slot then return end
+		if not IsValid( src ) or src == self or not src.GetSlot then return end
 		net.Start( "LBR_InvMove" )
-		net.WriteUInt( src.Slot, 4 )
-		net.WriteUInt( self.Slot, 4 )
+		net.WriteUInt( src:GetSlot(), 4 )
+		net.WriteUInt( self:GetSlot(), 4 )
 		net.SendToServer()
 		LocalPlayer():EmitSound( "weapons/shotgun/shotgun_cock.wav", 0, 110, 0.45, CHAN_STATIC ) // weapon handling sound
 	end )
 	t.Weapon = function( self )
 		if not inGame() then return end
-		return LBR.InvGet( LocalPlayer() )[self.Slot]
+		return LBR.InvGet( LocalPlayer() )[self:GetSlot()]
+	end
+	// backpack tiles come after the equipment: their slot moves with lbr_inv_equipment
+	t.GetSlot = function( self )
+		return self.BagIndex and LBR.INV_EQUIP + self.BagIndex or self.Slot
 	end
 	t.DoRightClick = function( self )
 		if not IsValid( self:Weapon() ) then return end
 		net.Start( "LBR_InvDrop" )
-		net.WriteUInt( self.Slot, 4 )
+		net.WriteUInt( self:GetSlot(), 4 )
 		net.SendToServer()
 		surface.PlaySound( "ui/buttonclick.wav" )
 	end
 	t.Paint = function( self, w, h )
 		local wep = self:Weapon()
-		local bag = self.Slot > LBR.INV_EQUIP
+		local bag = self.BagIndex ~= nil
 		local active = IsValid( wep ) and wep == LocalPlayer():GetActiveWeapon()
 		local hover = self:IsHovered() or self.DropHover
 		self.DropHover = false
@@ -574,33 +578,53 @@ local function buildSide( f )
 		UI.Text( "Your inventory shows here during the match", "LBR_UI_Small", w / 2, S( 80 ), C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 	local tiles = {}
-	local function count( from, to )
+	// slot counts come from lbr_inv_equipment / lbr_inv_backpack: tiles are made for
+	// the maximum and the extra ones hidden
+	local function count( bag )
 		return function()
 			local n = 0
 			local items = inGame() and LBR.InvGet( LocalPlayer() ) or {}
+			local from, to = 1, LBR.INV_EQUIP
+			if bag then from, to = LBR.INV_EQUIP + 1, LBR.INV_SLOTS end
 			for s = from, to do if IsValid( items[s] ) then n = n + 1 end end
 			return n .. " / " .. ( to - from + 1 )
 		end
 	end
 	local heads = {}
-	heads[1] = sideHeader( inv, "EQUIPMENT", count( 1, LBR.INV_EQUIP ) )
+	heads[1] = sideHeader( inv, "EQUIPMENT", count( false ) )
 	heads[1]:DockMargin( 0, 0, 0, S( 4 ) )
-	for s = 1, LBR.INV_EQUIP do tiles[#tiles + 1] = invTile( inv, s ) end
-	heads[2] = sideHeader( inv, "BACKPACK", count( LBR.INV_EQUIP + 1, LBR.INV_SLOTS ) )
-	for s = LBR.INV_EQUIP + 1, LBR.INV_SLOTS do tiles[#tiles + 1] = invTile( inv, s ) end
+	local equipTiles, bagTiles = {}, {}
+	for s = 1, LBR.INV_EQUIP_MAX do equipTiles[s] = invTile( inv, s ) end
+	heads[2] = sideHeader( inv, "BACKPACK", count( true ) )
+	for k = 1, LBR.INV_BAG_MAX do
+		bagTiles[k] = invTile( inv, LBR.INV_EQUIP + k )
+		bagTiles[k].BagIndex = k
+	end
 	local hint = vgui.Create( "DPanel", inv )
 	hint:Dock( TOP )
 	hint:SetTall( S( 18 ) )
 	hint.Paint = function( self, w, h )
-		UI.Text( "Drag to move  -  Right click to drop  -  1-5 in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( "Drag to move  -  Right click to drop  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
-	tiles[#tiles + 1] = hint
-	tiles[#tiles + 1] = heads[1]
-	tiles[#tiles + 1] = heads[2]
+	local lastE, lastB, lastH
 	inv.Think = function( self )
 		local show = inGame()
-		for _, t in ipairs( tiles ) do
-			if t:IsVisible() ~= show then t:SetVisible( show ) end
+		local function vis( p, v ) if p:IsVisible() ~= v then p:SetVisible( v ) end end
+		vis( hint, show )
+		vis( heads[1], show )
+		vis( heads[2], show and LBR.INV_BAG > 0 )
+		for s, t in ipairs( equipTiles ) do vis( t, show and s <= LBR.INV_EQUIP ) end
+		for k, t in ipairs( bagTiles ) do vis( t, show and k <= LBR.INV_BAG ) end
+		// many slots: smaller tiles so they all fit
+		local h = self:GetTall()
+		if LBR.INV_EQUIP ~= lastE or LBR.INV_BAG ~= lastB or h ~= lastH then
+			lastE, lastB, lastH = LBR.INV_EQUIP, LBR.INV_BAG, h
+			local fixed = S( 18 ) + ( S( 30 ) * ( LBR.INV_BAG > 0 and 2 or 1 ) )
+			local th = math.floor( ( h - fixed ) / math.max( LBR.INV_SLOTS, 1 ) ) - S( 3 )
+			th = math.Clamp( th, S( 38 ), S( 52 ) )
+			for _, t in ipairs( equipTiles ) do t:SetTall( th ) end
+			for _, t in ipairs( bagTiles ) do t:SetTall( th ) end
+			self:InvalidateLayout()
 		end
 	end
 	return side

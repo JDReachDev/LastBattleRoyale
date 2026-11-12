@@ -94,7 +94,7 @@ function MinPlayers()
 end
 
 function EXPScale()
-	return GetConVar("lbr_exp_scale"):GetInt()
+	return GetConVar("lbr_exp_scale"):GetFloat() // 0.5, 1.5... work too
 end
 
 function LevelEXP()

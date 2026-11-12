@@ -83,7 +83,7 @@
 		{
 			"name"		"lbr_exp_scale"
 			"text"		"EXP scale"
-			"help"		"EXP multiplier"
+			"help"		"EXP multiplier (0.5, 2...)"
 			"type"		"Numeric"
 			"default"	"1"
 		}
@@ -110,6 +110,54 @@
 			"help"		"Outline on loot"
 			"type"		"CheckBox"
 			"default"	"1"
+		}
+		14
+		{
+			"name"		"lbr_inv_equipment"
+			"text"		"Equipment slots (1-6)"
+			"help"		"Weapons you can have in hand (keys 1-N). Applied in the lobby"
+			"type"		"Numeric"
+			"default"	"5"
+		}
+		15
+		{
+			"name"		"lbr_inv_backpack"
+			"text"		"Backpack slots (0-6)"
+			"help"		"Extra items carried in the backpack. Applied in the lobby"
+			"type"		"Numeric"
+			"default"	"3"
+		}
+		16
+		{
+			"name"		"lbr_mapvote"
+			"text"		"Map vote"
+			"help"		"Vote the next map at the end of the match (only configured maps)"
+			"type"		"CheckBox"
+			"default"	"1"
+		}
+		17
+		{
+			"name"		"lbr_mapvote_rounds"
+			"text"		"Matches before the vote"
+			"help"		"Matches on the same map before the map vote"
+			"type"		"Numeric"
+			"default"	"1"
+		}
+		18
+		{
+			"name"		"lbr_cw_spawn_attachments"
+			"text"		"All attachments on spawn"
+			"help"		"1 = every CW 2.0 attachment on spawn, 0 = attachments are loot"
+			"type"		"CheckBox"
+			"default"	"0"
+		}
+		19
+		{
+			"name"		"lbr_cull_loot_distance"
+			"text"		"Loot send distance"
+			"help"		"Loot farther than this is not sent to players (FPS on big maps), 0 = off"
+			"type"		"Numeric"
+			"default"	"4000"
 		}
 	}
 }

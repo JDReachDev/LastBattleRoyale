@@ -1,6 +1,7 @@
 // Weapon selection made for the gamemode (replaces the Half-Life 2 menu).
 //  - mouse wheel: switch to the next / previous weapon right away
-//  - 1-5: switch to the weapon in that equipment slot (TAB inventory), 6: hands
+//  - 1-N: switch to the weapon in that equipment slot (TAB inventory), N+1: hands
+//    (N = lbr_inv_equipment, 5 by default)
 //    (press again to cycle when more weapons share the key)
 //  - a strip of cards at the bottom shows your weapons for a few seconds after a
 //    switch or a pickup, with the slot number, name and ammo
@@ -26,8 +27,8 @@ local pending // weapon we asked to switch to (highlighted before the switch fin
 local pendingUntil = 0
 local nextRetry = 0
 
-// weapons in the bar: the 5 equipment slots of the inventory (sh_inventory.lua)
-// then the hands (melee, fists), on key 6. Backpack weapons are not here.
+// weapons in the bar: the equipment slots of the inventory (sh_inventory.lua)
+// then the hands (melee, fists), on the next key. Backpack weapons are not here.
 local slotLabel = {}
 local function weaponList( ply )
 	local list = {}
@@ -132,7 +133,7 @@ hook.Add( "PlayerBindPress", "LBR_WeaponSelect", function( ply, bind, pressed )
 	end
 
 	// number keys: weapons in that slot, cycling
-	if slot < 1 or slot > 6 then return true end
+	if slot < 1 or slot > LBR.INV_EQUIP + 1 then return true end
 	local inSlot = {}
 	for _, w in ipairs( list ) do
 		if slotLabel[w] == slot then inSlot[#inSlot + 1] = w end

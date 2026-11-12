@@ -1,5 +1,5 @@
 // Inventory, server side (see sh_inventory.lua): keeps the slot layout of every
-// player, refuses pickups when the 8 slots are full, swaps and drops from the
+// player, refuses pickups when all the slots are full, swaps and drops from the
 // TAB menu.
 
 util.AddNetworkString( "LBR_InvMove" )
@@ -35,6 +35,13 @@ function LBR.InvSync( ply )
 	local inv = layout( ply )
 	local changed = false
 	local known = {}
+	// slots removed by a smaller lbr_inv_* setting: their weapons get a new place below
+	for s, w in pairs( inv ) do
+		if s > LBR.INV_SLOTS then
+			inv[s] = nil
+			changed = true
+		end
+	end
 	for s = 1, LBR.INV_SLOTS do
 		local w = inv[s]
 		if w ~= nil and ( not IsValid( w ) or w:GetOwner() ~= ply or LBR.InvIsHands( w ) ) then
@@ -59,6 +66,11 @@ function LBR.InvSync( ply )
 				LBR.Notify( ply, "Inventory full: " .. ( w.PrintName or w:GetClass() ) .. " dropped", "bad", 3 )
 			end
 		end
+	end
+	// the slot count changed: send the layout again with the new length
+	if ply.LBR_InvSent ~= LBR.INV_SLOTS then
+		ply.LBR_InvSent = LBR.INV_SLOTS
+		changed = true
 	end
 	if changed or ply:GetNW2String( "LBR_Inv", "" ) == "" then send( ply ) end
 	LBR.InvCheckActive( ply )
@@ -149,7 +161,7 @@ timer.Create( "LBR_InvSync", 0.5, 0, function()
 	end
 end )
 
-// pickup limit: 8 slots (a weapon you already have only gives ammo)
+// pickup limit: all the slots (a weapon you already have only gives ammo)
 function LBR.InvCanPickup( ply, wep )
 	if LBR.InvIsHands( wep ) then return true end
 	if ply:HasWeapon( wep:GetClass() ) then return true end

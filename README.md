@@ -37,7 +37,7 @@ add maps/weapons and run it on their own server.
 | `M` | **Map**: the whole map seen from above, up to its borders (found automatically on any map), with a battleship grid (A–H / 1–8), you, your squad (even far away), the safe zone with its timer and a dashed line to it when you are outside (outside the zone the map is darker and striped in the zone color), supply drops still to open, the nuke target and where teammates fell. **Left click** places a marker for your squad (also on the compass and on screen with the distance), **right click** removes it. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
-| `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
+| `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists; the keys follow `lbr_inv_equipment`). Weapons, medkits, adrenaline and grenades take a slot; with all slots full (8 by default) you must drop something to pick up more |
 | `C` | CW 2.0 weapon customization: put on the attachments you found (press the category number `1`, `2`, `3`…; the ones you don't have are red) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
@@ -128,6 +128,8 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | ConVar | Default | Description |
 |---|---|---|
 | `lbr_min_players` | `2` | Players needed to start a round |
+| `lbr_inv_equipment` | `5` | Equipment slots (weapons in hand, keys 1-N), 1 to 6; applied in the lobby |
+| `lbr_inv_backpack` | `3` | Backpack slots, 0 to 6; applied in the lobby |
 | `lbr_time_preparing` | `30` | Preparing time (seconds) |
 | `lbr_time_weapons_hot` | `30` | Time before the round goes live (seconds) |
 | `lbr_time_postround` | `15` | Time after the round ends (seconds) |
@@ -136,7 +138,7 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_css_armor` | `1` | `1` = use CS:S armor models (needs CS:S mounted) |
 | `lbr_event_nuke` | `0` | `1` = enable the random nuclear strike event |
 | `lbr_event_implosion` | `0` | `1` = implosion bomb when the zone fully closes |
-| `lbr_exp_scale` | `1` | EXP multiplier |
+| `lbr_exp_scale` | `1` | EXP multiplier (decimals work: 0.5, 1.5) |
 | `lbr_level_exp` | `25` | EXP needed for the next level = next level × this value |
 | `lbr_zone_quality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |
 | `lbr_outline` | `1` | `1` = outline on loot |
@@ -188,7 +190,7 @@ gamemodes/lastbattleroyale/
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
         cl_map.lua / sv_map.lua  M map: top-down view rendered once, map borders scan, squad positions and markers, supply drops, nuke, fallen teammates
-        cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-5 equipment, 6 hands)
+        cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-N equipment, then hands)
         sh_inventory.lua / sv_inventory.lua  inventory: 5 equipment + 3 backpack slots, pickup limit, swap and drop
         sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
         sv_mapvote.lua / cl_mapvote.lua  end of match map vote, F2 admin map menu

@@ -499,7 +499,7 @@ function playerdeath( victim, inflictor, attacker )
 			local ply = alive[1]
 			LBR.Chat( nil, victim:Nick() .. " died! " .. ply:Nick() .. " is the winner!", "good" )
 			ply:AddFrags(5)
-			local exp = 30 * EXPScale()
+			local exp = math.Round( 30 * EXPScale() )
 			if (ply.roundkills or 0) >= 5 then
 				ply:SetEXP( ply:GetEXP() + (exp * 4) )
 				ply:LevelUpdate()
@@ -547,7 +547,7 @@ function playerdeath( victim, inflictor, attacker )
 	end
 	if IsValid(attacker) and attacker:IsPlayer() and attacker != victim then
 		if victim:Team() == TEAM_SPEC and attacker:Team() == TEAM_CONT then
-			local exp = ( 25 + (victim:GetLevel() * 2) ) * EXPScale()
+			local exp = math.Round( ( 25 + (victim:GetLevel() * 2) ) * EXPScale() )
 			local hitgroup = victim:LastHitGroup()
 			if hitgroup == HITGROUP_HEAD then
 				exp = exp * 1.5
@@ -643,7 +643,7 @@ function GM:PlayerCanPickupWeapon( ply, wep )
 	if ply:Team() == TEAM_CONT then
 		if wep.kanadelootable == true then
 			if ply:KeyDown(IN_USE) then
-				if not LBR.InvCanPickup( ply, wep ) then return false end // 8 slots full
+				if not LBR.InvCanPickup( ply, wep ) then return false end // all slots full
 				// extra reserve ammo set in the Loot editor, given once if the pickup happens
 				if ( wep.LBR_Ammo or 0 ) > 0 and not wep.LBR_AmmoPending then
 					wep.LBR_AmmoPending = true
