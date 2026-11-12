@@ -32,7 +32,8 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop), your stats and the Classes / Squad / Map buttons. The view stays still |
+| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
+| `M` | **Map** seen from above with a battleship grid (A–H / 1–8): you, your squad and the safe zone. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
@@ -82,8 +83,8 @@ Collection: **[Last Battle Royale Supported Maps](https://steamcommunity.com/wor
 | `rp_city17_build210` | |
 | `gm_marsh` | |
 | `rp_wasteland` | |
-| `gm_fork` | Heavy map, lower FPS |
-| `gm_valley` | Heavy map, lower FPS |
+| `gm_fork` | Big map |
+| `gm_valley` | Big map |
 | `rp_ineu_pass_v1e` | |
 
 Any other map can be configured in game: join as admin, press `F8`, place the points and save —

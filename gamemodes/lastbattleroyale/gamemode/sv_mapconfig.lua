@@ -37,6 +37,7 @@ function LBR.RefreshMapState()
 	local errors = LBR.ValidateMapConfig( LBR.GetMapConfig() )
 	LBR.MapReady = #errors == 0
 	SetGlobalBool( "LBR_MapReady", LBR.MapReady )
+	if LBR.UpdateMapBounds then LBR.UpdateMapBounds() end // map area for the M map (sv_map.lua)
 	return errors
 end
 

@@ -14,6 +14,7 @@ include( "cl_loot.lua" )
 include( "cl_weaponselect.lua" )
 include( "cl_attachments.lua" )
 include( "cl_mapvote.lua" )
+include( "cl_map.lua" )
 
 TEAM_PLAYER = 1
 TEAM_CONT = 2

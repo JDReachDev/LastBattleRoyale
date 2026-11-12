@@ -165,7 +165,7 @@ end
 
 hook.Add( "PostDrawTranslucentRenderables", "LBR_DrawZone", function( depth, skybox )
 	// the hook also runs for the skybox and depth passes: drawing there doubled the cost
-	if depth or skybox then return end
+	if depth or skybox or LBR.MapRendering then return end
 	if not LBR.IsZoneActive() then return end
 	local q = math.min( cvQuality:GetInt(), 3 )
 	if q <= 0 then return end
@@ -215,7 +215,7 @@ hook.Add( "Think", "LBR_ZoneStorm", function()
 end )
 
 local function stormFog( scale )
-	if storm <= 0 then return end
+	if storm <= 0 or LBR.MapRendering then return end
 	render.FogMode( MATERIAL_FOG_LINEAR )
 	render.FogStart( 0 )
 	render.FogEnd( Lerp( storm, 30000, 1800 ) * ( scale or 1 ) )
@@ -318,7 +318,7 @@ end
 
 hook.Add( "PreDrawHalos", "AddPropHalos", function()
 	if cvOutline:GetInt() ~= 1 then return end
-	if LBR.Editor and LBR.Editor.active then return end
+	if LBR.MapRendering or ( LBR.Editor and LBR.Editor.active ) then return end
 	if CurTime() > nextScan then
 		nextScan = CurTime() + 0.25
 		rebuildHalos()

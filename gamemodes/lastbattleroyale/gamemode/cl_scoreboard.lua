@@ -500,12 +500,16 @@ local function buildSide( f )
 	local list = {
 		UI.Button( btns, "CLASSES  F3", C.accent, function() ShowClassMenu() end ),
 		UI.Button( btns, "SQUAD  F4", C.blue, function() ShowTeamMenu() end ),
-		UI.Button( btns, "MAP  F2", C.good, function() if LBR.OpenMapMenu then LBR.OpenMapMenu() end end ),
+		UI.Button( btns, "MAP  M", C.good, function()
+			GAMEMODE:ScoreboardHide() // the map (cl_map.lua) is drawn under the board
+			if LBR.Map then LBR.Map.Toggle( true ) end
+		end ),
+		UI.Button( btns, "CHANGE MAP  F2", C.bad, function() if LBR.OpenMapMenu then LBR.OpenMapMenu() end end ),
 	}
 	btns.Think = function( self )
 		local admin = LocalPlayer():IsAdmin()
-		if list[3]:IsVisible() ~= admin then
-			list[3]:SetVisible( admin )
+		if list[4]:IsVisible() ~= admin then
+			list[4]:SetVisible( admin )
 			self:InvalidateLayout()
 		end
 	end
@@ -643,7 +647,7 @@ local function createBoard()
 
 		// footer
 		local hint = self:IsMouseInputEnabled() and "Right click a player: mute / profile" or "Click to use the mouse"
-		UI.Text( "F3 Classes   F4 Squad   Q Drop weapon in hand", "LBR_UI_Tiny", S( 20 ), ph - S( 18 ), C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		UI.Text( "F3 Classes   F4 Squad   M Map   Q Drop weapon in hand", "LBR_UI_Tiny", S( 20 ), ph - S( 18 ), C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 		UI.Text( hint, "LBR_UI_Tiny", pw - S( 20 ), ph - S( 18 ), C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	end
 

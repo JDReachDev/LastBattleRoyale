@@ -471,9 +471,10 @@ hook.Add( "HUDPaint", "LBR_HUD", function()
 
 	local ply, spectating = viewTarget()
 	drawEffects( lp )
-	drawTeamNames( lp )
-	drawCompass( lp )
-	drawBanner( lp, spectating, ply )
+	local mapOpen = LBR.Map and LBR.Map.open // the map (cl_map.lua) covers the middle of the screen
+	if not mapOpen then drawTeamNames( lp ) end
+	if not mapOpen then drawCompass( lp ) end
+	if not mapOpen then drawBanner( lp, spectating, ply ) end
 	drawInfo( lp, ply )
 	drawTeam( lp )
 	if ( lp:Alive() and lp:Team() ~= 3 ) or spectating then
