@@ -9,11 +9,11 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*][b]New zone[/b]: the old sphere is gone. Now it is a glowing wall that follows the terrain and fades upward, with a light on the ground and a storm effect (fog, grey colors) when you are outside. No more "hole" in the sky from far away
 [*][b]New HUD[/b]: shield and health bars, compass with zone and teammates, zone timer, kills, players alive, squad panel. One clean style for HUD, menus and messages
-[*][b]New menus[/b]: TAB scoreboard, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
+[*][b]New menus[/b]: TAB with scoreboard, inventory and stats, F3 class menu (stats, loadout, level and unlocks) and F4 squad menu (invite and remove players with the mouse)
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
 [*][b]Map vote[/b] at the end of the match, only between maps ready to play
-[*][b]New weapon bar[/b]: mouse wheel and 1-6 switch weapon right away, with slot, name and ammo
+[*][b]Inventory[/b]: 5 equipment slots (mouse wheel and 1-5, instant switch) + 3 backpack slots. Hold TAB to move items (drag) or drop them (right click)
 [*][b]Interaction prompts[/b]: the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn, lighter zone and outlines
@@ -29,7 +29,6 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]Events[/b]: supply airdrops, optional nuclear strike and implosion bomb
 [*][b]Squads[/b] of up to 4 players with teammate markers on compass and screen
 [*][b]9 classes[/b] unlocked by levelling up
-[*][b]Optimized for big maps[/b] (gm_fork, gm_valley): far loot and vehicles are not sent / drawn, lighter zone and outlines
 [/list]
 
 [h2]How to play[/h2]
@@ -51,10 +50,10 @@ Kills and wins give EXP to the class you are using. Level up classes to unlock n
 
 [h2]Keys[/h2]
 [list]
-[*][b]TAB[/b] - scoreboard (right click a player to mute or open the profile)
+[*][b]TAB (hold)[/b] - scoreboard, inventory (drag to move, right click to drop), stats
 [*][b]F3[/b] - class menu: stats, loadout, level and what unlocks each class
 [*][b]F4[/b] - squad menu: invite players, remove mates ([b]F6[/b] decline / [b]F7[/b] accept an invite)
-[*][b]Mouse wheel / 1-6[/b] - switch weapon (new weapon bar)
+[*][b]Mouse wheel / 1-5[/b] - switch between the equipment slots (6: melee)
 [*][b]C[/b] - customize your CW 2.0 weapon with the attachments you found
 [*][b]Q[/b] - drop your active weapon
 [*][b]E[/b] - pick up weapons, use items, enter vehicles, open supply drops (a prompt shows what you are looking at)

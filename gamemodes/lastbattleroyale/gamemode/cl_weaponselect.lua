@@ -1,6 +1,7 @@
 // Weapon selection made for the gamemode (replaces the Half-Life 2 menu).
 //  - mouse wheel: switch to the next / previous weapon right away
-//  - 1-6: switch to the weapon in that slot (press again to cycle the slot)
+//  - 1-5: switch to the weapon in that equipment slot (TAB inventory), 6: hands
+//    (press again to cycle when more weapons share the key)
 //  - a strip of cards at the bottom shows your weapons for a few seconds after a
 //    switch or a pickup, with the slot number, name and ammo
 
@@ -25,10 +26,33 @@ local pending // weapon we asked to switch to (highlighted before the switch fin
 local pendingUntil = 0
 local nextRetry = 0
 
+// weapons in the bar: the 5 equipment slots of the inventory (sh_inventory.lua)
+// then the hands (melee, fists), on key 6. Backpack weapons are not here.
+local slotLabel = {}
 local function weaponList( ply )
 	local list = {}
+	slotLabel = {}
+	if ply:GetNW2String( "LBR_Inv", "" ) ~= "" then
+		local inv = LBR.InvGet( ply )
+		for s = 1, LBR.INV_EQUIP do
+			if IsValid( inv[s] ) then
+				list[#list + 1] = inv[s]
+				slotLabel[inv[s]] = s
+			end
+		end
+		for _, w in ipairs( ply:GetWeapons() ) do
+			if LBR.InvIsHands( w ) then
+				list[#list + 1] = w
+				slotLabel[w] = LBR.INV_EQUIP + 1
+			end
+		end
+		return list
+	end
 	for _, w in ipairs( ply:GetWeapons() ) do
-		if IsValid( w ) then list[#list + 1] = w end
+		if IsValid( w ) then
+			list[#list + 1] = w
+			slotLabel[w] = w:GetSlot() + 1
+		end
 	end
 	table.sort( list, function( a, b )
 		local sa, sb = a:GetSlot(), b:GetSlot()
@@ -116,7 +140,7 @@ hook.Add( "PlayerBindPress", "LBR_WeaponSelect", function( ply, bind, pressed )
 	if slot < 1 or slot > 6 then return true end
 	local inSlot = {}
 	for _, w in ipairs( list ) do
-		if w:GetSlot() == slot - 1 then inSlot[#inSlot + 1] = w end
+		if slotLabel[w] == slot then inSlot[#inSlot + 1] = w end
 	end
 	if #inSlot == 0 then
 		showUntil = CurTime() + SHOW_TIME
@@ -200,7 +224,7 @@ hook.Add( "HUDPaint", "LBR_WeaponSelect", function()
 
 		// slot number
 		local a = ( active and 255 or 170 ) * alpha
-		draw.SimpleText( tostring( w:GetSlot() + 1 ), "LBR_HUD_Tiny", cx + S( 8 ), cy + S( 6 ), Color( colDim.r, colDim.g, colDim.b, a ) )
+		draw.SimpleText( tostring( slotLabel[w] or ( w:GetSlot() + 1 ) ), "LBR_HUD_Tiny", cx + S( 8 ), cy + S( 6 ), Color( colDim.r, colDim.g, colDim.b, a ) )
 
 		// name
 		local nameCol = active and colGold or colText

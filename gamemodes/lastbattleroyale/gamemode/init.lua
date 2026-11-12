@@ -11,6 +11,7 @@ AddCSLuaFile( "sh_zone.lua" )
 AddCSLuaFile( "sh_spawn.lua" )
 AddCSLuaFile( "sh_loot.lua" )
 AddCSLuaFile( "sh_notify.lua" )
+AddCSLuaFile( "sh_inventory.lua" )
 AddCSLuaFile( "cl_hud.lua" )
 AddCSLuaFile( "cl_zone.lua" )
 AddCSLuaFile( "cl_editor.lua" )
@@ -31,6 +32,7 @@ include( "sv_perf.lua" )
 include( "sv_attachments.lua" )
 include( "sv_mapvote.lua" )
 include( "sv_menus.lua" )
+include( "sv_inventory.lua" )
 include( "classes.lua" )
 include( "classessystem.lua" )
 
@@ -315,9 +317,7 @@ cantdropweapons = {
 	"weapon_crowbar",
 	"weapon_molotov_c",
 	"cw_extrema_ratio_official",
-	"weapon_stunstick",
-	"sg_medkit_fix",
-	"sg_adrenaline_fix"
+	"weapon_stunstick"
 }
 
 function intab(val, tab)
@@ -330,29 +330,8 @@ function intab(val, tab)
 end
 
 net.Receive( "DropWeapon", function( len, ply )
-	local wep = ply:GetActiveWeapon()
-	if IsValid(wep) && wep != nil then
-		if wep:GetClass() == nil then return end
-		if intab(wep:GetClass(), cantdropweapons) == false then
-			local ent = ents.Create( wep:GetClass() )
-			if IsValid( ent ) then
-				ent:Spawn()
-				ent:SetPos(ply:GetShootPos() + ply:GetAimVector() * 10)
-				ent:SetAngles( ply:EyeAngles() )
-				
-				ent:PhysWake()
-				local phys = ent:GetPhysicsObject()
-				if IsValid(phys) then
-					phys:SetVelocity(ply:GetVelocity() + ply:GetAimVector() * 500)
-				end
-				
-				ent:SetClip1(wep:Clip1())
-				ent.kanadelootable = true
-			end
-			ply:StripWeapon(wep:GetClass())
-			ply:ConCommand( "lastinv" )
-		end
-	end
+	if not ply:Alive() then return end
+	LBR.DropWeapon( ply, ply:GetActiveWeapon() ) // sv_inventory.lua
 end )
 
 TEAM_PLAYER = 1
@@ -662,6 +641,7 @@ function GM:PlayerCanPickupWeapon( ply, wep )
 	if ply:Team() == TEAM_CONT then
 		if wep.kanadelootable == true then
 			if ply:KeyDown(IN_USE) then
+				if not LBR.InvCanPickup( ply, wep ) then return false end // 8 slots full
 				// extra reserve ammo set in the Loot editor, given once if the pickup happens
 				if ( wep.LBR_Ammo or 0 ) > 0 and not wep.LBR_AmmoPending then
 					wep.LBR_AmmoPending = true

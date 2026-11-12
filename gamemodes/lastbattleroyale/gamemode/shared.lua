@@ -6,6 +6,7 @@ include( "sh_zone.lua" )
 include( "sh_spawn.lua" )
 include( "sh_loot.lua" )
 include( "sh_notify.lua" )
+include( "sh_inventory.lua" )
 
 for k,v in pairs(CLASSES) do
 	local cls = "player_class/" .. v["class"] .. ".lua"

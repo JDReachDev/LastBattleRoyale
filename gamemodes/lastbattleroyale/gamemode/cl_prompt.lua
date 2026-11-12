@@ -43,6 +43,13 @@ local function describe( lp, ent )
 	if ent:IsWeapon() then
 		if IsValid( ent:GetOwner() ) then return end
 		if lp:HasWeapon( class ) then return "TAKE AMMO", niceName( ent ) end
+		if LBR.InvGet and not LBR.InvIsHands( ent ) then
+			local n = 0
+			for _, w in ipairs( lp:GetWeapons() ) do
+				if not LBR.InvIsHands( w ) then n = n + 1 end
+			end
+			if n >= LBR.INV_SLOTS then return "INVENTORY FULL, DROP SOMETHING", niceName( ent ) end
+		end
 		return "PICK UP", niceName( ent )
 	end
 

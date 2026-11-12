@@ -32,10 +32,10 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` | Scoreboard: players in game, lobby, spectators (the view stays still, right click a player to mute; admins: *START NOW* button in the lobby) |
+| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (5 equipment + 3 backpack slots: drag to move, right click to drop), your stats and the Classes / Squad / Map buttons. The view stays still |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
-| `Mouse wheel` / `1`–`6` | Switch weapon (custom weapon bar with slot, name and ammo) |
+| `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
 | `C` | CW 2.0 weapon customization: put on the attachments you found (`1`–`4` / `R` pick the category, the weapon does not change) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
@@ -177,10 +177,11 @@ gamemodes/lastbattleroyale/
         sh_zone.lua              zone math shared by server and client
         sv_mapconfig.lua         map config files + map editor (server)
         cl_ui.lua                shared look of the menus (fonts, colors, buttons)
-        cl_scoreboard.lua        TAB scoreboard
+        cl_scoreboard.lua        TAB: scoreboard, inventory, stats
         cl_menus.lua / sv_menus.lua  F3 class menu, F4 squad menu, squad invite popup
         cl_prompt.lua            "[E] PICK UP ..." interaction prompt
-        cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-6)
+        cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-5 equipment, 6 hands)
+        sh_inventory.lua / sv_inventory.lua  inventory: 5 equipment + 3 backpack slots, pickup limit, swap and drop
         sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
         sv_mapvote.lua / cl_mapvote.lua  end of match map vote, F2 admin map menu
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor

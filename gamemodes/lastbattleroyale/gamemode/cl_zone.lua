@@ -61,18 +61,18 @@ local matGlow = CreateMaterial( "LBR_ZoneGlow", "UnlitGeneric", {
 	["$additive"] = 1, ["$nocull"] = 1,
 } )
 
-local WALL_HEIGHT = 2200   // fades to nothing at this height above the ground
-local WALL_DEPTH = 1500    // goes this far under the ground (hidden by the terrain)
+local WALL_UP = 2000       // fades to nothing this far above your eyes
+local WALL_DOWN = 1400     // and this far below them
 local TEX_SCALE = 1400     // world units per texture repeat
 local segmentsByQuality = { [1] = 40, [2] = 64, [3] = 96 }
 
-// wall rows: height above the ground, alpha (0..1)
+// wall rows: height from your eyes, alpha (0..1). Strongest at your height,
+// fading up and down (the terrain hides the part under the ground)
 local rows = {
-	{ -WALL_DEPTH, 0.9 },
+	{ -WALL_DOWN, 0 },
 	{ 0, 1 },
-	{ WALL_HEIGHT * 0.25, 0.7 },
-	{ WALL_HEIGHT * 0.6, 0.25 },
-	{ WALL_HEIGHT, 0 },
+	{ WALL_UP * 0.4, 0.45 },
+	{ WALL_UP, 0 },
 }
 
 // ground height cache: index on the circle -> { z, r }
@@ -144,7 +144,7 @@ local function vert( x, y, z, u, v, col, a )
 	mesh.AdvanceVertex()
 end
 
-local function drawWall( count, col, alphaMul, scroll )
+local function drawWall( count, col, alphaMul, scroll, eyeZ )
 	local quads = 0
 	for i = 1, count - 1 do
 		if cols[i].fade > 0 or cols[i + 1].fade > 0 then quads = quads + #rows - 1 end
@@ -157,10 +157,10 @@ local function drawWall( count, col, alphaMul, scroll )
 			for r = 1, #rows - 1 do
 				local h1, a1 = rows[r][1], rows[r][2]
 				local h2, a2 = rows[r + 1][1], rows[r + 1][2]
-				vert( c1.x, c1.y, c1.z + h1, c1.u, ( c1.z + h1 ) / TEX_SCALE + scroll, col, a1 * c1.fade * alphaMul )
-				vert( c1.x, c1.y, c1.z + h2, c1.u, ( c1.z + h2 ) / TEX_SCALE + scroll, col, a2 * c1.fade * alphaMul )
-				vert( c2.x, c2.y, c2.z + h2, c2.u, ( c2.z + h2 ) / TEX_SCALE + scroll, col, a2 * c2.fade * alphaMul )
-				vert( c2.x, c2.y, c2.z + h1, c2.u, ( c2.z + h1 ) / TEX_SCALE + scroll, col, a1 * c2.fade * alphaMul )
+				vert( c1.x, c1.y, eyeZ + h1, c1.u, ( eyeZ + h1 ) / TEX_SCALE + scroll, col, a1 * c1.fade * alphaMul )
+				vert( c1.x, c1.y, eyeZ + h2, c1.u, ( eyeZ + h2 ) / TEX_SCALE + scroll, col, a2 * c1.fade * alphaMul )
+				vert( c2.x, c2.y, eyeZ + h2, c2.u, ( eyeZ + h2 ) / TEX_SCALE + scroll, col, a2 * c2.fade * alphaMul )
+				vert( c2.x, c2.y, eyeZ + h1, c2.u, ( eyeZ + h1 ) / TEX_SCALE + scroll, col, a1 * c2.fade * alphaMul )
 			end
 		end
 	end
@@ -170,7 +170,7 @@ end
 // glowing line where the wall meets the ground
 local function drawGroundGlow( count, col, alphaMul )
 	local pulse = 0.75 + math.sin( CurTime() * 3 ) * 0.25
-	mesh.Begin( MATERIAL_QUADS, ( count - 1 ) * 3 )
+	mesh.Begin( MATERIAL_QUADS, ( count - 1 ) * 2 )
 	for i = 1, count - 1 do
 		local c1, c2 = cols[i], cols[i + 1]
 		local a1, a2 = 255 * c1.fade * alphaMul * pulse, 255 * c2.fade * alphaMul * pulse
@@ -183,11 +183,6 @@ local function drawGroundGlow( count, col, alphaMul )
 		vert( c1.x, c1.y, c1.z + 200, 0, 0, col, 0 )
 		vert( c2.x, c2.y, c2.z + 200, 0, 0, col, 0 )
 		vert( c2.x, c2.y, c2.z + 10, 0, 0, col, a2 )
-		// soft haze rising from the ground
-		vert( c1.x, c1.y, c1.z, 0, 0, col, a1 * 0.35 )
-		vert( c1.x, c1.y, c1.z + 900, 0, 0, col, 0 )
-		vert( c2.x, c2.y, c2.z + 900, 0, 0, col, 0 )
-		vert( c2.x, c2.y, c2.z, 0, 0, col, a2 * 0.35 )
 	end
 	mesh.End()
 end
@@ -209,10 +204,10 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_DrawZone", function( depth, sky
 	local col = updateZoneColor()
 	// light tint + glowing triangle lines (the old values made a solid wall)
 	render.SetMaterial( matFill )
-	drawWall( count, col, 22, 0 )
+	drawWall( count, col, 22, 0, eye.z )
 	if q >= 2 then
 		render.SetMaterial( matWall )
-		drawWall( count, col, 160, CurTime() * 0.03 )
+		drawWall( count, col, 160, CurTime() * 0.03, eye.z )
 	end
 	render.SetMaterial( matGlow )
 	drawGroundGlow( count, col, q >= 3 and 1 or 0.7 )
