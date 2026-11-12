@@ -525,7 +525,7 @@ local function buildSide( f )
 			GAMEMODE:ScoreboardHide() // the map (cl_map.lua) is drawn under the board
 			if LBR.Map then LBR.Map.Toggle( true ) end
 		end ),
-		UI.Button( btns, "CHANGE MAP  F2", C.bad, function() if LBR.OpenMapMenu then LBR.OpenMapMenu() end end ),
+		UI.Button( btns, "CHANGE LEVEL  F2", C.bad, function() if LBR.OpenMapMenu then LBR.OpenMapMenu() end end ),
 	}
 	btns.Think = function( self )
 		local admin = LocalPlayer():IsAdmin()

@@ -125,7 +125,7 @@ local function buildMapMenu( list )
 		if m.status == STATUS_CUSTOM or m.status == STATUS_BUILTIN then ready[#ready + 1] = m else todo[#todo + 1] = m end
 	end
 
-	local f = UI.Frame( S( 620 ), S( 760 ), "Change map", #list .. " maps installed on the server. Ready ones can be played now, the others can be configured with F8 after the change." )
+	local f = UI.Frame( S( 620 ), S( 760 ), "Change level", #list .. " maps installed on the server. Ready ones can be played now, the others can be configured with F8 after the change." )
 	MapFrame = f
 	local current = string.lower( game.GetMap() )
 

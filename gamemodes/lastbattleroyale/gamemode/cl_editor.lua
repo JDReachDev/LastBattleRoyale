@@ -442,7 +442,7 @@ hook.Add( "HUDPaint", "LBR_EditorHUD", function()
 	y = line( "Mode [R]: " .. ( isEyeMode() and "at your position" or "where you aim" ) .. "   Zone radius: " .. ( ED.cfg.zone_radius or 0 ), "LBR_UI_Small", x, y, C.text )
 	local loot, spots = LBR.CountLoot( ED.cfg ), #LBR.GetCategoryList( ED.cfg, cats[3] )
 	// spots must be at least as many as the loot of a match, otherwise loot gets stacked
-	y = line( "Loot spots: " .. spots .. " / " .. loot .. " needed" .. ( spots < loot and ( "   (add " .. ( loot - spots ) .. ")" ) or "   OK" ),
+	y = line( "Loot per round: " .. loot .. "   Spots placed: " .. spots .. ( spots < loot and ( "   need " .. ( loot - spots ) .. " more" ) or "   OK" ),
 		"LBR_UI_Small", x, y, spots < loot and colWarn or colOk )
 	y = y + S( 6 )
 	for _, e in ipairs( ED.errors or {} ) do y = line( "X  " .. e, "LBR_UI_Small", x, y, colErr ) end
@@ -646,8 +646,8 @@ function ED.OpenMenu()
 		local ok = spots >= loot
 		local col = ok and colOk or colWarn
 		UI.Box( 0, 0, w, h, Color( col.r, col.g, col.b, 30 ) )
-		UI.Text( "Total loot: " .. loot, "LBR_UI_Text", S( 10 ), h / 2, colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-		UI.Text( "Loot spots: " .. spots .. " / " .. loot .. ( ok and "  OK" or ( "  (add " .. ( loot - spots ) .. ")" ) ),
+		UI.Text( "Loot per round: " .. loot, "LBR_UI_Text", S( 10 ), h / 2, colWhite, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		UI.Text( "Spots placed: " .. spots .. ( ok and "   OK" or ( "   need " .. ( loot - spots ) .. " more" ) ),
 			"LBR_UI_Small", w - S( 10 ), h / 2, col, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 	end
 
