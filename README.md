@@ -171,7 +171,7 @@ gamemodes/lastbattleroyale/
     lastbattleroyale.txt         gamemode definition + Start New Game settings
     icon24.png, logo.png
     backgrounds/                 main menu backgrounds
-    entities/entities/           zone, loot, armor, supply drop,
+    entities/entities/           zone, loot, armor, supply drop, base_wire_entity placeholder (WAC),
                                  base_gmodentity (Sandbox base needed by addon entities)
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
