@@ -30,7 +30,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [*][b]In-game map editor (F8)[/b]: set up any map without writing code, configs saved as text files you can share
 [*][b]Loot editor[/b]: choose in game which weapons, items and vehicles spawn and how often, from the addons you have installed
 [*][b]Interaction prompts[/b]: the screen tells you what [b]E[/b] does ([b][E] PICK UP M4A1[/b], [b][E] ENTER[/b]...)
-[*][b]Loot is easy to spot[/b]: nearby loot has an outline and a small light beam going up (only close by, not across the map)
+[*][b]Loot is easy to spot[/b]: nearby loot has an outline and a small light beam going up (only close by and in sight, not across the map or through walls)
 [*][b]Safe spawns[/b]: players and loot no longer get stuck in floors or walls
 [*][b]Much better performance on big maps[/b] (gm_fork, gm_valley): far loot and parked vehicles are not sent or drawn
 [*][b]Settings renamed[/b] from lst_* to lbr_* (the old names still work)

@@ -26,7 +26,7 @@ add maps/weapons and run it on their own server.
 - **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
 - On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop
 - Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
-- Outline (halo) on loot to see it in the dark
+- Outline (halo) on loot to see it in the dark, only on the loot you can see (not through walls and floors)
 - One look for everything: HUD, menus, map vote, map editor, dialogs, messages in the middle of the screen and in chat (`[LBR]` tag)
 
 ## Controls

@@ -300,6 +300,21 @@ hook.Add( "InitPostEntity", "LBR_TrackLootInit", function()
 end )
 for _, ent in ipairs( ents.GetAll() ) do track( ent ) end // lua refresh
 
+// a wall or floor of the map between the eye and the point? Only the map counts
+// (crates, cars and players do not hide the outline)
+local function clearTo( eye, target )
+	local tr = util.TraceLine( { start = eye, endpos = target, mask = MASK_SOLID_BRUSHONLY } )
+	return not tr.Hit or tr.HitPos:DistToSqr( target ) < 24 * 24
+end
+
+// only the loot you can see gets the outline and the beam: in a closed room the
+// items in the other rooms, or on the floor above / below, get none (the halo
+// draws every model a second time, through walls too)
+local function canSee( eye, ent )
+	local c = ent:WorldSpaceCenter()
+	return clearTo( eye, c ) or clearTo( eye, c + Vector( 0, 0, 40 ) )
+end
+
 local function rebuildHalos()
 	haloEnts = {}
 	local lp = LocalPlayer()
@@ -311,7 +326,7 @@ local function rebuildHalos()
 		if not IsValid( ent ) then
 			candidates[ent] = nil
 		elseif not IsValid( ent:GetOwner() ) and not ent:IsDormant() and not ent:GetNoDraw()
-			and ent:GetPos():DistToSqr( eye ) < maxd then
+			and ent:GetPos():DistToSqr( eye ) < maxd and canSee( eye, ent ) then
 			haloEnts[#haloEnts + 1] = ent
 		end
 	end
