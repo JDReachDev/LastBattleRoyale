@@ -32,35 +32,30 @@ local slotLabel = {}
 local function weaponList( ply )
 	local list = {}
 	slotLabel = {}
-	if ply:GetNW2String( "LBR_Inv", "" ) ~= "" then
-		local inv = LBR.InvGet( ply )
-		for s = 1, LBR.INV_EQUIP do
-			if IsValid( inv[s] ) then
-				list[#list + 1] = inv[s]
-				slotLabel[inv[s]] = s
-			end
-		end
-		for _, w in ipairs( ply:GetWeapons() ) do
-			if LBR.InvIsHands( w ) then
-				list[#list + 1] = w
-				slotLabel[w] = LBR.INV_EQUIP + 1
-			end
-		end
-		return list
+	local inv = LBR.InvGet( ply )
+	local placed = {}
+	for s = 1, LBR.INV_SLOTS do
+		if IsValid( inv[s] ) then placed[inv[s]] = true end
 	end
+	for s = 1, LBR.INV_EQUIP do
+		if IsValid( inv[s] ) then
+			list[#list + 1] = inv[s]
+			slotLabel[inv[s]] = s
+		end
+	end
+	// just picked up, not in the layout yet (the server places it in a moment)
 	for _, w in ipairs( ply:GetWeapons() ) do
-		if IsValid( w ) then
+		if IsValid( w ) and not placed[w] and not LBR.InvIsHands( w ) and #list < LBR.INV_EQUIP then
 			list[#list + 1] = w
-			slotLabel[w] = w:GetSlot() + 1
 		end
 	end
-	table.sort( list, function( a, b )
-		local sa, sb = a:GetSlot(), b:GetSlot()
-		if sa ~= sb then return sa < sb end
-		local pa, pb = a:GetSlotPos(), b:GetSlotPos()
-		if pa ~= pb then return pa < pb end
-		return a:GetClass() < b:GetClass()
-	end )
+	// melee / fists always at the end
+	for _, w in ipairs( ply:GetWeapons() ) do
+		if LBR.InvIsHands( w ) then
+			list[#list + 1] = w
+			slotLabel[w] = LBR.INV_EQUIP + 1
+		end
+	end
 	return list
 end
 
@@ -224,7 +219,7 @@ hook.Add( "HUDPaint", "LBR_WeaponSelect", function()
 
 		// slot number
 		local a = ( active and 255 or 170 ) * alpha
-		draw.SimpleText( tostring( slotLabel[w] or ( w:GetSlot() + 1 ) ), "LBR_HUD_Tiny", cx + S( 8 ), cy + S( 6 ), Color( colDim.r, colDim.g, colDim.b, a ) )
+		draw.SimpleText( tostring( slotLabel[w] or "" ), "LBR_HUD_Tiny", cx + S( 8 ), cy + S( 6 ), Color( colDim.r, colDim.g, colDim.b, a ) )
 
 		// name
 		local nameCol = active and colGold or colText

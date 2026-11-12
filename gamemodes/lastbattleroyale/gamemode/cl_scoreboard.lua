@@ -246,10 +246,78 @@ end
 // selection texture or spawn menu icon. Returns false when there is none.
 local function createIconFonts()
 	surface.CreateFont( "LBR_InvIcon", { font = "csd", size = S( 44 ), weight = 500, antialias = true } )
+	surface.CreateFont( "LBR_InvIconS", { font = "csd", size = S( 30 ), weight = 500, antialias = true } )
 	surface.CreateFont( "LBR_InvIcon2", { font = "HalfLife2", size = S( 40 ), weight = 500, antialias = true } )
+	surface.CreateFont( "LBR_InvIcon2S", { font = "HalfLife2", size = S( 28 ), weight = 500, antialias = true } )
 end
 createIconFonts()
-hook.Add( "OnScreenSizeChanged", "LBR_InvIconFonts", createIconFonts )
+
+// The icon letters do not sit in the middle of their line (each one is placed
+// differently in the font), so centering the text puts them off. Each letter is
+// drawn once in a hidden render target and its real edges are measured, then it
+// is drawn with its own middle on the middle of the slot.
+local letterBox = {} // letter .. font -> { x, y, w, h } from the text position
+local measureQueue = {}
+local queued = {}
+local measureRT
+
+local function measureLetter( letter, font )
+	measureRT = measureRT or GetRenderTarget( "LBR_IconMeasure", 512, 256 )
+	surface.SetFont( font )
+	local tw, th = surface.GetTextSize( letter )
+	local pad = 16
+	render.PushRenderTarget( measureRT )
+	render.Clear( 0, 0, 0, 255, true, true )
+	cam.Start2D()
+		surface.SetFont( font )
+		surface.SetTextColor( 255, 255, 255, 255 )
+		surface.SetTextPos( pad, pad )
+		surface.DrawText( letter )
+	cam.End2D()
+	render.CapturePixels()
+	local x1, y1, x2, y2 = math.huge, math.huge, -1, -1
+	local maxX, maxY = math.min( 511, pad + tw + 8 ), math.min( 255, pad + th + 8 )
+	for y = 0, maxY do
+		for x = 0, maxX do
+			local r = render.ReadPixel( x, y )
+			if r and r > 80 then
+				if x < x1 then x1 = x end
+				if x > x2 then x2 = x end
+				if y < y1 then y1 = y end
+				if y > y2 then y2 = y end
+			end
+		end
+	end
+	render.PopRenderTarget()
+	if x2 < 0 then return { x = 0, y = 0, w = tw, h = th } end // nothing drawn: use the text box
+	return { x = x1 - pad, y = y1 - pad, w = x2 - x1 + 1, h = y2 - y1 + 1 }
+end
+
+// measured in HUDPaint (a clean 2D pass), a few per frame
+hook.Add( "HUDPaint", "LBR_InvIconMeasure", function()
+	for i = 1, 2 do
+		local job = table.remove( measureQueue, 1 )
+		if not job then return end
+		local key = job[1] .. job[2]
+		if not letterBox[key] then letterBox[key] = measureLetter( job[1], job[2] ) end
+	end
+end )
+
+hook.Add( "OnScreenSizeChanged", "LBR_InvIconFonts", function()
+	createIconFonts()
+	letterBox = {}
+	queued = {}
+end )
+
+local function boxOf( letter, font )
+	local key = letter .. font
+	local b = letterBox[key]
+	if b then return b end
+	if not queued[key] then
+		queued[key] = true
+		measureQueue[#measureQueue + 1] = { letter, font }
+	end
+end
 
 local hl2Letters = {
 	weapon_pistol = "d", weapon_357 = "e", weapon_smg1 = "a", weapon_ar2 = "l",
@@ -275,6 +343,8 @@ local function iconOf( wep )
 		local m = Material( "entities/" .. class .. ".png", "smooth" )
 		c = m:IsError() and { none = true } or { mat = m }
 	end
+	// big letter, then a small one if the big one does not fit the slot
+	if c.letter then c.fonts = { c.font, c.font .. "S" } end
 	iconCache[class] = c
 	return c
 end
@@ -283,7 +353,14 @@ local function drawWeaponIcon( wep, x, y, w, h, col )
 	local c = iconOf( wep )
 	if c.none then return false end
 	if c.letter then
-		UI.Text( c.letter, c.font, x + w / 2, y + h / 2, col, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		local font, b
+		for _, f in ipairs( c.fonts ) do
+			local fb = boxOf( c.letter, f )
+			if not fb then return true end // measured in a moment
+			font, b = f, fb
+			if fb.w <= w and fb.h <= h then break end
+		end
+		UI.Text( c.letter, font, math.floor( x + w / 2 - ( b.x + b.w / 2 ) ), math.floor( y + h / 2 - ( b.y + b.h / 2 ) ), col )
 		return true
 	end
 	local s = h
@@ -393,8 +470,8 @@ local function invTile( parent, slot )
 
 		// weapon icon
 		local ix, iw = S( 50 ), S( 120 )
-		local hasIcon = drawWeaponIcon( wep, ix, S( 3 ), iw, h - S( 6 ), active and C.accent or C.text )
-		local tx = hasIcon and ix + iw + S( 10 ) or S( 56 )
+		drawWeaponIcon( wep, ix, S( 4 ), iw, h - S( 8 ), active and C.accent or C.text )
+		local tx = ix + iw + S( 12 ) // same column for every slot, icon or not
 
 		// name + ammo
 		local ammo = ammoText( wep )
