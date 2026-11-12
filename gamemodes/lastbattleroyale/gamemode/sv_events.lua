@@ -32,10 +32,24 @@ function LBR.PlaySiren()
 	BroadcastLua( 'surface.PlaySound("' .. SIREN .. '")' )
 end
 
-// ground under a point placed in the air (the blast happens on the ground)
+// ground under a point placed in the air (the blast happens on the ground): the nuke
+// targets of the old configs are high in the sky (the HBOMBS bomb fell from there),
+// thousands of units above the ground. Sky and nodraw brushes on the way are skipped.
 local function groundOf( pos )
-	local g = LBR.FindGround and LBR.FindGround( pos, MASK_SOLID_BRUSHONLY )
-	return g and ( g + Vector( 0, 0, 16 ) ) or pos
+	local start = pos + Vector( 0, 0, 40 )
+	for _ = 1, 6 do
+		local tr = util.TraceLine( { start = start, endpos = start - Vector( 0, 0, 32768 ), mask = MASK_SOLID_BRUSHONLY } )
+		if tr.StartSolid then
+			start = start - Vector( 0, 0, 64 )
+		elseif not tr.Hit then
+			return pos
+		elseif tr.HitSky or tr.HitNoDraw then
+			start = tr.HitPos - Vector( 0, 0, 16 )
+		else
+			return tr.HitPos + Vector( 0, 0, 16 )
+		end
+	end
+	return pos
 end
 
 // flash and shake for everyone near, the boom for everyone on the map
