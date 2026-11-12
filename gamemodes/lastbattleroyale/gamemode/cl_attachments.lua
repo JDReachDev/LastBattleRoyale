@@ -1,7 +1,7 @@
 // CW 2.0 customization menu (C) with attachments as loot.
 // CW 2.0 draws every attachment of the weapon the same way, owned or not, so it
 // looks like you have them all. Here (without touching CW 2.0) the ones you do
-// not own are drawn grey, and a small panel says how many you have for that
+// not own are drawn red (as in the old CW 2.0), and a small panel says how many you have for that
 // weapon and how to mount them.
 
 LBR = LBR or {}
@@ -28,7 +28,7 @@ local function patchMenu()
 	if tab.LBR_Patched then return true end
 	tab.LBR_Patched = true
 
-	// the icons of attachments you do not own are drawn grey and see-through
+	// the icons of attachments you do not own are drawn red
 	// (CW 2.0 sets the color, then the icon texture, then draws it)
 	local orig = tab.drawFunc
 	local setTexture = surface.SetTexture
@@ -45,7 +45,7 @@ local function patchMenu()
 		local alpha = wep.CustomizeMenuAlpha or 1
 		surface.SetTexture = function( id )
 			setTexture( id )
-			if dim[id] then surface.SetDrawColor( 70, 70, 70, 110 * alpha ) end
+			if dim[id] then surface.SetDrawColor( 255, 90, 90, 230 * alpha ) end
 		end
 		local ok, err = pcall( orig, wep, ... )
 		surface.SetTexture = setTexture

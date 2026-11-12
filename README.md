@@ -14,7 +14,7 @@ add maps/weapons and run it on their own server.
 ## Features
 
 - Round flow: lobby → preparing → live → post round, with a configurable minimum player count
-- Shrinking safe zone with damage outside it: a glowing wall that follows the terrain and fades upward, plus a storm effect (fog, grey colors) while you are outside
+- Shrinking safe zone with damage outside it: a glowing wall, brightest at eye height and fading up and down, plus a storm effect (fog, grey colors) while you are outside
 - Random loot (weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo) on every round
 - Cars (SCars) and helicopters (WAC) spawned around the map
 - Random supply airdrops, optional nuclear strike event and optional implosion bomb at the end
@@ -36,7 +36,7 @@ add maps/weapons and run it on their own server.
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
 | `Mouse wheel` / `1`–`5` | Switch between the 5 equipment slots (`6`: melee / fists). Weapons, medkits, adrenaline and grenades take a slot; with 8 items you must drop something to pick up more |
-| `C` | CW 2.0 weapon customization: put on the attachments you found (`1`–`4` / `R` pick the category, the weapon does not change) |
+| `C` | CW 2.0 weapon customization: put on the attachments you found, the ones you don't have are red (`1`–`4` / `R` pick the category, the weapon does not change) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
