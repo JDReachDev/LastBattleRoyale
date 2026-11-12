@@ -45,73 +45,68 @@ local needBuild = false
 // Map area
 ------------------------------------------------------------------------
 
-// in the map editor the area also covers the points being placed (saved or not),
-// like the server does for the saved ones (sv_map.lua): their box plus a margin,
-// up to the sky ceiling above them. Recomputed twice a second.
-local ED_MARGIN = 2000
-local edMins, edMaxs, edNext = nil, nil, 0
-local edSky = {} // rounded point -> sky z above it (traced once)
+// In the map editor the area is the one of the points being placed (saved or not),
+// found by the server exactly like the one of the saved config (ground scan from
+// above, sv_map.lua): the client sends the box of the points and a sample of them
+// when they change, the server answers with the area.
+local edMins, edMaxs, edNext, edSent = nil, nil, 0, nil
 
-local function skyAbove( p )
-	local k = math.floor( p.x / 64 ) .. " " .. math.floor( p.y / 64 ) .. " " .. math.floor( p.z / 64 )
-	if edSky[k] == nil then
-		local start = p + Vector( 0, 0, 40 )
-		local tr = util.TraceLine( { start = start, endpos = start + Vector( 0, 0, 65536 ), mask = MASK_SOLID_BRUSHONLY } )
-		edSky[k] = ( tr.HitSky and not tr.StartSolid ) and tr.HitPos.z or false
-	end
-	return edSky[k] or nil
-end
+net.Receive( "LBR_Editor_Bounds", function()
+	edMins, edMaxs = net.ReadVector(), net.ReadVector()
+end )
 
 local function editorBounds()
 	local ED = LBR.Editor
 	if not ( Map.edMode and ED and ED.active and ED.cfg ) then return nil end
-	if CurTime() < edNext then return edMins, edMaxs end
-	edNext = CurTime() + 0.5
-	local mins, maxs, sky
-	local n = 0
-	for _, cat in ipairs( LBR.MapCategories ) do
-		// supply drops are high in the sky: they do not make the ground area bigger
-		if not cat.eye then
-			for _, p in ipairs( LBR.GetCategoryList( ED.cfg, cat ) ) do
-				n = n + 1
-				if not mins then
-					mins, maxs = Vector( p ), Vector( p )
-				else
-					mins.x, mins.y, mins.z = math.min( mins.x, p.x ), math.min( mins.y, p.y ), math.min( mins.z, p.z )
-					maxs.x, maxs.y, maxs.z = math.max( maxs.x, p.x ), math.max( maxs.y, p.y ), math.max( maxs.z, p.z )
-				end
-				if n % 8 == 1 then
-					local z = skyAbove( p )
-					if z then sky = math.max( sky or z, z ) end
+	if CurTime() > edNext then
+		edNext = CurTime() + 0.5
+		local mins, maxs
+		local points = {}
+		for _, cat in ipairs( LBR.MapCategories ) do
+			// same categories as the server (no lobby, nuke targets or sky supply drops)
+			if cat.key == "playerspawns" or cat.key == "weaponspawns" or cat.key == "vehiclepositions"
+				or cat.key == "flying_vehiclespawns" or cat.key == "endpositions" then
+				for _, p in ipairs( LBR.GetCategoryList( ED.cfg, cat ) ) do
+					points[#points + 1] = p
+					if not mins then
+						mins, maxs = Vector( p ), Vector( p )
+					else
+						mins.x, mins.y, mins.z = math.min( mins.x, p.x ), math.min( mins.y, p.y ), math.min( mins.z, p.z )
+						maxs.x, maxs.y, maxs.z = math.max( maxs.x, p.x ), math.max( maxs.y, p.y ), math.max( maxs.z, p.z )
+					end
 				end
 			end
 		end
+		if not mins then
+			edMins, edMaxs, edSent = nil, nil, nil
+		else
+			local sig = string.format( "%d %d %d %d %d %d %d", mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z, #points )
+			if sig ~= edSent then
+				edSent = sig
+				local step = math.max( 1, math.floor( #points / 64 ) )
+				local sample = {}
+				for i = 1, #points, step do
+					if #sample < 64 then sample[#sample + 1] = points[i] end
+				end
+				net.Start( "LBR_Editor_Bounds" )
+					net.WriteVector( mins )
+					net.WriteVector( maxs )
+					net.WriteUInt( #sample, 7 )
+					for _, p in ipairs( sample ) do net.WriteVector( p ) end
+				net.SendToServer()
+			end
+		end
 	end
-	if not mins then
-		edMins, edMaxs = nil, nil
-		return nil
-	end
-	if not sky or sky < maxs.z then sky = maxs.z + 3000 end
-	edMins = Vector( mins.x - ED_MARGIN, mins.y - ED_MARGIN, mins.z - 1000 )
-	edMaxs = Vector( maxs.x + ED_MARGIN, maxs.y + ED_MARGIN, sky )
 	return edMins, edMaxs
 end
 
 local function getBounds()
-	local mins = GetGlobalVector( "LBR_MapMins", vector_origin )
-	local maxs = GetGlobalVector( "LBR_MapMaxs", vector_origin )
-	local ok = maxs.x - mins.x >= 100 and maxs.y - mins.y >= 100
-	local emins, emaxs = editorBounds()
-	if emins then
-		if ok then
-			mins = Vector( math.min( mins.x, emins.x ), math.min( mins.y, emins.y ), math.min( mins.z, emins.z ) )
-			maxs = Vector( math.max( maxs.x, emaxs.x ), math.max( maxs.y, emaxs.y ), math.max( maxs.z, emaxs.z ) )
-		else
-			mins, maxs = emins, emaxs
-		end
-		ok = true
+	local mins, maxs = editorBounds()
+	if not mins then
+		mins = GetGlobalVector( "LBR_MapMins", vector_origin )
+		maxs = GetGlobalVector( "LBR_MapMaxs", vector_origin )
 	end
-	if not ok then return nil end
+	if maxs.x - mins.x < 100 or maxs.y - mins.y < 100 then return nil end
 	return mins, maxs
 end
 

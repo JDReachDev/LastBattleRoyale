@@ -18,6 +18,7 @@ util.AddNetworkString( "LBR_Editor_Save" )
 util.AddNetworkString( "LBR_Editor_Reload" )
 util.AddNetworkString( "LBR_Editor_Delete" )
 util.AddNetworkString( "LBR_Editor_Goto" )
+util.AddNetworkString( "LBR_Editor_Bounds" )
 util.AddNetworkString( "LBR_Editor_Msg" )
 util.AddNetworkString( "LBR_Editor_Toggle" )
 
@@ -279,6 +280,24 @@ net.Receive( "LBR_Editor_Delete", function( len, ply )
 	LBR.LoadCurrentMapConfig()
 	sendConfig( ply )
 	editorMsg( ply, true, LBR.MapSource == "file" and "Reset to the built-in config" or "Saved file deleted, map is not configured" )
+end )
+
+// editor map (M): the map area of the points being placed, found the same way as
+// the one of the saved config (LBR.ComputeMapBounds in sv_map.lua)
+net.Receive( "LBR_Editor_Bounds", function( len, ply )
+	if not canUseEditorNet( ply ) then return end
+	if ( ply.LBR_EdBoundsNext or 0 ) > CurTime() then return end
+	ply.LBR_EdBoundsNext = CurTime() + 0.3
+	local mins, maxs = net.ReadVector(), net.ReadVector()
+	local n = math.min( net.ReadUInt( 7 ), 64 )
+	local points = {}
+	for i = 1, n do points[i] = net.ReadVector() end
+	if #points == 0 or not LBR.ComputeMapBounds then return end
+	local a, b = LBR.ComputeMapBounds( mins, maxs, points )
+	net.Start( "LBR_Editor_Bounds" )
+		net.WriteVector( a )
+		net.WriteVector( b )
+	net.Send( ply )
 end )
 
 net.Receive( "LBR_Editor_Goto", function( len, ply )

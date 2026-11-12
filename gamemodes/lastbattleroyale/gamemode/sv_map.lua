@@ -31,31 +31,12 @@ local function worldBounds()
 	return nil
 end
 
-function LBR.UpdateMapBounds()
-	local cfg = LBR.GetMapConfig and LBR.GetMapConfig()
-	local points = {}
-	if istable( cfg ) then
-		for _, cat in ipairs( LBR.MapCategories or {} ) do
-			if BOUND_CATS[cat.key] then
-				for _, p in ipairs( LBR.GetCategoryList( cfg, cat ) ) do
-					if isvector( p ) then points[#points + 1] = p end
-				end
-			end
-		end
-	end
-	if #points == 0 then
-		SetGlobalVector( "LBR_MapMins", vector_origin )
-		SetGlobalVector( "LBR_MapMaxs", vector_origin )
-		return
-	end
+LBR.MapBoundCats = BOUND_CATS
 
-	local mins = Vector( math.huge, math.huge, math.huge )
-	local maxs = Vector( -math.huge, -math.huge, -math.huge )
-	for _, p in ipairs( points ) do
-		mins.x, mins.y, mins.z = math.min( mins.x, p.x ), math.min( mins.y, p.y ), math.min( mins.z, p.z )
-		maxs.x, maxs.y, maxs.z = math.max( maxs.x, p.x ), math.max( maxs.y, p.y ), math.max( maxs.z, p.z )
-	end
-
+// map area of a set of points: mins / maxs is the box of all the points, points
+// the ones the sky is traced from (up to 64 are used). Also used by the map editor
+// for the points being placed (sv_mapconfig.lua). Returns area mins, maxs, info
+function LBR.ComputeMapBounds( mins, maxs, points )
 	// sky ceiling: highest sky hit going straight up from a sample of the points
 	local skyZ
 	local step = math.max( 1, math.floor( #points / 64 ) )
@@ -118,10 +99,40 @@ function LBR.UpdateMapBounds()
 		x1, y1, x2, y2 = mins.x - MARGIN, mins.y - MARGIN, maxs.x + MARGIN, maxs.y + MARGIN
 	end
 
-	SetGlobalVector( "LBR_MapMins", Vector( x1, y1, mins.z - 1000 ) )
-	SetGlobalVector( "LBR_MapMaxs", Vector( x2, y2, skyZ ) )
-	LBR.MapBoundsInfo = string.format( "map area x %d..%d  y %d..%d  sky %d  ground cells %d/%d  scanned x %d..%d y %d..%d (world bounds %s)",
+	return Vector( x1, y1, mins.z - 1000 ), Vector( x2, y2, skyZ ),
+		string.format( "map area x %d..%d  y %d..%d  sky %d  ground cells %d/%d  scanned x %d..%d y %d..%d (world bounds %s)",
 		x1, x2, y1, y2, skyZ, hits, N * N, sx1, sx2, sy1, sy2, wmins and "found" or "not found" )
+end
+
+function LBR.UpdateMapBounds()
+	local cfg = LBR.GetMapConfig and LBR.GetMapConfig()
+	local points = {}
+	if istable( cfg ) then
+		for _, cat in ipairs( LBR.MapCategories or {} ) do
+			if BOUND_CATS[cat.key] then
+				for _, p in ipairs( LBR.GetCategoryList( cfg, cat ) ) do
+					if isvector( p ) then points[#points + 1] = p end
+				end
+			end
+		end
+	end
+	if #points == 0 then
+		SetGlobalVector( "LBR_MapMins", vector_origin )
+		SetGlobalVector( "LBR_MapMaxs", vector_origin )
+		return
+	end
+
+	local mins = Vector( math.huge, math.huge, math.huge )
+	local maxs = Vector( -math.huge, -math.huge, -math.huge )
+	for _, p in ipairs( points ) do
+		mins.x, mins.y, mins.z = math.min( mins.x, p.x ), math.min( mins.y, p.y ), math.min( mins.z, p.z )
+		maxs.x, maxs.y, maxs.z = math.max( maxs.x, p.x ), math.max( maxs.y, p.y ), math.max( maxs.z, p.z )
+	end
+
+	local a, b, info = LBR.ComputeMapBounds( mins, maxs, points )
+	SetGlobalVector( "LBR_MapMins", a )
+	SetGlobalVector( "LBR_MapMaxs", b )
+	LBR.MapBoundsInfo = info
 end
 
 concommand.Add( "lbr_map_info", function( ply )
