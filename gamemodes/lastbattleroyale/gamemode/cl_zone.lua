@@ -302,9 +302,18 @@ for _, ent in ipairs( ents.GetAll() ) do track( ent ) end // lua refresh
 
 // a wall or floor of the map between the eye and the point? Only the map counts
 // (crates, cars and players do not hide the outline)
+// Glass and grates do not hide it: the mask leaves out the see-through brushes
+// (CONTENTS_WINDOW / CONTENTS_GRATE) and a glass surface hit anyway is passed through.
+local SEE_MASK = bit.bor( CONTENTS_SOLID, CONTENTS_MOVEABLE )
 local function clearTo( eye, target )
-	local tr = util.TraceLine( { start = eye, endpos = target, mask = MASK_SOLID_BRUSHONLY } )
-	return not tr.Hit or tr.HitPos:DistToSqr( target ) < 24 * 24
+	local start = eye
+	for _ = 1, 3 do
+		local tr = util.TraceLine( { start = start, endpos = target, mask = SEE_MASK } )
+		if not tr.Hit or tr.HitPos:DistToSqr( target ) < 24 * 24 then return true end
+		if tr.MatType ~= MAT_GLASS then return false end
+		start = tr.HitPos + ( target - eye ):GetNormalized() * 4
+	end
+	return false
 end
 
 // only the loot you can see gets the outline and the beam: in a closed room the
