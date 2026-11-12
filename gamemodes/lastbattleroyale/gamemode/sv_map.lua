@@ -208,20 +208,7 @@ timer.Create( "LBR_MapDrops", 1, 0, function()
 	net.Broadcast()
 end )
 
-// nuke target (sv_round.lua RunEvents): shown until a while after the blast
-function LBR.MapMarkNuke( nuke, pos )
-	local r = tonumber( nuke.ExplosionRadius ) or tonumber( nuke.ShockwaveRadius ) or 0
-	if r < 500 then r = 3500 end
-	SetGlobalVector( "LBR_NukePos", pos )
-	SetGlobalFloat( "LBR_NukeRadius", math.min( r, 12000 ) )
-	SetGlobalFloat( "LBR_NukeUntil", CurTime() + 90 )
-	local id = "LBR_NukeMark" .. nuke:EntIndex()
-	timer.Create( id, 1, 0, function()
-		if IsValid( nuke ) then return end
-		timer.Remove( id )
-		SetGlobalFloat( "LBR_NukeUntil", math.min( GetGlobalFloat( "LBR_NukeUntil", 0 ), CurTime() + 15 ) )
-	end )
-end
+// the nuke target on the map is set by LBR.Nuke (sv_events.lua)
 
 // players of the squad of ply (ply included)
 local function squadOf( ply )

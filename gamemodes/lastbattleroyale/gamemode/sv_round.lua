@@ -85,17 +85,11 @@ function GM:Tick()
 		local radius = LBR.GetZoneRadius()
 		if radius < LBR.ZoneWarnRadius and startednuclearsiren == false then
 			startednuclearsiren = true
-			BroadcastLua('surface.PlaySound("gbombs_5/sirens/nuclear_siren.wav")')
+			LBR.PlaySiren()
 		end
 		if radius <= 0 and cvImplosion:GetInt() == 1 then
 			zoneisactive = false
-			implosionbomb = ents.Create( "hb_main_implosionbomb_edit" )
-			if IsValid(implosionbomb) then
-				implosionbomb:SetPos( LBR.GetZonePos() )
-				implosionbomb:Spawn()
-				implosionbomb:Arm()
-				implosionbomb:ExplodeEDIT()
-			end
+			LBR.Implosion( LBR.GetZonePos() )
 			BroadcastLua('RunConsoleCommand("stopsound")')
 		end
 	end
@@ -106,15 +100,7 @@ function RunEvents(num)
 	local drops = CatList( "supplydrops", "events" )
 	if num == 1 and #nukes == 0 then num = 2 end
 	if num == 1 then
-		local nuke = ents.Create( "hb_nuclear_fatman" )
-		if not IsValid( nuke ) then return end
-		LBR.Chat( nil, "Nuclear airstrike inbound" )
-		LBR.Notify( nil, "Nuclear airstrike inbound!", "bad", 6 )
-		local target = nukes[math.random( #nukes )]
-		nuke:SetPos( target )
-		nuke:Spawn()
-		nuke:Arm()
-		if LBR.MapMarkNuke then LBR.MapMarkNuke( nuke, target ) end
+		LBR.Nuke( nukes[math.random( #nukes )] )
 		// lua_run RunEvents(2)
 	elseif num == 2 then
 		// only the points inside the safe zone, measured flat (the point may be
@@ -197,6 +183,7 @@ function RoundRestart()
 	timer.Remove("timer_attackdelay")
 	timer.Remove("timer_event1")
 	timer.Remove("timer_event2")
+	if LBR.StopEvents then LBR.StopEvents() end
 	canattack = false
 	SetGlobalBool( "LBR_CanAttack", false )
 	SetState(STATE_PREPARING)

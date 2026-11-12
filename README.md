@@ -17,7 +17,7 @@ add maps/weapons and run it on their own server.
 - Shrinking safe zone with damage outside it: a glowing wall, brightest at eye height and fading up and down, plus a storm effect (fog, grey colors) while you are outside
 - Random loot (weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo) on every round
 - Cars (SCars) and helicopters (WAC) spawned around the map
-- Random supply airdrops (only inside the safe zone), optional nuclear strike event and optional implosion bomb at the end
+- Random supply airdrops (only inside the safe zone), optional nuclear strike event (20 s warning, red area on the map) and optional implosion when the zone closes, built in (no HBOMBS needed)
 - 9 classes unlocked by levelling up (EXP saved per player with PData)
 - Squads: invite other players to your team
 - **Map** (`M`): the whole map seen from above on any map, with a battleship grid, your squad, the safe zone, supply drops and the nuke target; click to place a marker for your squad
@@ -66,10 +66,8 @@ Server **and** clients need them. The full list is in the Workshop collection
 | [Molotov Cocktail](https://steamcommunity.com/workshop/filedetails/?id=137173046) | `weapon_molotov_c` |
 | [SCars Slim](https://steamcommunity.com/workshop/filedetails/?id=104483020) + [SCars Extra](https://steamcommunity.com/workshop/filedetails/?id=104492363) | Cars |
 | [WAC Aircraft](https://steamcommunity.com/workshop/filedetails/?id=104990330) | Helicopters |
-| [HBOMBS Base Pack](https://steamcommunity.com/workshop/filedetails/?id=668552230) + [Materials](https://steamcommunity.com/workshop/filedetails/?id=668558959) | Nuke and implosion bomb |
 | [Legacy Rust Sweps](https://steamcommunity.com/workshop/filedetails/?id=702289635) + [Rust (Legacy) Entities Pack](https://steamcommunity.com/workshop/filedetails/?id=705904773) | Supply signal / supply drop |
 | [Viper's Operators Playermodels](https://steamcommunity.com/workshop/filedetails/?id=636790055) | Class player models |
-| [Last Stand Map Voting](https://steamcommunity.com/workshop/filedetails/?id=798682244) | Map vote at the end of the match |
 | [Pripyat (Resources)](https://steamcommunity.com/workshop/filedetails/?id=1486462327) | Content for `rp_pripyat_cop` |
 
 Counter-Strike: Source content is recommended (armor). Without it set `lbr_css_armor 0`.
@@ -138,7 +136,7 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_zone_heal` | `1` | `1` = health regenerates up to 20 while inside the zone |
 | `lbr_css_armor` | `1` | `1` = use CS:S armor models (needs CS:S mounted) |
 | `lbr_event_nuke` | `0` | `1` = enable the random nuclear strike event |
-| `lbr_event_implosion` | `0` | `1` = implosion bomb when the zone fully closes |
+| `lbr_event_implosion` | `0` | `1` = implosion when the zone fully closes |
 | `lbr_exp_scale` | `1` | EXP multiplier (decimals work: 0.5, 1.5) |
 | `lbr_level_exp` | `25` | EXP needed for the next level = next level × this value |
 | `lbr_zone_quality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |
@@ -173,7 +171,7 @@ gamemodes/lastbattleroyale/
     lastbattleroyale.txt         gamemode definition + Start New Game settings
     icon24.png, logo.png
     backgrounds/                 main menu backgrounds
-    entities/entities/           zone, loot, armor, supply drop, implosion bomb,
+    entities/entities/           zone, loot, armor, supply drop,
                                  base_gmodentity (Sandbox base needed by addon entities)
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
@@ -200,6 +198,7 @@ gamemodes/lastbattleroyale/
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
         shared.lua               ConVars (and their old lst_ names), teams, round states
         sv_round.lua             round system, zone, loot/vehicle spawning, events
+        sv_events.lua            nuclear strike and implosion (Half-Life 2 effects, no addon needed)
         sv_player.lua            player helpers, class switching
         config.lua               loot tables, vehicles, built-in map configs
         classes.lua              class list, unlock requirements, menu descriptions

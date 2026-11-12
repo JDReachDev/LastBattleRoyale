@@ -31,7 +31,7 @@ shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/last
 | `lbr_zone_heal` | `lst_healhealth` | `1` | Regenerate health up to 20 HP while inside the zone |
 | `lbr_css_armor` | `lst_usecssarmor` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
 | `lbr_event_nuke` | `lst_event_enablenuke` | `0` | Random nuclear strike event during the round |
-| `lbr_event_implosion` | `lst_enableimplosion` | `0` | Implosion bomb when the zone reaches radius 0 |
+| `lbr_event_implosion` | `lst_enableimplosion` | `0` | Implosion when the zone reaches radius 0 |
 | `lbr_exp_scale` | `lst_expscale` | `1` | EXP multiplier for kills / wins |
 | `lbr_level_exp` | `lst_levelexp` | `25` | EXP for the next level = next level × this value |
 | `lbr_zone_quality` | `lst_zonequality` | `3` | Client: zone wall quality: `3` high, `2` medium (textured wall), `1` low (plain wall), `0` invisible |

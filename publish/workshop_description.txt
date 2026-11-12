@@ -23,7 +23,7 @@ Based on LAST STAND by Kanade, but almost completely rewritten.
 [list]
 [*]Random loot every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*]Vehicles: cars (SCars) and helicopters (WAC)
-[*]Events: supply airdrops, optional nuclear strike and implosion bomb
+[*]Events: supply airdrops, optional nuclear strike and implosion (built in, no extra addons)
 [*]Squads of up to 4 players
 [*]Classes with their own loadout, unlocked by levelling up
 [/list]

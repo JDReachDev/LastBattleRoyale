@@ -26,6 +26,7 @@ AddCSLuaFile( "cl_map.lua" )
 include( "shared.lua" )
 include( "config.lua" )
 include( "sv_round.lua" )
+include( "sv_events.lua" ) // nuke and implosion (HL2 effects only)
 include( "sv_loot.lua" ) // after config.lua: loot.txt replaces the loot lists
 include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with the data file
 include( "sv_player.lua" )
