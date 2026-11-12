@@ -1,7 +1,8 @@
 // Server side of the map (M): map area and squad positions.
 //
-// Map area: the box around the configured points (spawns, loot, cars, zone centers)
-// plus a margin, made square, networked once as two global vectors. Its top is the
+// Map area: found by scanning the map from above (a grid of traces going down from
+// the sky ceiling: where one lands on ground there is map), so it reaches the map
+// borders on any map; networked once as two global vectors. Its top is the
 // sky ceiling (traced up from the points), so the client can render the map from
 // above with the sky cut away.
 //
@@ -67,27 +68,60 @@ function LBR.UpdateMapBounds()
 	end
 	if not skyZ or skyZ < maxs.z then skyZ = maxs.z + 3000 end
 
-	// The whole world, up to its outer walls (not a square: most maps are rectangles).
-	// The 3D skybox room is part of the world too and is usually off to one side:
-	// on the side where the sky_camera is, stop a little after the configured points.
-	local x1, y1 = mins.x - MARGIN, mins.y - MARGIN
-	local x2, y2 = maxs.x + MARGIN, maxs.y + MARGIN
+	// Map area: scan the map from above. A grid of traces goes down from the sky
+	// ceiling; where one lands on ground there is map. Outside the outer walls the
+	// trace starts in the void (StartSolid) and is skipped, so the area stops at the
+	// map borders, whatever the shape of the map. The 3D skybox room (a small copy
+	// of the scenery somewhere in the world) is skipped around the sky_camera.
 	local wmins, wmaxs = worldBounds()
+	local sx1, sy1, sx2, sy2
 	if wmins then
-		local sky = ents.FindByClass( "sky_camera" )[1]
-		local sp = IsValid( sky ) and sky:GetPos()
-		if not ( sp and sp.x < x1 ) then x1 = math.min( x1, wmins.x ) end
-		if not ( sp and sp.y < y1 ) then y1 = math.min( y1, wmins.y ) end
-		if not ( sp and sp.x > x2 ) then x2 = math.max( x2, wmaxs.x ) end
-		if not ( sp and sp.y > y2 ) then y2 = math.max( y2, wmaxs.y ) end
-		// never past the world walls
-		x1, y1 = math.max( x1, wmins.x ), math.max( y1, wmins.y )
-		x2, y2 = math.min( x2, wmaxs.x ), math.min( y2, wmaxs.y )
+		sx1, sy1, sx2, sy2 = wmins.x, wmins.y, wmaxs.x, wmaxs.y
+	else
+		sx1, sy1, sx2, sy2 = mins.x - 12000, mins.y - 12000, maxs.x + 12000, maxs.y + 12000
 	end
+	sx1, sy1 = math.max( sx1, -16384 ), math.max( sy1, -16384 )
+	sx2, sy2 = math.min( sx2, 16384 ), math.min( sy2, 16384 )
+
+	local sky = ents.FindByClass( "sky_camera" )[1]
+	local skyPos = IsValid( sky ) and sky:GetPos()
+	local function isSkyboxRoom( x, y )
+		if not skyPos then return false end
+		if x >= mins.x - MARGIN and x <= maxs.x + MARGIN and y >= mins.y - MARGIN and y <= maxs.y + MARGIN then return false end
+		return math.abs( x - skyPos.x ) < 4000 and math.abs( y - skyPos.y ) < 4000
+	end
+
+	local N = 96
+	local cw, ch = ( sx2 - sx1 ) / N, ( sy2 - sy1 ) / N
+	local bottom = mins.z - 6000
+	local x1, y1, x2, y2 = mins.x, mins.y, maxs.x, maxs.y
+	local hits = 0
+	for i = 0, N - 1 do
+		local x = sx1 + ( i + 0.5 ) * cw
+		for j = 0, N - 1 do
+			local y = sy1 + ( j + 0.5 ) * ch
+			if not isSkyboxRoom( x, y ) then
+				local tr = util.TraceLine( { start = Vector( x, y, skyZ - 8 ), endpos = Vector( x, y, bottom ), mask = MASK_SOLID_BRUSHONLY } )
+				if tr.StartSolid then
+					// lower sky here: try again from just above the highest point
+					tr = util.TraceLine( { start = Vector( x, y, maxs.z + 200 ), endpos = Vector( x, y, bottom ), mask = MASK_SOLID_BRUSHONLY } )
+				end
+				if not tr.StartSolid and tr.Hit and not tr.HitSky and not tr.HitNoDraw then
+					hits = hits + 1
+					x1, y1 = math.min( x1, x - cw / 2 ), math.min( y1, y - ch / 2 )
+					x2, y2 = math.max( x2, x + cw / 2 ), math.max( y2, y + ch / 2 )
+				end
+			end
+		end
+	end
+	if hits == 0 then
+		x1, y1, x2, y2 = mins.x - MARGIN, mins.y - MARGIN, maxs.x + MARGIN, maxs.y + MARGIN
+	end
+
 	SetGlobalVector( "LBR_MapMins", Vector( x1, y1, mins.z - 1000 ) )
 	SetGlobalVector( "LBR_MapMaxs", Vector( x2, y2, skyZ ) )
-	LBR.MapBoundsInfo = string.format( "map area x %d..%d  y %d..%d  sky %d  (world bounds: %s)",
-		x1, x2, y1, y2, skyZ, wmins and ( tostring( wmins ) .. " / " .. tostring( wmaxs ) ) or "not found" )
+	LBR.MapBoundsInfo = string.format( "map area x %d..%d  y %d..%d  sky %d  ground cells %d/%d  scanned x %d..%d y %d..%d (world bounds %s)",
+		x1, x2, y1, y2, skyZ, hits, N * N, sx1, sx2, sy1, sy2, wmins and "found" or "not found" )
 end
 
 concommand.Add( "lbr_map_info", function( ply )

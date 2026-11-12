@@ -61,7 +61,8 @@ local function build()
 		} )
 	end
 
-	local halfX, halfY = ( maxs.x - mins.x ) / 2, ( maxs.y - mins.y ) / 2
+	// square view around the map area; the map rectangle is cut out of it when drawn
+	local half = math.max( maxs.x - mins.x, maxs.y - mins.y ) / 2
 	local skyZ = maxs.z
 	// above the sky (outside the map the engine draws everything, no visibility culling);
 	// the near plane starts just under the sky ceiling so the sky does not cover the map
@@ -76,8 +77,7 @@ local function build()
 		angles = Angle( 90, 90, 0 ), // looking down, north (+y) up, east (+x) right
 		x = 0, y = 0, w = RT_SIZE, h = RT_SIZE,
 		aspect = 1,
-		// a rectangle squeezed into the square texture, stretched back when drawn
-		ortho = { left = -halfX, right = halfX, top = -halfY, bottom = halfY },
+		ortho = { left = -half, right = half, top = -half, bottom = half },
 		znear = camZ - skyZ + 24,
 		zfar = camZ - mins.z + 4000,
 		drawhud = false, drawviewmodel = false, drawmonitors = false,
@@ -277,13 +277,26 @@ local function drawMap()
 	// map rectangle with the map's own proportions, as big as the screen allows
 	local spanX = mins and maxs.x - mins.x or 1
 	local spanY = mins and maxs.y - mins.y or 1
-	local maxW, maxH = sw - S( 120 ), sh - S( 160 )
-	local scale = math.min( maxW / spanX, maxH / spanY )
+	// kept clear of the HUD corners (health, weapon, squad, zone info): either between
+	// the left and right HUD columns with the full height, or between the top and bottom
+	// HUD rows with the full width, whichever gives the bigger map
+	local pad, head, foot = S( 26 ), S( 58 ), S( 40 )
+	local colW, topH, botH = S( 440 ), S( 200 ), S( 130 )
+	local aW, aH = sw - colW * 2 - pad * 2, sh - S( 40 ) - head - foot
+	local bW, bH = sw - S( 40 ) - pad * 2, sh - topH - botH - head - foot
+	local aScale = math.min( aW / spanX, aH / spanY )
+	local bScale = math.min( bW / spanX, bH / spanY )
+	local scale = math.max( aScale, bScale )
 	local mw, mh = math.floor( spanX * scale ), math.floor( spanY * scale )
-	if not mins then mw, mh = math.floor( maxH ), math.floor( maxH ) end
+	if not mins then mw, mh = math.floor( aH ), math.floor( aH ) end
 	mw = math.max( mw, S( 420 ) ) // room for the title and the legend
-	local mx, my = math.floor( ( sw - mw ) / 2 ), math.floor( ( sh - mh ) / 2 ) + S( 10 )
-	local pad = S( 26 )
+	local mx = math.floor( ( sw - mw ) / 2 )
+	local my
+	if aScale >= bScale or not mins then
+		my = math.floor( ( sh - mh - head - foot ) / 2 ) + head
+	else
+		my = topH + math.floor( ( sh - topH - botH - mh - head - foot ) / 2 ) + head
+	end
 
 	// frame
 	UI.Box( mx - pad, my - S( 58 ), mw + pad * 2, mh + S( 58 ) + S( 40 ), C.bg )
@@ -312,7 +325,10 @@ local function drawMap()
 
 	surface.SetDrawColor( 255, 255, 255 )
 	surface.SetMaterial( rtMat )
-	surface.DrawTexturedRect( ix, my, imgW, mh )
+	// the texture is a square around the map area: cut out the map rectangle
+	local half = math.max( spanX, spanY ) / 2
+	local u0, v0 = 0.5 - spanX / 4 / half, 0.5 - spanY / 4 / half
+	surface.DrawTexturedRectUV( ix, my, imgW, mh, u0, v0, 1 - u0, 1 - v0 )
 
 	render.SetScissorRect( ix, my, ix + imgW, my + mh, true )
 
