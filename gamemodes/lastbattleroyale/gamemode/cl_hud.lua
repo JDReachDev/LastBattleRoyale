@@ -23,7 +23,6 @@ CreateHUDFonts()
 hook.Add( "OnScreenSizeChanged", "LBR_HUDFonts", CreateHUDFonts )
 
 local matSkull = Material( "zpicons/skull.png", "smooth" )
-local matHealth = Material( "zpicons/health.png", "smooth" )
 local matUser = Material( "icon16/user.png" )
 local matGradient = Material( "vgui/gradient-u" )
 local matGradientD = Material( "vgui/gradient-d" )
@@ -127,10 +126,15 @@ local function drawVitals( ply )
 	local bx = x + pad + S( 46 )
 	local bw = w - pad * 2 - S( 46 ) - S( 70 )
 
-	// health icon
+	// health icon: a plain cross in the health color (red when low), dark border
+	local cs, ct = S( 30 ), S( 10 )
+	local cx, cy = x + pad + S( 17 ), y + S( 57 )
+	surface.SetDrawColor( 0, 0, 0, 200 )
+	surface.DrawRect( cx - ct / 2 - 2, cy - cs / 2 - 2, ct + 4, cs + 4 )
+	surface.DrawRect( cx - cs / 2 - 2, cy - ct / 2 - 2, cs + 4, ct + 4 )
 	surface.SetDrawColor( col )
-	surface.SetMaterial( matHealth )
-	surface.DrawTexturedRect( x + pad, y + S( 40 ), S( 34 ), S( 34 ) )
+	surface.DrawRect( cx - ct / 2, cy - cs / 2, ct, cs )
+	surface.DrawRect( cx - cs / 2, cy - ct / 2, cs, ct )
 
 	// shield
 	ptext( "SHIELD", "LBR_HUD_Tiny", bx, y + S( 12 ), Color( 150, 158, 175 ) )
