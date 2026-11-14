@@ -548,22 +548,28 @@ function playerdeath( victim, inflictor, attacker )
 			// hands / fists and weapons that cannot be dropped stay with the body
 			local class = v:GetClass()
 			if not LBR.InvIsHands( v ) and not ( cantdropweapons and intab and intab( class, cantdropweapons ) ) then
-				// adrenaline shots, grenades: one on the ground for each one carried
-				// (each gives its default ammo back), not one for the whole stack
-				local copies = 1
+				// adrenaline shots, grenades, medkits: what was carried is split in
+				// full ones (the last one with what is left), each one with its
+				// charges (LBR_Charges); nothing left = nothing falls
+				local charges = { false } // false = a normal weapon, the engine gives its ammo
 				if v:GetMaxClip1() <= 0 and v:GetPrimaryAmmoType() >= 0 then
 					local full = weapons.Get( class )
 					local per = math.max( tonumber( full and full.Primary and full.Primary.DefaultClip ) or 1, 1 )
 					local have = ( victim.LBR_DeathAmmo or {} )[v:GetPrimaryAmmoType()] or 0
-					copies = math.Clamp( math.floor( have / per ), 1, 8 )
+					charges = {}
+					while have > 0 and #charges < 8 do
+						charges[#charges + 1] = math.min( per, have )
+						have = have - per
+					end
 				end
-				for _ = 1, copies do
+				for _, c in ipairs( charges ) do
 					local wep = ents.Create( class )
 					if IsValid( wep ) then
 						wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
 						wep:Spawn()
 						wep:SetClip1(v:Clip1())
 						wep.kanadelootable = true // ground loot: taken only with E, like the rest
+						if c then wep.LBR_Charges = c end
 					end
 				end
 			end
@@ -689,6 +695,21 @@ function GM:PlayerCanPickupWeapon( ply, wep )
 							return
 						end
 						if IsValid( ply ) and ammoType and ammoType >= 0 then ply:GiveAmmo( amount, ammoType ) end
+					end )
+				end
+				// medkit / adrenaline / grenade dropped by a player: exactly the
+				// charges it left with, not the default ammo the engine gives
+				if wep.LBR_Charges and not wep.LBR_ChargesPending then
+					wep.LBR_ChargesPending = true
+					local id = wep:GetPrimaryAmmoType()
+					local before, charges = ply:GetAmmoCount( id ), wep.LBR_Charges
+					timer.Simple( 0, function()
+						// still on the ground: not picked up
+						if IsValid( wep ) and not IsValid( wep:GetOwner() ) then
+							wep.LBR_ChargesPending = nil
+							return
+						end
+						if IsValid( ply ) and id and id >= 0 then ply:SetAmmo( before + charges, id ) end
 					end )
 				end
 				return true

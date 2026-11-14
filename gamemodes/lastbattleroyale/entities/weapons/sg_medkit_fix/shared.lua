@@ -73,19 +73,22 @@ if self:Ammo1() > 0 then
 
 timer.Simple(3, function()
 	if not SG_IsActive(self) then return end
-	if self.Owner:Health() < 100 then
-		if (self.Owner:Health() + 35) > 100 then
-			self.Owner:SetHealth(100)
-		else
-			self.Owner:SetHealth(self.Owner:Health() + 35)
-		end
+	// up to the max health of the class (was 100 for everyone)
+	local maxh = self.Owner:GetMaxHealth()
+	if self.Owner:Health() < maxh then
+		self.Owner:SetHealth( math.min( self.Owner:Health() + 35, maxh ) )
 	end
-end)	
+end)
 
 timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function()
 	if SG_IsActive(self) then
 	self:SendWeaponAnim(ACT_VM_IDLE)
 	self.CanHolster = true
+	// no charges left: the empty kit goes away (it took a slot for nothing)
+	if SERVER and self:Ammo1() < 1 then
+		self.Owner:ConCommand("lastinv")
+		self.Owner:StripWeapon(self:GetClass())
+	end
 	end
 end)
 
@@ -147,8 +150,9 @@ end)
 timer.Simple(2.8, function()
 if not SG_IsActive(self) then return end
 if SERVER then
---The thrown Adrenaline
-local syr = ents.Create("sg_adrenaline_thrown")
+--The thrown Adrenaline: our adrenaline shot as ground loot (the addon's
+--sg_adrenaline_thrown gave its own adrenaline, healing up to 100 only)
+local syr = ents.Create("sg_adrenaline_fix")
 local o = self.Owner
 
 local tr = util.TraceLine( {
@@ -157,8 +161,11 @@ local tr = util.TraceLine( {
 	filter = o
 } )
 
-syr:SetPos(tr.HitPos + Vector(0,0,10))
-syr:Spawn()
+if IsValid( syr ) then
+	syr:SetPos(tr.HitPos + Vector(0,0,10))
+	syr:Spawn()
+	syr.kanadelootable = true
+end
 end
 end)
 
@@ -201,23 +208,10 @@ if self.Owner:KeyDown(IN_RELOAD) then
 
 timer.Simple(0.4, function()
 	if SG_IsActive(self) then
-		self.Owner:ConCommand("lastinv")
-		if SERVER then
-			local med = ents.Create("sg_med_thrown")
-			local o = self.Owner
-
-			local tr = util.TraceLine( {
-				start = o:GetShootPos(),
-				endpos = o:GetShootPos() + o:EyeAngles():Forward() * 50,
-				filter = o
-			} )
-
-			med:SetPos(tr.HitPos + Vector(0,0,10))
-			med:Spawn()
-		end
-		if SERVER then 
-			self.Owner:StripWeapon(self:GetClass()) --You ARE technically throwing your medkit away
-		end
+		// thrown like the Q drop: our medkit with its charges (the addon's
+		// sg_med_thrown gave its own medkit, full and healing up to 100 only)
+		self.CanHolster = true
+		if SERVER then LBR.DropWeapon( self.Owner, self ) end
 	end
 end)
 

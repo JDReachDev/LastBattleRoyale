@@ -134,12 +134,20 @@ function LBR.DropWeapon( ply, wep, noSelect )
 	// grenades, molotovs, mines: no magazine, the count is the reserve ammo. The
 	// dropped one gives its default ammo to whoever takes it: take the same from
 	// the reserve, so dropping and taking it back does not make new ones
+	// The ammo taken goes with the dropped one (LBR_Charges, given back exactly on
+	// pickup, see init.lua): a medkit with 2 charges left is 2 charges on the
+	// ground, not 0 and not a full new one
 	if wep:GetMaxClip1() <= 0 then
 		local id = wep:GetPrimaryAmmoType()
 		if id and id >= 0 then
 			local full = weapons.Get( class )
 			local give = math.max( tonumber( full and full.Primary and full.Primary.DefaultClip ) or 1, 1 )
-			ply:RemoveAmmo( math.min( give, ply:GetAmmoCount( id ) ), id )
+			local moved = math.min( give, ply:GetAmmoCount( id ) )
+			ply:RemoveAmmo( moved, id )
+			if IsValid( ent ) then
+				ent.LBR_Charges = moved
+				if moved <= 0 then ent:Remove() end // empty: nothing to drop
+			end
 		end
 	end
 	ply:StripWeapon( class )
