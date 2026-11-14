@@ -21,6 +21,7 @@ util.AddNetworkString( "LBR_Editor_Goto" )
 util.AddNetworkString( "LBR_Editor_Bounds" )
 util.AddNetworkString( "LBR_Editor_Msg" )
 util.AddNetworkString( "LBR_Editor_Toggle" )
+util.AddNetworkString( "LBR_Editor_Sync" )
 
 local cvSuperOnly = CreateConVar( "lbr_editor_superadminonly", "0", FCVAR_ARCHIVE, "1 = only superadmins can use the map editor, 0 = admins too" )
 
@@ -135,15 +136,41 @@ local function editorMsg( ply, ok, msg )
 	net.Send( ply )
 end
 
+// Shared editing: every editor works on the same draft, kept here. Each change
+// (point added / removed, category cleared, settings, import) goes to the server,
+// which applies it to the draft and sends it to the other editors, so everyone
+// sees the points of the others live. Save writes the draft; when the last editor
+// closes, unsaved changes are dropped.
+LBR.EdDraft = LBR.EdDraft or nil
+LBR.EdDraftDirty = LBR.EdDraftDirty or false
+
+local function copyConfig( cfg )
+	return LBR.MapConfigFromJSON( LBR.MapConfigToJSON( cfg ) ) or LBR.NewMapConfig()
+end
+
+local function resetDraft()
+	LBR.EdDraft = copyConfig( LBR.GetMapConfig() or LBR.NewMapConfig() )
+	LBR.EdDraftDirty = false
+end
+
+local function editorList( except )
+	local out = {}
+	for p in pairs( LBR.Editors ) do
+		if IsValid( p ) and p.LBR_Editing and p ~= except then out[#out + 1] = p end
+	end
+	return out
+end
+
 local function sendConfig( ply )
-	local cfg = LBR.GetMapConfig() or LBR.NewMapConfig()
-	local data = util.Compress( LBR.MapConfigToJSON( cfg ) )
+	if not LBR.EdDraft then resetDraft() end
+	local data = util.Compress( LBR.MapConfigToJSON( LBR.EdDraft ) )
 	if not data or #data > 60000 then
 		editorMsg( ply, false, "Map config too big to send" )
 		return false
 	end
 	net.Start( "LBR_Editor_Open" )
 		net.WriteString( LBR.MapSource )
+		net.WriteBool( LBR.EdDraftDirty )
 		net.WriteUInt( #data, 16 )
 		net.WriteData( data, #data )
 	net.Send( ply )
@@ -167,7 +194,11 @@ function LBR.OpenEditor( ply )
 		LBR.Chat( ply, "The map editor can be opened only between rounds.", "bad" )
 		return
 	end
+	// first editor: the draft starts from the saved config; the others get the
+	// draft as it is now, with the unsaved changes of who is already editing
+	if not LBR.AnyEditing() then resetDraft() end
 	if not sendConfig( ply ) then return end
+	for _, p in ipairs( editorList( ply ) ) do editorMsg( p, true, ply:Nick() .. " joined the map editor" ) end
 	ply.LBR_Editing = true
 	LBR.Editors[ply] = true
 	applyEditMode( ply )
@@ -179,7 +210,9 @@ function LBR.CloseEditor( ply )
 	local was = ply.LBR_Editing
 	ply.LBR_Editing = nil
 	LBR.Editors[ply] = nil
+	if not LBR.AnyEditing() then LBR.EdDraft = nil end
 	if was then
+		for _, p in ipairs( editorList( ply ) ) do editorMsg( p, true, ply:Nick() .. " left the map editor" ) end
 		if ply:GetMoveType() == MOVETYPE_NOCLIP then ply:SetMoveType( MOVETYPE_WALK ) end
 		net.Start( "LBR_Editor_Close" )
 		net.Send( ply )
@@ -218,7 +251,9 @@ hook.Add( "PlayerSpawn", "LBR_EditorRespawn", function( ply )
 end )
 
 hook.Add( "PlayerDisconnected", "LBR_EditorCleanup", function( ply )
+	ply.LBR_Editing = nil
 	LBR.Editors[ply] = nil
+	if not LBR.AnyEditing() then LBR.EdDraft = nil end
 end )
 
 local function canUseEditorNet( ply )
@@ -233,14 +268,9 @@ net.Receive( "LBR_Editor_Save", function( len, ply )
 	end
 	ply.LBR_NextSave = CurTime() + 1
 
-	local size = net.ReadUInt( 16 )
-	local data = net.ReadData( size )
-	local json = util.Decompress( data, 4 * 1024 * 1024 )
-	local cfg, err = LBR.MapConfigFromJSON( json )
-	if not cfg then
-		editorMsg( ply, false, "Save failed: " .. tostring( err ) )
-		return
-	end
+	// the shared draft is saved: it has the changes of every editor
+	if not LBR.EdDraft then resetDraft() end
+	local cfg = copyConfig( LBR.EdDraft )
 
 	local map = game.GetMap()
 	file.CreateDir( LBR.MapDataDir )
@@ -252,22 +282,30 @@ net.Receive( "LBR_Editor_Save", function( len, ply )
 
 	MAPCONFIG[map] = cfg
 	LBR.MapSource = "file"
+	LBR.EdDraftDirty = false
 	local errors = LBR.RefreshMapState()
 	if RegenerateSpawns then RegenerateSpawns() end
 
 	print( "[LBR] " .. ply:Nick() .. " saved the map config to data/" .. LBR.MapFileName( map ) )
-	if #errors > 0 then
-		editorMsg( ply, true, "Saved to data/" .. LBR.MapFileName( map ) .. " - not playable yet: " .. table.concat( errors, ", " ) )
-	else
-		editorMsg( ply, true, "Saved to data/" .. LBR.MapFileName( map ) .. " - map is playable!" )
+	local msg = "Saved to data/" .. LBR.MapFileName( map ) .. ( #errors > 0 and ( " - not playable yet: " .. table.concat( errors, ", " ) ) or " - map is playable!" )
+	for _, p in ipairs( editorList() ) do
+		editorMsg( p, true, p == ply and msg or ( msg .. " (by " .. ply:Nick() .. ")" ) )
 	end
 end )
+
+// the draft changed for everyone (reload, reset): every editor gets it again
+local function resendAll()
+	for _, p in ipairs( editorList() ) do sendConfig( p ) end
+end
 
 net.Receive( "LBR_Editor_Reload", function( len, ply )
 	if not canUseEditorNet( ply ) then return end
 	LBR.LoadCurrentMapConfig()
-	sendConfig( ply )
-	editorMsg( ply, true, "Reloaded (" .. LBR.MapSource .. ")" )
+	resetDraft()
+	resendAll()
+	for _, p in ipairs( editorList() ) do
+		editorMsg( p, true, "Reloaded (" .. LBR.MapSource .. ")" .. ( p ~= ply and ( " by " .. ply:Nick() ) or "" ) )
+	end
 end )
 
 net.Receive( "LBR_Editor_Delete", function( len, ply )
@@ -278,8 +316,122 @@ net.Receive( "LBR_Editor_Delete", function( len, ply )
 		print( "[LBR] " .. ply:Nick() .. " deleted data/" .. path )
 	end
 	LBR.LoadCurrentMapConfig()
-	sendConfig( ply )
-	editorMsg( ply, true, LBR.MapSource == "file" and "Reset to the built-in config" or "Saved file deleted, map is not configured" )
+	resetDraft()
+	resendAll()
+	local msg = LBR.MapSource == "file" and "Reset to the built-in config" or "Saved file deleted, map is not configured"
+	for _, p in ipairs( editorList() ) do
+		editorMsg( p, true, msg .. ( p ~= ply and ( " (by " .. ply:Nick() .. ")" ) or "" ) )
+	end
+end )
+
+// Live changes of an editor (see cl_editor.lua, ED.Send*):
+//   1 add point       cat, x y z, index (0 = at the end)
+//   2 remove point    cat, x y z
+//   3 category list   cat, count, points (clear / undo of a clear)
+//   4 settings        compressed JSON: zone radius, zone delay, loot amounts, player models
+//   5 whole config    compressed JSON (import)
+local SYNC_ADD, SYNC_REMOVE, SYNC_LIST, SYNC_SETTINGS, SYNC_FULL = 1, 2, 3, 4, 5
+
+local function readPoint()
+	local x, y, z = net.ReadFloat(), net.ReadFloat(), net.ReadFloat()
+	local function ok( n ) return n == n and n > -1e6 and n < 1e6 end
+	if ok( x ) and ok( y ) and ok( z ) then return Vector( x, y, z ) end
+end
+
+local function writePoint( v )
+	net.WriteFloat( v.x ) net.WriteFloat( v.y ) net.WriteFloat( v.z )
+end
+
+local function readJSON()
+	local size = net.ReadUInt( 16 )
+	local data = net.ReadData( size )
+	return util.JSONToTable( util.Decompress( data, 4 * 1024 * 1024 ) or "" )
+end
+
+local function writeJSON( tbl )
+	local data = util.Compress( util.TableToJSON( tbl ) )
+	net.WriteUInt( #data, 16 )
+	net.WriteData( data, #data )
+end
+
+local function settingsOf( cfg )
+	return { zone_radius = cfg.zone_radius, zone_delay = cfg.zone_delay or -1, weaponsc = cfg.weaponsc, playermodels = cfg.playermodels }
+end
+
+net.Receive( "LBR_Editor_Sync", function( len, ply )
+	if not canUseEditorNet( ply ) then return end
+	if not LBR.EdDraft then resetDraft() end
+	local draft = LBR.EdDraft
+	local kind = net.ReadUInt( 3 )
+	local ci, cat, a, b
+
+	if kind == SYNC_ADD or kind == SYNC_REMOVE or kind == SYNC_LIST then
+		ci = net.ReadUInt( 4 )
+		cat = LBR.MapCategories[ci]
+		if not cat then return end
+		local l = LBR.GetCategoryList( draft, cat, true )
+		if kind == SYNC_ADD then
+			a = readPoint()
+			b = net.ReadUInt( 12 )
+			if not a or #l >= LBR.MaxPointsPerCategory then return end
+			if b > 0 and b <= #l then table.insert( l, b, a ) else l[#l + 1] = a b = 0 end
+		elseif kind == SYNC_REMOVE then
+			a = readPoint()
+			if not a then return end
+			// the point itself, not its index: the list may have changed in the meantime
+			local best, bestD
+			for i, p in ipairs( l ) do
+				local d = p:DistToSqr( a )
+				if d < 4 and ( not bestD or d < bestD ) then best, bestD = i, d end
+			end
+			if not best then return end
+			table.remove( l, best )
+		else
+			local n = math.min( net.ReadUInt( 12 ), LBR.MaxPointsPerCategory )
+			a = {}
+			for i = 1, n do
+				local v = readPoint()
+				if v then a[#a + 1] = v end
+			end
+			for i = #l, 1, -1 do l[i] = nil end
+			for i, v in ipairs( a ) do l[i] = v end
+		end
+	elseif kind == SYNC_SETTINGS or kind == SYNC_FULL then
+		local raw = readJSON()
+		if not istable( raw ) then return end
+		if kind == SYNC_SETTINGS then
+			local full = util.JSONToTable( LBR.MapConfigToJSON( draft ) )
+			full.zone_radius, full.zone_delay = raw.zone_radius, raw.zone_delay
+			full.weaponsc, full.playermodels = raw.weaponsc, raw.playermodels
+			raw = full
+		end
+		local cfg = LBR.SanitizeMapConfig( raw )
+		if not cfg then return end
+		LBR.EdDraft = cfg
+	else
+		return
+	end
+	LBR.EdDraftDirty = true
+
+	// to the other editors, as the server has it now
+	local others = editorList( ply )
+	if #others == 0 then return end
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteEntity( ply )
+		net.WriteUInt( kind, 3 )
+		if kind == SYNC_ADD then
+			net.WriteUInt( ci, 4 ) writePoint( a ) net.WriteUInt( b, 12 )
+		elseif kind == SYNC_REMOVE then
+			net.WriteUInt( ci, 4 ) writePoint( a )
+		elseif kind == SYNC_LIST then
+			net.WriteUInt( ci, 4 ) net.WriteUInt( #a, 12 )
+			for _, v in ipairs( a ) do writePoint( v ) end
+		elseif kind == SYNC_SETTINGS then
+			writeJSON( settingsOf( LBR.EdDraft ) )
+		else
+			writeJSON( util.JSONToTable( LBR.MapConfigToJSON( LBR.EdDraft ) ) )
+		end
+	net.Send( others )
 end )
 
 // editor map (M): the map area of the points being placed, found the same way as

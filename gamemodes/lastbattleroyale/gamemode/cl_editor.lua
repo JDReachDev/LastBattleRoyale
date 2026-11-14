@@ -67,16 +67,22 @@ end
 
 net.Receive( "LBR_Editor_Open", function()
 	local source = net.ReadString()
+	local dirty = net.ReadBool()
 	local size = net.ReadUInt( 16 )
 	local data = net.ReadData( size )
 	local cfg = LBR.MapConfigFromJSON( util.Decompress( data ) or "" )
+	local reopen = ED.active
 	ED.cfg = cfg or LBR.NewMapConfig()
 	ED.source = source
 	ED.active = true
 	ED.undo = {}
-	ED.dirty = false
+	ED.dirty = dirty
 	ED.errors, ED.warnings = LBR.ValidateMapConfig( ED.cfg )
-	ED.Status( source == "none" and "New map: place the points and save (Q)" or ( "Loaded config (" .. source .. ")" ), colOk )
+	if reopen then
+		if IsValid( ED.menu ) then ED.menu:Remove() ED.OpenMenu() end
+		return
+	end
+	ED.Status( source == "none" and "New map: place the points and save (Q)" or ( "Loaded config (" .. source .. ")" .. ( dirty and ", with the unsaved changes of the other editors" or "" ) ), colOk )
 	surface.PlaySound( "buttons/button9.wav" )
 end )
 
@@ -96,17 +102,143 @@ end )
 
 function ED.Save()
 	if not ED.cfg then return end
-	local data = util.Compress( LBR.MapConfigToJSON( ED.cfg ) )
-	if not data or #data > 60000 then
-		ED.Status( "Config too big to send", colErr )
-		return
-	end
+	// the server saves the shared draft (the changes of every editor)
+	timer.Remove( "LBR_EdSettings" )
+	if ED.settingsPending then ED.settingsPending = nil ED.SendSettings() end
 	net.Start( "LBR_Editor_Save" )
-		net.WriteUInt( #data, 16 )
-		net.WriteData( data, #data )
 	net.SendToServer()
 	ED.Status( "Saving..." )
 end
+
+// Live editing with the other editors: every change goes to the server, which
+// sends it to the others (sv_mapconfig.lua, LBR_Editor_Sync)
+local SYNC_ADD, SYNC_REMOVE, SYNC_LIST, SYNC_SETTINGS, SYNC_FULL = 1, 2, 3, 4, 5
+
+local function writePoint( v )
+	net.WriteFloat( v.x ) net.WriteFloat( v.y ) net.WriteFloat( v.z )
+end
+
+local function readPoint()
+	return Vector( net.ReadFloat(), net.ReadFloat(), net.ReadFloat() )
+end
+
+local function writeJSON( tbl )
+	local data = util.Compress( util.TableToJSON( tbl ) )
+	if not data or #data > 60000 then return false end
+	net.WriteUInt( #data, 16 )
+	net.WriteData( data, #data )
+	return true
+end
+
+local function catIndex( cat )
+	for i, c in ipairs( cats ) do if c == cat then return i end end
+end
+
+function ED.SendAdd( ci, pos, idx )
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteUInt( SYNC_ADD, 3 )
+		net.WriteUInt( ci, 4 )
+		writePoint( pos )
+		net.WriteUInt( idx or 0, 12 )
+	net.SendToServer()
+end
+
+function ED.SendRemove( ci, pos )
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteUInt( SYNC_REMOVE, 3 )
+		net.WriteUInt( ci, 4 )
+		writePoint( pos )
+	net.SendToServer()
+end
+
+function ED.SendList( ci )
+	local l = LBR.GetCategoryList( ED.cfg, cats[ci], true )
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteUInt( SYNC_LIST, 3 )
+		net.WriteUInt( ci, 4 )
+		net.WriteUInt( #l, 12 )
+		for _, v in ipairs( l ) do writePoint( v ) end
+	net.SendToServer()
+end
+
+function ED.SendSettings()
+	if not ED.cfg then return end
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteUInt( SYNC_SETTINGS, 3 )
+		writeJSON( { zone_radius = ED.cfg.zone_radius, zone_delay = ED.cfg.zone_delay or -1, weaponsc = ED.cfg.weaponsc, playermodels = ED.cfg.playermodels } )
+	net.SendToServer()
+end
+
+// sliders change many times a second: the settings leave once they stop
+function ED.QueueSettings()
+	ED.settingsPending = true
+	timer.Create( "LBR_EdSettings", 0.4, 1, function()
+		ED.settingsPending = nil
+		ED.SendSettings()
+	end )
+end
+
+function ED.SendFull()
+	if not ED.cfg then return end
+	net.Start( "LBR_Editor_Sync" )
+		net.WriteUInt( SYNC_FULL, 3 )
+		if not writeJSON( util.JSONToTable( LBR.MapConfigToJSON( ED.cfg ) ) ) then net.Abort() ED.Status( "Config too big to send", colErr ) return end
+	net.SendToServer()
+end
+
+net.Receive( "LBR_Editor_Sync", function()
+	if not ED.active or not ED.cfg then return end
+	local from = net.ReadEntity()
+	local who = IsValid( from ) and from:Nick() or "Someone"
+	local kind = net.ReadUInt( 3 )
+	if kind == SYNC_ADD or kind == SYNC_REMOVE or kind == SYNC_LIST then
+		local ci = net.ReadUInt( 4 )
+		local cat = cats[ci]
+		if not cat then return end
+		local l = LBR.GetCategoryList( ED.cfg, cat, true )
+		if kind == SYNC_ADD then
+			local pos, idx = readPoint(), net.ReadUInt( 12 )
+			if idx > 0 and idx <= #l then table.insert( l, idx, pos ) else l[#l + 1] = pos end
+		elseif kind == SYNC_REMOVE then
+			local pos = readPoint()
+			local best, bestD
+			for i, p in ipairs( l ) do
+				local d = p:DistToSqr( pos )
+				if d < 4 and ( not bestD or d < bestD ) then best, bestD = i, d end
+			end
+			if best then table.remove( l, best ) end
+		else
+			local n = net.ReadUInt( 12 )
+			for i = #l, 1, -1 do l[i] = nil end
+			for i = 1, n do l[i] = readPoint() end
+			ED.Status( who .. " changed " .. cat.name )
+		end
+	else
+		local size = net.ReadUInt( 16 )
+		local raw = util.JSONToTable( util.Decompress( net.ReadData( size ) ) or "" )
+		if not istable( raw ) then return end
+		if kind == SYNC_SETTINGS then
+			local cfg = LBR.SanitizeMapConfig( raw )
+			if not cfg then return end
+			ED.cfg.zone_radius, ED.cfg.zone_delay = cfg.zone_radius, cfg.zone_delay
+			ED.cfg.weaponsc, ED.cfg.playermodels = cfg.weaponsc, cfg.playermodels
+			ED.Status( who .. " changed the settings" )
+		elseif kind == SYNC_FULL then
+			local cfg = LBR.SanitizeMapConfig( raw )
+			if not cfg then return end
+			ED.cfg = cfg
+			ED.undo = {}
+			ED.Status( who .. " imported a config", colWarn )
+		end
+		// the open menu shows the old values: rebuild it (not while typing in it)
+		local focus = vgui.GetKeyboardFocus()
+		if IsValid( ED.menu ) and not ( IsValid( focus ) and focus:HasParent( ED.menu ) ) and not input.IsMouseDown( MOUSE_LEFT ) then
+			ED.menu:Remove() ED.OpenMenu()
+		end
+	end
+	ED.dirty = true
+	ED.errors, ED.warnings = LBR.ValidateMapConfig( ED.cfg )
+end )
 
 function ED.Toggle()
 	net.Start( "LBR_Editor_Toggle" )
@@ -204,6 +336,7 @@ function ED.Add()
 	end
 	l[#l + 1] = pos
 	table.insert( ED.undo, { op = "add", cat = ED.cat, pos = pos } )
+	ED.SendAdd( ED.cat, pos )
 	markDirty()
 	surface.PlaySound( "buttons/lightswitch2.wav" )
 end
@@ -213,6 +346,7 @@ function ED.Remove()
 	if not idx then return end
 	table.remove( list(), idx )
 	table.insert( ED.undo, { op = "remove", cat = ED.cat, pos = pos, idx = idx } )
+	ED.SendRemove( ED.cat, pos )
 	markDirty()
 	surface.PlaySound( "buttons/button15.wav" )
 end
@@ -224,6 +358,7 @@ function ED.RemovePoint( ci, idx )
 	if not pos then return end
 	table.remove( l, idx )
 	table.insert( ED.undo, { op = "remove", cat = ci, pos = pos, idx = idx } )
+	ED.SendRemove( ci, pos )
 	markDirty()
 	surface.PlaySound( "buttons/button15.wav" )
 end
@@ -237,12 +372,15 @@ function ED.Undo()
 	local l = list( cats[u.cat] )
 	if u.op == "add" then
 		for i = #l, 1, -1 do
-			if l[i] == u.pos then table.remove( l, i ) break end
+			if l[i] == u.pos then table.remove( l, i ) ED.SendRemove( u.cat, u.pos ) break end
 		end
 	elseif u.op == "remove" then
-		table.insert( l, math.min( u.idx, #l + 1 ), u.pos )
+		local idx = math.min( u.idx, #l + 1 )
+		table.insert( l, idx, u.pos )
+		ED.SendAdd( u.cat, u.pos, idx )
 	elseif u.op == "clear" then
-		for i, v in ipairs( u.points ) do l[i] = v end
+		for i, v in ipairs( u.points ) do l[#l + 1] = v end
+		ED.SendList( u.cat )
 	end
 	ED.cat = u.cat
 	markDirty()
@@ -254,6 +392,7 @@ function ED.ClearCategory()
 	if #l == 0 then return end
 	table.insert( ED.undo, { op = "clear", cat = ED.cat, points = table.Copy( l ) } )
 	for i = #l, 1, -1 do l[i] = nil end
+	ED.SendList( ED.cat )
 	markDirty()
 	ED.Status( "Cleared " .. curCat().name )
 end
@@ -525,6 +664,7 @@ local function openImport()
 		end
 		ED.cfg = cfg
 		ED.undo = {}
+		ED.SendFull()
 		markDirty()
 		ED.Status( "Imported" .. ( map and map ~= game.GetMap() and ( " (made for " .. map .. "!)" ) or "" ), map and map ~= game.GetMap() and colWarn or colOk )
 		fr:Close()
@@ -584,6 +724,7 @@ function ED.OpenMenu()
 	zr:SetValue( ED.cfg.zone_radius or 20000 )
 	zr.OnValueChanged = function( _, v )
 		ED.cfg.zone_radius = math.floor( v )
+		ED.QueueSettings()
 		markDirty()
 	end
 
@@ -601,6 +742,7 @@ function ED.OpenMenu()
 	zd.OnValueChanged = function( _, v )
 		v = math.floor( v )
 		ED.cfg.zone_delay = v >= 0 and v or nil
+		ED.QueueSettings()
 		markDirty()
 	end
 
@@ -640,6 +782,7 @@ function ED.OpenMenu()
 		styleEntry( wang )
 		wang.OnValueChanged = function( _, v )
 			ED.cfg.weaponsc[i] = math.Clamp( math.floor( tonumber( v ) or 0 ), 0, 1000 )
+			ED.QueueSettings()
 			markDirty()
 		end
 	end
@@ -681,6 +824,7 @@ function ED.OpenMenu()
 			if string.match( string.lower( l ), "%.mdl$" ) then models[#models + 1] = l end
 		end
 		ED.cfg.playermodels = models
+		ED.QueueSettings()
 		markDirty()
 	end
 
