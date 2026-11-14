@@ -111,7 +111,7 @@ local function getBounds()
 end
 
 local function boundsSig( mins, maxs )
-	return string.format( "%d %d %d %d %d", mins.x, mins.y, maxs.x, maxs.y, maxs.z )
+	return string.format( "%d %d %d %d %d %d", mins.x, mins.y, maxs.x, maxs.y, maxs.z, GetGlobalFloat( "LBR_WorldTop", 0 ) )
 end
 
 ------------------------------------------------------------------------
@@ -136,7 +136,9 @@ local function build()
 	local skyZ = maxs.z
 	// above the sky (outside the map the engine draws everything, no visibility culling);
 	// the near plane starts just under the sky ceiling so the sky does not cover the map
-	local camZ = skyZ + 1024
+	// and above the whole world box: inside a leaf of the map the engine draws only
+	// what is visible from there (on rp_ineu_pass_v1e the map was almost all black)
+	local camZ = math.max( skyZ + 1024, GetGlobalFloat( "LBR_WorldTop", 0 ) + 256 )
 	local origin = Vector( ( mins.x + maxs.x ) / 2, ( mins.y + maxs.y ) / 2, camZ )
 
 	LBR.MapRendering = true

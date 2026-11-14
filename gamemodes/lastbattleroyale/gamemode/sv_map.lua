@@ -132,6 +132,11 @@ function LBR.UpdateMapBounds()
 	local a, b, info = LBR.ComputeMapBounds( mins, maxs, points )
 	SetGlobalVector( "LBR_MapMins", a )
 	SetGlobalVector( "LBR_MapMaxs", b )
+	// top of the world box: the map camera must be above it (sky brushes higher than
+	// the sky ceiling, or the 3D skybox room up there, put it inside a leaf of the map:
+	// the engine then drew only what is visible from that leaf, rp_ineu_pass_v1e)
+	local _, wmaxs = worldBounds()
+	SetGlobalFloat( "LBR_WorldTop", wmaxs and wmaxs.z or 0 )
 	LBR.MapBoundsInfo = info
 end
 
