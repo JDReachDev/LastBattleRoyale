@@ -56,7 +56,7 @@ ITEMS = {
 		"cw_shorty"
 	},
 	// good weapons: assault rifles, battle rifles, semi-auto rifles, good SMGs,
-	// pump shotgun, heavy pistols
+	// heavy pistols
 	BLUE = {
 		"cw_ak74",
 		"cw_l85a2",
@@ -84,7 +84,6 @@ ITEMS = {
 		"cw_ump45",
 		"khr_mp5a4",
 		"khr_veresk",
-		"cw_m3super90",
 		"cw_deagle",
 		"khr_deagle",
 		"khr_ragingbull",
@@ -92,7 +91,7 @@ ITEMS = {
 		"khr_410jury",
 		"khr_ots33"
 	},
-	// special weapons: snipers, machine guns
+	// special weapons: snipers, machine guns, semi-auto shotgun
 	PURPLE = {
 		"cw_l115",
 		"khr_t5000",
@@ -102,7 +101,8 @@ ITEMS = {
 		"cw_m249_official",
 		"khr_pkm",
 		"khr_m60",
-		"khr_hmg"
+		"khr_hmg",
+		"cw_m3super90" // semi-auto shotgun
 	},
 	// grenades, molotov, mines: no tier, no magazines
 	THROWABLES = {

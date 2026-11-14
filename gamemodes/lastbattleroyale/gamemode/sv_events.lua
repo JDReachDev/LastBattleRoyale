@@ -97,10 +97,25 @@ local function hurt( ply, pos, amount )
 	ply:TakeDamageInfo( dmg )
 end
 
+// under cover from a blast at pos: a roof of the map over the head (not the sky)
+// and the map between the blast and the player (eyes and body). A bunker, a
+// building or a tunnel saves you; a tree, a car or a crate does not (map only)
+local function sheltered( ply, pos )
+	local eye, mid = ply:EyePos(), ply:WorldSpaceCenter()
+	local up = util.TraceLine( { start = eye, endpos = eye + Vector( 0, 0, 2000 ), mask = MASK_SOLID_BRUSHONLY } )
+	if not up.Hit or up.HitSky then return false end
+	local from = pos + Vector( 0, 0, 64 )
+	for _, p in ipairs( { eye, mid } ) do
+		if not util.TraceLine( { start = from, endpos = p, mask = MASK_SOLID_BRUSHONLY } ).Hit then return false end
+	end
+	return true
+end
+LBR.BlastSheltered = sheltered
+
 function LBR.Nuke( target )
 	local pos = groundOf( target )
-	LBR.Chat( nil, "Nuclear airstrike inbound! Leave the red area on the map (M)" )
-	LBR.Notify( nil, "Nuclear airstrike in " .. NUKE_DELAY .. " s! Leave the red area (M)", "bad", 6 )
+	LBR.Chat( nil, "Nuclear airstrike inbound! Leave the red area on the map (M) or get under cover (bunker, building)" )
+	LBR.Notify( nil, "Nuclear airstrike in " .. NUKE_DELAY .. " s! Leave the red area (M) or get under cover", "bad", 6 )
 	SetGlobalVector( "LBR_NukePos", pos )
 	SetGlobalFloat( "LBR_NukeRadius", NUKE_RADIUS )
 	SetGlobalFloat( "LBR_NukeUntil", CurTime() + NUKE_DELAY + 15 )
@@ -110,19 +125,23 @@ function LBR.Nuke( target )
 	later( "LBR_NukeBlast", NUKE_DELAY, function()
 		bigExplosion( pos, 500 )
 		blastFeedback( pos, NUKE_RADIUS, 25 )
-		// the blast goes through walls: inside the lethal part you die,
-		// further out less and less (no cover)
+		// in the open: inside the lethal part you die, further out less and less.
+		// Under cover (bunker, building, tunnel: sheltered above) only a knock
 		for _, ply in ipairs( player.GetAll() ) do
 			if ply:Alive() then
 				local d = ply:GetPos():Distance( pos )
 				local lethal = NUKE_RADIUS * NUKE_LETHAL
-				if d <= lethal then
+				if d <= NUKE_RADIUS and sheltered( ply, pos ) then
+					hurt( ply, pos, d <= lethal and 25 or 10 )
+				elseif d <= lethal then
 					hurt( ply, pos, 1000 )
 				elseif d <= NUKE_RADIUS then
 					hurt( ply, pos, Lerp( ( d - lethal ) / ( NUKE_RADIUS - lethal ), 150, 30 ) )
 				end
 			end
 		end
+		// vehicles, props: the engine blast (it stops at the walls of the map, so it
+		// does not reach the players under cover either)
 		util.BlastDamage( game.GetWorld(), game.GetWorld(), pos, NUKE_RADIUS * NUKE_LETHAL, 400 )
 	end )
 end
