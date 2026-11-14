@@ -245,14 +245,28 @@ function RoundRestart()
 		SpawnAllFlyingVehicles()
 
 		local spawns = LBR.ShuffledCopy( CatList( "playerspawns" ) )
-		for i, pl in ipairs( player.GetAll() ) do
+		// one spawn point per squad: the members start together, PlacePlayer puts
+		// them next to each other (the ones already there are solid). Solo players
+		// get a point each, as before
+		local all = player.GetAll()
+		local group, groups = {}, 0
+		for _, pl in ipairs( all ) do
+			if not group[pl] then
+				groups = groups + 1
+				group[pl] = groups
+				for _, other in ipairs( all ) do
+					if not group[other] and IsInTeam( pl, other ) then group[other] = groups end
+				end
+			end
+		end
+		for _, pl in ipairs( all ) do
 			pl.roundkills = 0
 			pl:SetNW2Int( "LBR_Kills", 0 )
 			pl:Spawn()
 			pl:SetActivePlayer()
 			if #spawns > 0 then
-				// more players than spawns: PlacePlayer spreads them around the same point
-				LBR.PlacePlayer( pl, spawns[ ( ( i - 1 ) % #spawns ) + 1 ] )
+				// more squads than spawns: PlacePlayer spreads them around the same point
+				LBR.PlacePlayer( pl, spawns[ ( ( group[pl] - 1 ) % #spawns ) + 1 ] )
 			end
 		end
 		net.Start("LST_RoundStart")

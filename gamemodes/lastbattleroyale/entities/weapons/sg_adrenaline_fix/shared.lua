@@ -16,11 +16,12 @@ SWEP.DrawCrosshair = false
 SWEP.DrawAmmo = true
 
 SWEP.base = "weapon_base"
-SWEP.SAmmo = 1
 
+// the shots are ammo (sh_tiers.lua): one more each time you pick one up, the
+// HUD shows how many are left
 SWEP.Primary.ClipSize = -1
-SWEP.Primary.Ammo = "none" 
-SWEP.Primary.DefaultClip = -1
+SWEP.Primary.Ammo = "lbr_adrenaline"
+SWEP.Primary.DefaultClip = 1
 SWEP.Primary.Automatic = false 
 
 SWEP.Secondary.DefaultClip = -1
@@ -67,8 +68,8 @@ function SWEP:PrimaryAttack()
 		end
 		return
 	end
-	print(self.SAmmo)
-	self.SAmmo = self.SAmmo - 1
+	if self:Ammo1() < 1 then return end
+	self:TakePrimaryAmmo( 1 )
 	self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
 	self:SetNextPrimaryFire(CurTime()+3.4)
 
@@ -101,7 +102,7 @@ function SWEP:PrimaryAttack()
 
 	timer.Simple(self.Owner:GetViewModel():SequenceDuration(), function()
 		if not SG_IsActive(self) then return end
-		if self.SAmmo < 1 then
+		if self:Ammo1() < 1 then
 			self.Owner:ConCommand("lastinv")
 			if SERVER then
 				self.Owner:StripWeapon(self:GetClass())

@@ -548,12 +548,23 @@ function playerdeath( victim, inflictor, attacker )
 			// hands / fists and weapons that cannot be dropped stay with the body
 			local class = v:GetClass()
 			if not LBR.InvIsHands( v ) and not ( cantdropweapons and intab and intab( class, cantdropweapons ) ) then
-				local wep = ents.Create( class )
-				if IsValid( wep ) then
-					wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
-					wep:Spawn()
-					wep:SetClip1(v:Clip1())
-					wep.kanadelootable = true // ground loot: taken only with E, like the rest
+				// adrenaline shots, grenades: one on the ground for each one carried
+				// (each gives its default ammo back), not one for the whole stack
+				local copies = 1
+				if v:GetMaxClip1() <= 0 and v:GetPrimaryAmmoType() >= 0 then
+					local full = weapons.Get( class )
+					local per = math.max( tonumber( full and full.Primary and full.Primary.DefaultClip ) or 1, 1 )
+					local have = ( victim.LBR_DeathAmmo or {} )[v:GetPrimaryAmmoType()] or 0
+					copies = math.Clamp( math.floor( have / per ), 1, 8 )
+				end
+				for _ = 1, copies do
+					local wep = ents.Create( class )
+					if IsValid( wep ) then
+						wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
+						wep:Spawn()
+						wep:SetClip1(v:Clip1())
+						wep.kanadelootable = true // ground loot: taken only with E, like the rest
+					end
 				end
 			end
 		end
@@ -579,6 +590,17 @@ function playerdeath( victim, inflictor, attacker )
 	end
 end
 hook.Add("PlayerDeath", "playerdeathhook", playerdeath)
+
+// the ammo of each weapon at the moment of death, read before the PlayerDeath
+// hooks (sh_clips.lua empties it there): how many adrenaline shots / grenades fall
+hook.Add( "DoPlayerDeath", "LBR_DeathAmmo", function( ply )
+	local t = {}
+	for _, w in ipairs( ply:GetWeapons() ) do
+		local id = w:GetPrimaryAmmoType()
+		if id and id >= 0 then t[id] = ply:GetAmmoCount( id ) end
+	end
+	ply.LBR_DeathAmmo = t
+end )
 
 function deaththink( ply )
 	if (CurTime() >= (ply.nextspawn or 0)) then

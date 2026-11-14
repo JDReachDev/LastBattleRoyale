@@ -129,6 +129,9 @@ for _, t in ipairs( LBR.Tiers ) do
 		addAmmoType( LBR.TierAmmoName( t.id, k ), t.name .. " " .. LBR.AmmoKindNames[k] )
 	end
 end
+// adrenaline shots (sg_adrenaline_fix): the count of the shots you have, as the
+// medkit does with its charges. They stack and the HUD shows how many
+addAmmoType( "lbr_adrenaline", "Adrenaline Shots" )
 
 ------------------------------------------------------------------------
 // Giving the tier ammo to the weapons
