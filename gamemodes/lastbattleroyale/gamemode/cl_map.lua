@@ -781,7 +781,6 @@ local function drawMap()
 		if zr > 1 then
 			ring( zx, zy, zr, Color( zc.r, zc.g, zc.b, 255 ), S( 3 ) )
 		end
-		circle( zx, zy, S( 4 ), Color( zc.r, zc.g, zc.b, 255 ), 12 )
 
 		// outside the zone: dashed line to the nearest point of its edge
 		local zr = LBR.GetZoneRadius()

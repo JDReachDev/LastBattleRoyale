@@ -16,7 +16,7 @@ A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attach
 [*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen)
 [*][b]Attachments are loot[/b]: attachment kits have their own loot category, about one kit every 3 weapons (set per map in the editor). In the C menu the missing ones are red
 [*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 1 minute before shrinking and always starts outside the map. Inside it your health regenerates up to 20
-[*][b]New HUD and menus[/b]: shield and health bars, compass with zone and teammates, squad panel, TAB menu with stats, F3 classes, F4 squad
+[*][b]New HUD and menus[/b]: shield and health bars, compass with teammates, squad panel, TAB menu with stats, F3 classes, F4 squad
 [*][b]Loot is easy to spot[/b]: outline and a small light beam on loot close by and in sight. The screen tells you what E does
 [*][b]Map vote[/b] at the end of the match, admins change level with F2
 [*][b]In-game map editor, loot editor and classes editor[/b] (F8): set up any map, choose what spawns (tiers, damage %, magazines per tier, supply drop contents) and edit the classes, no code needed
@@ -37,7 +37,7 @@ A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attach
 [*][b]Lobby[/b]: wait for enough players (2 by default), pick a class (F3) and make a squad (F4)
 [*][b]Preparing[/b]: after a 30 s countdown everyone is spread around the map
 [*][b]Loot[/b]: no attacks for the first 30 s. Pick up with [b]E[/b], hold TAB to sort your inventory
-[*][b]Zone[/b]: after 1 minute the zone starts shrinking. Outside it you lose health: follow the compass, the timer or the map ([b]M[/b])
+[*][b]Zone[/b]: after 1 minute the zone starts shrinking. Outside it you lose health: follow the timer or the map ([b]M[/b])
 [*][b]Win[/b]: the last player (or squad) alive wins, then back to the lobby or a map vote
 [/olist]
 Kills and wins give EXP to your class: level up to unlock new classes. Dead players can spectate.

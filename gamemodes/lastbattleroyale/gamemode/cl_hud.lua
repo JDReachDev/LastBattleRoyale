@@ -1,7 +1,7 @@
 // Client HUD (same look as the menus of cl_ui.lua: dark flat panels, thin gold line on top)
 //  bottom-left : shield + health bars
 //  bottom-right: weapon name + ammo
-//  top-center  : compass with zone center and teammates, match phase banner
+//  top-center  : compass with teammates, match phase banner
 //  top-right   : players alive, kills, zone timer and distance
 //  top-left    : teammates with health
 //  outside the zone: red vignette + direction
@@ -281,10 +281,7 @@ local function drawCompass( lp )
 		end
 	end
 
-	if LBR.IsZoneActive() then
-		local zp = LBR.GetZonePos()
-		marker( zp, LBR.GetZoneColor and LBR.GetZoneColor() or colZone, S( 9 ), units2m( eye:Distance( zp ) ) .. "m" )
-	end
+	// no zone center marker: it showed where the zone ends
 	for _, sid in ipairs( TEAMERSTAB or {} ) do
 		local mate = player.GetBySteamID64( sid )
 		if IsValid( mate ) and mate ~= lp and mate:Alive() and mate:Team() == 2 then
