@@ -209,44 +209,47 @@ net.Receive( "LBR_InvSwap", function( _, ply )
 		LBR.Notify( ply, "Hold the weapon you want to swap", "bad", 2 )
 		return
 	end
+	local inv = layout( ply )
 	local slot
 	for s = 1, LBR.INV_SLOTS do
-		if layout( ply )[s] == act then slot = s end
+		if inv[s] == act then slot = s end
 	end
-	if not LBR.DropWeapon( ply, act, true ) then
+	if not slot then return end
+	if cantdropweapons and intab and intab( act:GetClass(), cantdropweapons ) then
 		LBR.Notify( ply, "You can not drop this", "bad", 2 )
 		return
 	end
+	// 1) the new weapon first, while the old one is still in hand: dropping first
+	// left the player with no weapon for a moment and the game could put another
+	// one in hand (a CW 2.0 weapon then refuses any switch while it is deploying)
 	local class = ent:GetClass()
-	// next tick: the old weapon is really gone from the player by then
-	timer.Simple( 0, function()
-		if not IsValid( ply ) or not ply:Alive() then return end
-		local ok = false
-		if IsValid( ent ) and not IsValid( ent:GetOwner() ) then
-			ply.LBR_SwapEnt = ent
-			ok = ply:PickupWeapon( ent )
-			ply.LBR_SwapEnt = nil
-		end
-		LBR.InvSync( ply )
-		if not ok or not ply:HasWeapon( class ) then
-			LBR.InvSelectBest( ply )
+	ply.LBR_SwapEnt = ent
+	local ok = ply:PickupWeapon( ent )
+	ply.LBR_SwapEnt = nil
+	local new = ply:GetWeapon( class )
+	if not ok or not IsValid( new ) then return end
+	// 2) it takes the slot of the old one (before any sync sees one weapon too many)
+	inv[slot] = new
+	// 3) the old one on the ground, the new one in hand right away
+	LBR.DropWeapon( ply, act, true )
+	send( ply )
+	ply:SelectWeapon( class )
+	// 4) until it really is in hand: a CW 2.0 weapon put in hand meanwhile has its
+	// deploy / holster wait cleared so it lets go at once
+	timer.Create( "LBR_SwapSelect_" .. ply:EntIndex(), 0.1, 20, function()
+		if not IsValid( ply ) or not ply:Alive() or not IsValid( new ) or new:GetOwner() ~= ply then
+			timer.Remove( "LBR_SwapSelect_" .. ply:EntIndex() )
 			return
 		end
-		// the new weapon in the slot of the old one (the sync puts it in the first free one)
-		local new = ply:GetWeapon( class )
-		local inv = layout( ply )
-		if slot and IsValid( new ) and inv[slot] ~= new then
-			for s = 1, LBR.INV_SLOTS do
-				if inv[s] == new then inv[s], inv[slot] = inv[slot], new break end
-			end
-			send( ply )
+		local cur = ply:GetActiveWeapon()
+		if cur == new then
+			timer.Remove( "LBR_SwapSelect_" .. ply:EntIndex() )
+			return
+		end
+		if IsValid( cur ) and cur.CW20Weapon then
+			cur.GlobalDelay, cur.HolsterWait = 0, 0
 		end
 		ply:SelectWeapon( class )
-		timer.Simple( 0.1, function()
-			if not IsValid( ply ) or not ply:Alive() or not ply:HasWeapon( class ) then return end
-			local act = ply:GetActiveWeapon()
-			if not IsValid( act ) or act:GetClass() ~= class then ply:SelectWeapon( class ) end
-		end )
 	end )
 end )
 
