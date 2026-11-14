@@ -472,6 +472,13 @@ function GM:PlayerSpawn(ply)
 	if ply.goingtobespec then
 		ply.goingtobespec = false
 		ply:SetSpectator()
+		// the free camera starts where you died (not at a spawn point of the map)
+		local at = ply.LBR_DeathView
+		ply.LBR_DeathView = nil
+		if at then
+			ply:SetPos( at.pos )
+			ply:SetEyeAngles( at.ang )
+		end
 		return
 	end
 	if ply.goingtowait then
@@ -496,6 +503,8 @@ end
 function playerdeath( victim, inflictor, attacker )
 	victim.nextspawn = CurTime() + 10
 	victim.goingtobespec = true
+	// where the spectator camera starts (GM:PlayerSpawn), a bit above the eyes
+	victim.LBR_DeathView = { pos = victim:EyePos() + Vector( 0, 0, 16 ), ang = Angle( 20, victim:EyeAngles().y, 0 ) }
 	if GetState() != STATE_LIVE then
 		return
 	end
