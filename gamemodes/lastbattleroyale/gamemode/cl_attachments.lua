@@ -1,7 +1,7 @@
 // CW 2.0 customization menu (C) with attachments as loot.
 // CW 2.0 draws every attachment of the weapon the same way, owned or not, so it
 // looks like you have them all. Here (without touching CW 2.0) the ones you do
-// not own are drawn red (as in the old CW 2.0), and a small panel says how many you have for that
+// not own get a red background, the ones you own a green frame, and a small panel says how many you have for that
 // weapon and how to mount them.
 
 LBR = LBR or {}
@@ -28,27 +28,53 @@ local function patchMenu()
 	if tab.LBR_Patched then return true end
 	tab.LBR_Patched = true
 
-	// the icons of attachments you do not own are drawn red
-	// (CW 2.0 sets the color, then the icon texture, then draws it)
+	// the attachments you do not own get a red background under the icon, the ones
+	// you own a green frame. (Tinting the icon red, as before, did not show on the
+	// black icons.) CW 2.0 sets the color, then the icon texture, then draws it:
+	// both calls are wrapped while its menu is drawn
 	local orig = tab.drawFunc
-	local setTexture = surface.SetTexture
+	local setTexture, drawTex = surface.SetTexture, surface.DrawTexturedRect
+	local function frame( x, y, w, h, r, g, b, a, t )
+		surface.SetDrawColor( r, g, b, a )
+		surface.DrawRect( x, y, w, t )
+		surface.DrawRect( x, y + h - t, w, t )
+		surface.DrawRect( x, y, t, h )
+		surface.DrawRect( x + w - t, y, t, h )
+	end
 	tab.drawFunc = function( wep, ... )
 		if not filterOn() then return orig( wep, ... ) end
 		local ply = LocalPlayer()
-		local dim = {}
+		local dim, have = {}, {}
 		for _, cat in pairs( wep.Attachments or {} ) do
 			for _, name in pairs( cat.atts or {} ) do
 				local att = cw.registeredAttachmentsSKey[name]
-				if att and att.displayIcon and not owns( ply, name, wep ) then dim[att.displayIcon] = true end
+				if att and att.displayIcon then
+					if owns( ply, name, wep ) then have[att.displayIcon] = true else dim[att.displayIcon] = true end
+				end
 			end
 		end
 		local alpha = wep.CustomizeMenuAlpha or 1
+		local cur
 		surface.SetTexture = function( id )
 			setTexture( id )
-			if dim[id] then surface.SetDrawColor( 255, 90, 90, 230 * alpha ) end
+			cur = id
+		end
+		surface.DrawTexturedRect = function( x, y, w, h, ... )
+			if not ( dim[cur] or have[cur] ) then return drawTex( x, y, w, h, ... ) end
+			local col = surface.GetDrawColor and surface.GetDrawColor() or Color( 255, 255, 255, 255 * alpha )
+			if dim[cur] then
+				surface.SetDrawColor( 200, 35, 35, 235 * alpha )
+				surface.DrawRect( x, y, w, h )
+				surface.SetDrawColor( col )
+				drawTex( x, y, w, h, ... )
+			else
+				drawTex( x, y, w, h, ... )
+				frame( x, y, w, h, 80, 230, 110, 255 * alpha, math.max( 2, math.floor( w / 24 ) ) )
+			end
+			surface.SetDrawColor( col )
 		end
 		local ok, err = pcall( orig, wep, ... )
-		surface.SetTexture = setTexture
+		surface.SetTexture, surface.DrawTexturedRect = setTexture, drawTex
 		if not ok then ErrorNoHalt( "[LBR] CW menu: " .. tostring( err ) .. "\n" ) end
 	end
 	return true
