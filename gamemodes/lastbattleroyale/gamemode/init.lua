@@ -545,11 +545,16 @@ function playerdeath( victim, inflictor, attacker )
 		victim.goingtowait = false
 		local pos = victim:GetPos()
 		for _, v in ipairs(victim:GetWeapons()) do
-			local wep = ents.Create( v:GetClass() )
-			if IsValid( wep ) then
-				wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
-				wep:Spawn()
-				wep:SetClip1(v:Clip1())
+			// hands / fists and weapons that cannot be dropped stay with the body
+			local class = v:GetClass()
+			if not LBR.InvIsHands( v ) and not ( cantdropweapons and intab and intab( class, cantdropweapons ) ) then
+				local wep = ents.Create( class )
+				if IsValid( wep ) then
+					wep:SetPos( pos + Vector( math.random( -16, 16 ), math.random( -16, 16 ), 16 ) )
+					wep:Spawn()
+					wep:SetClip1(v:Clip1())
+					wep.kanadelootable = true // ground loot: taken only with E, like the rest
+				end
 			end
 		end
 	end
