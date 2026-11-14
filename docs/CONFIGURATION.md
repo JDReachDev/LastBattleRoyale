@@ -27,7 +27,7 @@ shown in the *Start New Game* menu by [`lastbattleroyale.txt`](../gamemodes/last
 | `lbr_time_weapons_hot` | `lst_time_actionpreparing` | `30` | Time before players can attack (seconds) |
 | `lbr_time_postround` | `lst_time_postround` | `15` | Post round phase (seconds) |
 | `lbr_zone_speed` | `lst_zonespeed` | `0.75` | Radius removed from the zone every tick |
-| `lbr_zone_delay` | `lst_zonedelay` | `120` | Seconds after the start before the zone starts shrinking (a map can set its own `zone_delay`) |
+| `lbr_zone_delay` | `lst_zonedelay` | `60` | Seconds after the start before the zone starts shrinking (a map can set its own `zone_delay`) |
 | `lbr_zone_heal` | `lst_healhealth` | `1` | Regenerate health up to 20 HP while inside the zone |
 | `lbr_css_armor` | `lst_usecssarmor` | `1` | Use CS:S models for armor / ghillie (needs CS:S mounted) |
 | `lbr_event_nuke` | `lst_event_enablenuke` | `0` | Random nuclear strike event during the round |
@@ -74,7 +74,7 @@ lbr_time_preparing 30
 lbr_time_weapons_hot 30
 lbr_time_postround 15
 lbr_zone_speed 0.75
-lbr_zone_delay 120
+lbr_zone_delay 60
 lbr_zone_heal 1
 lbr_css_armor 1
 lbr_event_nuke 0

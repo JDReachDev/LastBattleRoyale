@@ -44,6 +44,41 @@ local cvHeal = GetConVar("lbr_zone_heal")
 local cvImplosion = GetConVar("lbr_event_implosion")
 local cvNuke = GetConVar("lbr_event_nuke")
 
+// Round start: players sharing a spawn point (a squad, or more players than
+// points) are put next to each other. The free-space check alone is not enough:
+// teammates do not collide (SetNoCollideWithTeammates), so the one already there
+// may not count and two ended up inside each other. The positions taken are kept
+// and every new one must be at least a body away from them.
+local SPREAD = {}
+for _, r in ipairs( { 0, 48, 96, 144 } ) do
+	for i = 0, ( r == 0 and 0 or 7 ) do
+		local a = math.rad( i * 45 )
+		SPREAD[#SPREAD + 1] = Vector( math.cos( a ) * r, math.sin( a ) * r, 0 )
+	end
+end
+local function apart( p, used )
+	for _, u in ipairs( used ) do
+		if math.abs( u.x - p.x ) < 40 and math.abs( u.y - p.y ) < 40 and math.abs( u.z - p.z ) < 80 then return false end
+	end
+	return true
+end
+local function placeApart( pl, point, used )
+	local mins, maxs = pl:GetHull()
+	local eye = point + Vector( 0, 0, 36 )
+	for _, off in ipairs( SPREAD ) do
+		local p, ok = LBR.FindSafePos( point + off, mins, maxs, MASK_PLAYERSOLID, pl )
+		// same place: not behind a wall or on another floor
+		if ok and apart( p, used ) and math.abs( p.z - point.z ) < 96
+			and not util.TraceLine( { start = eye, endpos = p + Vector( 0, 0, 36 ), mask = MASK_SOLID_BRUSHONLY } ).Hit then
+			pl:SetPos( p )
+			pl:SetVelocity( -pl:GetVelocity() )
+			used[#used + 1] = p
+			return
+		end
+	end
+	used[#used + 1] = LBR.PlacePlayer( pl, point ) // nothing better: as before
+end
+
 // lbr_zone_speed is "radius removed every tick", converted to units per second
 function GetZoneSpeed()
 	return cvZoneSpeed:GetFloat()
@@ -259,14 +294,17 @@ function RoundRestart()
 				end
 			end
 		end
+		local used = {} // spawn index -> positions already taken there
 		for _, pl in ipairs( all ) do
 			pl.roundkills = 0
 			pl:SetNW2Int( "LBR_Kills", 0 )
 			pl:Spawn()
 			pl:SetActivePlayer()
 			if #spawns > 0 then
-				// more squads than spawns: PlacePlayer spreads them around the same point
-				LBR.PlacePlayer( pl, spawns[ ( ( group[pl] - 1 ) % #spawns ) + 1 ] )
+				// more squads than spawns: two squads share a point, still apart
+				local idx = ( ( group[pl] - 1 ) % #spawns ) + 1
+				used[idx] = used[idx] or {}
+				placeApart( pl, spawns[idx], used[idx] )
 			end
 		end
 		net.Start("LST_RoundStart")
@@ -341,14 +379,29 @@ function IsInZone(ply)
 	return LBR.IsPosInZone( ply:GetPos() )
 end
 
+// damage outside the zone, every tick (0.36 s): from ZONE_DMG_MIN when it starts
+// shrinking to ZONE_DMG_MAX when it is closed (about 2.8 to 14 health per second),
+// growing with how much of the radius is gone. The fractions are kept per player.
+local ZONE_DMG_MIN, ZONE_DMG_MAX = 1, 5
+local function zoneDamage()
+	local start = GetGlobalFloat( "LBR_ZoneStartRadius", 0 )
+	if start <= 0 then return ZONE_DMG_MIN end
+	local closed = math.Clamp( 1 - LBR.GetZoneRadius() / start, 0, 1 )
+	return ZONE_DMG_MIN + ( ZONE_DMG_MAX - ZONE_DMG_MIN ) * closed
+end
+
 function HurtPlayers()
 	if GetState() != STATE_LIVE then return end
 	if not LBR.IsZoneActive() then return end
 	local heal = cvHeal:GetInt() == 1
+	local dmg = zoneDamage()
 	for _, v in ipairs( team.GetPlayers( TEAM_CONT ) ) do
 		if v:Alive() then
 			if not IsInZone(v) then
-				v:TakeDamage( 1, v, v )
+				local total = ( v.LBR_ZoneDmgLeft or 0 ) + dmg
+				local whole = math.floor( total )
+				v.LBR_ZoneDmgLeft = total - whole
+				if whole > 0 then v:TakeDamage( whole, v, v ) end
 			elseif heal and v:Health() < 20 then
 				v:SetHealth(v:Health() + 1)
 			end

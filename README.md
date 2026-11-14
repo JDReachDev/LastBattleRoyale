@@ -141,7 +141,7 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_time_weapons_hot` | `30` | Time before the round goes live (seconds) |
 | `lbr_time_postround` | `15` | Time after the round ends (seconds) |
 | `lbr_zone_speed` | `0.75` | How fast the zone shrinks (units per tick) |
-| `lbr_zone_delay` | `120` | Seconds before the zone starts shrinking (a map can set its own) |
+| `lbr_zone_delay` | `60` | Seconds before the zone starts shrinking (a map can set its own) |
 | `lbr_zone_heal` | `1` | `1` = health regenerates up to 20 while inside the zone |
 | `lbr_css_armor` | `1` | `1` = use CS:S armor models (needs CS:S mounted) |
 | `lbr_event_nuke` | `0` | `1` = enable the random nuclear strike event |

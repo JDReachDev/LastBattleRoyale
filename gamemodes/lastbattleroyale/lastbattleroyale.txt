@@ -165,7 +165,7 @@
 			"text"		"Zone delay"
 			"help"		"Seconds after the start before the zone starts shrinking (a map can set its own)"
 			"type"		"Numeric"
-			"default"	"120"
+			"default"	"60"
 		}
 		21
 		{
