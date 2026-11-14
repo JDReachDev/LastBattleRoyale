@@ -339,11 +339,20 @@ local function canSee( eye, ent )
 	return clearTo( eye, c ) or clearTo( eye, c + Vector( 0, 0, 40 ) )
 end
 
+// where the player's own view is. The scan runs in the first render hook of the
+// frame, and that can be another view: the reflection of the water (the eye
+// mirrored under the surface, every item "behind a wall") or a point_camera of
+// the map. gm_marsh has both: no outline and no beam at all there.
+local viewOrigin, viewFrame
+hook.Add( "RenderScene", "LBR_LootView", function( origin )
+	viewOrigin, viewFrame = origin, FrameNumber()
+end )
+
 local function rebuildHalos()
 	haloEnts = {}
 	local lp = LocalPlayer()
 	if not IsValid( lp ) then return end
-	local eye = EyePos()
+	local eye = ( viewOrigin and FrameNumber() - viewFrame <= 2 ) and viewOrigin or EyePos()
 	local maxd = cvHaloDist:GetFloat()
 	maxd = maxd * maxd
 	for ent in pairs( candidates ) do
@@ -480,7 +489,7 @@ local beamC1, beamC2, beamC3 = Color( 0, 0, 0 ), Color( 0, 0, 0 ), Color( 0, 0, 
 local beamMid, beamTop = Vector(), Vector()
 // additive sprite: the color itself is dimmed (alpha alone may not fade it)
 local function beamCol( c, hc, k )
-	k = k * 0.7
+	k = k * 0.9
 	c.r, c.g, c.b, c.a = hc.r * k, hc.g * k, hc.b * k, 255 * k
 	return c
 end
@@ -497,17 +506,21 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_LootBeams", function( depth, sk
 	for _, ent in ipairs( haloEnts ) do
 		if IsValid( ent ) and not IsValid( ent:GetOwner() ) then
 			local base = ent:WorldSpaceCenter()
-			// fade in the last 30% of the distance
-			local f = math.Clamp( ( 1 - base:Distance( eye ) / maxd ) / 0.3, 0, 1 ) * pulse
+			local dist = base:Distance( eye )
+			// fade in the last 20% of the distance
+			local f = math.Clamp( ( 1 - dist / maxd ) / 0.2, 0, 1 ) * pulse
 			if f > 0 then
+				// wider and taller far away: a fixed width became a thin line from afar
+				local bw = BEAM_WIDTH + dist * 0.009
+				local bh = BEAM_HEIGHT + dist * 0.06
 				// additive sprite: the color itself is dimmed (alpha alone may not fade it)
 				local hc = lootColor( ent )
 				render.StartBeam( 3 )
-				render.AddBeam( base, BEAM_WIDTH, 0.5, beamCol( beamC1, hc, f ) )
-				beamMid:SetUnpacked( base.x, base.y, base.z + BEAM_HEIGHT * 0.4 )
-				render.AddBeam( beamMid, BEAM_WIDTH, 0.5, beamCol( beamC2, hc, f * 0.6 ) )
-				beamTop:SetUnpacked( base.x, base.y, base.z + BEAM_HEIGHT )
-				render.AddBeam( beamTop, BEAM_WIDTH, 0.5, beamCol( beamC3, hc, 0 ) )
+				render.AddBeam( base, bw, 0.5, beamCol( beamC1, hc, f ) )
+				beamMid:SetUnpacked( base.x, base.y, base.z + bh * 0.4 )
+				render.AddBeam( beamMid, bw, 0.5, beamCol( beamC2, hc, f * 0.6 ) )
+				beamTop:SetUnpacked( base.x, base.y, base.z + bh )
+				render.AddBeam( beamTop, bw, 0.5, beamCol( beamC3, hc, 0 ) )
 				render.EndBeam()
 			end
 		end

@@ -472,6 +472,9 @@ local function drawTeam( lp )
 				surface.SetDrawColor( colShield )
 				surface.DrawRect( x + S( 14 ), y + S( 30 ), ( w - S( 28 ) ) * math.Clamp( pl:Armor() / 100, 0, 1 ), S( 2 ) )
 			end
+		elseif pl:Team() == 1 then
+			// still in the lobby (round not started, or joined late): not out of the game
+			ptext( "IN LOBBY", "LBR_HUD_Tiny", x + w - S( 14 ), y + S( 4 ), colDim, TEXT_ALIGN_RIGHT )
 		else
 			ptext( "ELIMINATED", "LBR_HUD_Tiny", x + w - S( 14 ), y + S( 4 ), colWarn, TEXT_ALIGN_RIGHT )
 		end
@@ -557,6 +560,8 @@ end )
 ------------------------------------------------------------------------
 
 local winPlayed = false
+local winChannel
+local WIN_VOLUME = 0.35
 hook.Add( "Think", "LBR_WinSound", function()
 	if GetGlobalInt( "state", 1 ) ~= STATE_POST then
 		winPlayed = false
@@ -564,5 +569,11 @@ hook.Add( "Think", "LBR_WinSound", function()
 	end
 	if winPlayed or GetGlobalString( "LBR_Winner", "" ) == "" then return end
 	winPlayed = true
-	surface.PlaySound( "music/hl2_song23_suitsong3.mp3" )
+	// at full volume it was too loud: played as a sound channel at a lower volume
+	sound.PlayFile( "sound/music/hl2_song23_suitsong3.mp3", "noplay", function( ch )
+		if not IsValid( ch ) then return end
+		winChannel = ch // keep a reference, or it can be collected while playing
+		ch:SetVolume( WIN_VOLUME )
+		ch:Play()
+	end )
 end )
