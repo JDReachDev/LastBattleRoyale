@@ -370,6 +370,8 @@ end
 // Top-right info: alive, kills, zone
 ------------------------------------------------------------------------
 
+local infoBottom, infoFrame // where the boxes end (the kill feed goes below)
+
 local function drawInfo( lp, ply )
 	local x = ScrW() - S( 24 )
 	local y = S( 20 )
@@ -429,7 +431,17 @@ local function drawInfo( lp, ply )
 		local tw = surface.GetTextSize( t ) + S( 24 )
 		panel( x - tw, y, tw, S( 26 ), Color( 255, 140, 40 ) )
 		ptext( t, "LBR_HUD_Tiny", x - S( 12 ), y + S( 14 ), colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+		y = y + S( 26 ) + S( 8 )
 	end
+	infoBottom, infoFrame = y, FrameNumber()
+end
+
+// kill feed (GMod's death notices): under the boxes above, not on top of them
+function GM:DrawDeathNotice( x, y )
+	if infoBottom and FrameNumber() - ( infoFrame or 0 ) < 5 then
+		y = math.max( y, ( infoBottom + S( 6 ) ) / ScrH() )
+	end
+	return self.BaseClass.DrawDeathNotice( self, x, y )
 end
 
 ------------------------------------------------------------------------
