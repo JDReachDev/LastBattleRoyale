@@ -62,7 +62,7 @@ Kills and wins give EXP to your class: level up to unlock new classes. Dead play
 [/list]
 
 [h2]Supported maps[/h2]
-rp_pripyat_cop (the best one), rp_city17_build210, gm_marsh, rp_wasteland, gm_fork, gm_valley, rp_ineu_pass_v1e. Any other map can be configured in game.
+rp_pripyat_cop (the best one), rp_city17_build210, gm_marsh, rp_wasteland, gm_fork, gm_valley, rp_ineu_pass_v1e, rp_unioncity, gm_boreas. Any other map can be configured in game.
 
 [h2]Map editor (F8)[/h2]
 As admin between rounds press [b]F8[/b]: you fly around and see every point already placed.

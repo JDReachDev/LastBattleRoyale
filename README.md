@@ -91,6 +91,8 @@ Collection: **[Last Battle Royale Supported Maps](https://steamcommunity.com/wor
 | `gm_fork` | Big map |
 | `gm_valley` | Big map |
 | `rp_ineu_pass_v1e` | |
+| `rp_unioncity` | City |
+| `gm_boreas` | |
 
 Any other map can be configured in game: join as admin, press `F8`, place the points and save —
 see [docs/CONFIGURATION.md](docs/CONFIGURATION.md#map-editor-f8).
