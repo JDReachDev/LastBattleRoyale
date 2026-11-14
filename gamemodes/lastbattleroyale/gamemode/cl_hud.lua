@@ -577,3 +577,24 @@ hook.Add( "Think", "LBR_WinSound", function()
 		ch:Play()
 	end )
 end )
+
+// nuclear siren (LBR.PlaySiren on the server), the Half-Life 2 one (no longer the
+// HBOMBS one: who still had that addon installed heard its looping wav forever).
+// A sound patch, stopped after len seconds
+local SIREN = "npc/attack_helicopter/aheli_megabomb_siren1.wav"
+local siren
+
+function LBR.StopSiren()
+	timer.Remove( "LBR_SirenStop" )
+	if siren then siren:Stop() siren = nil end
+end
+
+function LBR.Siren( len )
+	LBR.StopSiren()
+	local ply = LocalPlayer()
+	if not IsValid( ply ) then return end
+	siren = CreateSound( ply, SIREN )
+	siren:SetSoundLevel( 0 )
+	siren:Play()
+	timer.Create( "LBR_SirenStop", len or 6, 1, LBR.StopSiren )
+end

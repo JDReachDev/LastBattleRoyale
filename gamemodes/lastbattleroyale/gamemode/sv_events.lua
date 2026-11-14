@@ -13,10 +13,6 @@ local NUKE_RADIUS = 3500    // red area on the map (67 m): inside it you die nea
 local NUKE_LETHAL = 0.6     // part of the radius where the blast always kills
 local IMPLOSION_DELAY = 6
 local IMPLOSION_RADIUS = 10000
-// the nuclear siren of HBOMBS (the one the gamemode always had) when the client
-// has that addon, else the Half-Life 2 one
-local SIREN_OLD = "gbombs_5/sirens/nuclear_siren.wav"
-local SIREN = "npc/attack_helicopter/aheli_megabomb_siren1.wav"
 
 local pending = {}
 
@@ -29,10 +25,13 @@ function LBR.StopEvents()
 	for _, id in ipairs( pending ) do timer.Remove( id ) end
 	pending = {}
 	SetGlobalFloat( "LBR_NukeUntil", 0 )
+	BroadcastLua( 'if LBR and LBR.StopSiren then LBR.StopSiren() end' )
 end
 
-function LBR.PlaySiren()
-	BroadcastLua( 'surface.PlaySound(file.Exists("sound/' .. SIREN_OLD .. '","GAME") and "' .. SIREN_OLD .. '" or "' .. SIREN .. '")' )
+// played by the clients (LBR.Siren, cl_hud) for len seconds, then stopped: the HBOMBS
+// siren the gamemode used when the client had that addon was a looping wav, never ending
+function LBR.PlaySiren( len )
+	BroadcastLua( 'if LBR and LBR.Siren then LBR.Siren(' .. ( len or 6 ) .. ') end' )
 end
 
 // ground under a point placed in the air (the blast happens on the ground): the nuke
@@ -120,7 +119,7 @@ function LBR.Nuke( target )
 	SetGlobalFloat( "LBR_NukeRadius", NUKE_RADIUS )
 	SetGlobalFloat( "LBR_NukeUntil", CurTime() + NUKE_DELAY + 15 )
 	for i = 0, NUKE_DELAY - 5, 5 do
-		later( "LBR_NukeSiren" .. i, math.max( i, 0.01 ), LBR.PlaySiren )
+		later( "LBR_NukeSiren" .. i, math.max( i, 0.01 ), function() LBR.PlaySiren( 5 ) end )
 	end
 	later( "LBR_NukeBlast", NUKE_DELAY, function()
 		bigExplosion( pos, 500 )
