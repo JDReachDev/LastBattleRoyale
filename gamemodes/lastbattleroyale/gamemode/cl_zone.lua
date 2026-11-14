@@ -287,9 +287,9 @@ end )
 local candidates = {}
 local haloEnts = {}
 local nextScan = 0
-local haloColor = Color( 50, 250, 180 )
+local haloColor = Color( 185, 255, 235 ) // neutral loot: almost white, a hint of teal
 
-// green / blue / purple for tier weapons and tier magazines, teal for the rest
+// green / blue / purple for tier weapons and tier magazines, pale teal (almost white) for the rest
 local function lootColor( ent )
 	if ent:GetClass() == "lbr_ammo_box" then
 		local t = ent.TierTable and ent:TierTable()

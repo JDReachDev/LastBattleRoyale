@@ -109,6 +109,7 @@ local function canPrompt( lp )
 	if lp:InVehicle() or IsValid( lp:GetVehicle() ) then return false end
 	if LBR.Editor and LBR.Editor.active then return false end
 	if IsValid( lp:GetObserverTarget() ) then return false end
+	if LBR.KitMenuOpen and LBR.KitMenuOpen() then return false end // the menu is in the way
 	return true
 end
 

@@ -493,8 +493,32 @@ local function clipRow( parent )
 	return row
 end
 
-// one inventory slot: drag it on another slot to swap, right click for the menu
-// (drop the weapon / unload its ammo in a box)
+// a tile dropped outside the inventory (rest of the board, the drop zone, the
+// game): the weapon is dropped. Panels with this receiver get LBR_DropTarget, so
+// the drop zone lights up whenever letting go would drop.
+local DROP_RED = Color( 235, 70, 70 )
+local function invDropReceiver( self, panels, dropped )
+	if not dropped then return end
+	local src = panels[1]
+	if not IsValid( src ) or not src.GetSlot or not src.Weapon or not IsValid( src:Weapon() ) then return end
+	net.Start( "LBR_InvDrop" )
+	net.WriteUInt( src:GetSlot(), 4 )
+	net.SendToServer()
+	surface.PlaySound( "ui/buttonclick.wav" )
+end
+local function makeDropTarget( pnl )
+	pnl:Receiver( "LBR_Inv", invDropReceiver )
+	pnl.LBR_DropTarget = true
+end
+local function draggingWeapon()
+	if not dragndrop.IsDragging() then return false end
+	local d = dragndrop.GetDroppable( "LBR_Inv" )
+	local src = d and d[1]
+	return IsValid( src ) and src.Weapon and IsValid( src:Weapon() )
+end
+
+// one inventory slot: drag it on another slot to swap, drag it out to drop it,
+// right click for the menu (unload its ammo in a box / drop the weapon)
 local function invTile( parent, slot )
 	local t = vgui.Create( "DButton", parent )
 	t:SetText( "" )
@@ -533,7 +557,6 @@ local function invTile( parent, slot )
 			surface.PlaySound( "ui/buttonclick.wav" )
 		end
 		local m = DermaMenu()
-		m:AddOption( "Drop weapon", function() send( "LBR_InvDrop" ) end ):SetIcon( "icon16/arrow_down.png" )
 		// weapons with a magazine: the rounds in it go back in the magazine store
 		if LBR.UsesMagazines( wep ) then
 			local n = LBR.ClipValueOfLoaded( wep )
@@ -541,7 +564,12 @@ local function invTile( parent, slot )
 			local o = m:AddOption( "Unload (+" .. LBR.ClipText( n ) .. " " .. ( t and t.name or "" ) .. " magazine)", function() send( "LBR_InvUnload" ) end )
 			o:SetIcon( "icon16/box.png" )
 			if wep:Clip1() <= 0 then o:SetEnabled( false ) end
+			m:AddSpacer()
 		end
+		// drop last and in red: the one you don't want to click by mistake
+		local d = m:AddOption( "Drop weapon", function() send( "LBR_InvDrop" ) end )
+		d:SetIcon( "icon16/arrow_down.png" )
+		d:SetTextColor( DROP_RED )
 		m:Open()
 	end
 	t.Paint = function( self, w, h )
@@ -607,6 +635,8 @@ local function buildSide( f )
 	side:SetWide( math.min( S( 560 ), math.floor( f:GetWide() * 0.5 ) ) )
 	side:DockMargin( S( 16 ), 0, 0, 0 )
 	side.Paint = nil
+	// let go between the tiles (headers, magazines, stats): nothing happens
+	side:Receiver( "LBR_Inv", function() end )
 
 	// buttons at the bottom
 	local btns = vgui.Create( "DPanel", side )
@@ -719,7 +749,7 @@ local function buildSide( f )
 	hint:Dock( TOP )
 	hint:SetTall( S( 18 ) )
 	hint.Paint = function( self, w, h )
-		UI.Text( "Drag to move  -  Right click: drop / unload  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( "Drag to move / out to drop  -  Right click: unload / drop  -  1-" .. LBR.INV_EQUIP .. " in hand", "LBR_UI_Tiny", w / 2, h / 2, C.dim, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 	local lastE, lastB, lastH
 	inv.Think = function( self )
@@ -826,7 +856,64 @@ local function createBoard()
 	f.List = list
 	f.Sig = ""
 	f.NextCheck = 0
+
+	// drag a weapon out of the inventory to drop it: anywhere on the board but the
+	// inventory column, or out in the game, and on the zone shown on the right while
+	// you drag
+	makeDropTarget( f )
+	local world = vgui.GetWorldPanel()
+	if IsValid( world ) and not world.LBR_DropTarget then makeDropTarget( world ) end
+	local zone = vgui.Create( "DPanel" )
+	makeDropTarget( zone )
+	zone:MakePopup()
+	zone:SetKeyboardInputEnabled( false )
+	zone:Hide()
+	f.DropZone = zone
+	f.OnRemove = function() if IsValid( zone ) then zone:Remove() end end
+	zone.Paint = function( self, w, h )
+		local r = dragndrop.m_Receiver
+		local hot = IsValid( r ) and r.LBR_DropTarget
+		local pulse = math.abs( math.sin( CurTime() * 5 ) )
+		UI.Box( 0, 0, w, h, Color( 20, 8, 10, 235 ) )
+		UI.Box( 0, 0, w, h, Color( DROP_RED.r, DROP_RED.g, DROP_RED.b, hot and 60 + pulse * 40 or 25 ) )
+		surface.SetDrawColor( DROP_RED.r, DROP_RED.g, DROP_RED.b, hot and 255 or 140 )
+		surface.DrawOutlinedRect( 0, 0, w, h, hot and S( 3 ) or S( 2 ) )
+		// arrow pointing down + text
+		local cx, cy = w / 2, h / 2 - S( 30 )
+		local a = S( 18 )
+		draw.NoTexture()
+		surface.DrawPoly( {
+			{ x = cx - a, y = cy - a * 0.4 }, { x = cx + a, y = cy - a * 0.4 }, { x = cx, y = cy + a * 0.8 },
+		} )
+		local tc = Color( 255, 255, 255, hot and 255 or 180 )
+		UI.Text( "DROP", "LBR_UI_Head", cx, cy + a + S( 14 ), DROP_RED, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( UI.Fit( "Let go here to", "LBR_UI_Tiny", w - S( 12 ) ), "LBR_UI_Tiny", cx, cy + a + S( 38 ), tc, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		UI.Text( UI.Fit( "drop the weapon", "LBR_UI_Tiny", w - S( 12 ) ), "LBR_UI_Tiny", cx, cy + a + S( 54 ), tc, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+	end
+	local function updateZone()
+		local show = draggingWeapon()
+		if show then
+			// to the right of the board; no room there (4:3): over the player list
+			local fx, fy = f:GetPos()
+			local rx = fx + f:GetWide() + S( 10 )
+			local room = ScrW() - rx - S( 10 )
+			if room >= S( 110 ) then
+				zone:SetPos( rx, fy )
+				zone:SetSize( math.min( room, S( 220 ) ), f:GetTall() )
+			else
+				local lx, ly = list:LocalToScreen( 0, 0 )
+				zone:SetPos( lx, ly )
+				zone:SetSize( list:GetWide(), list:GetTall() )
+			end
+		end
+		if zone:IsVisible() ~= show then
+			zone:SetVisible( show )
+			if show then zone:MoveToFront() end
+		end
+	end
+
 	f.Think = function( self )
+		updateZone()
 		updateStart( start )
 		if CurTime() < self.NextCheck then return end
 		self.NextCheck = CurTime() + 0.5
@@ -854,6 +941,7 @@ function GM:ScoreboardHide()
 	if IsValid( Board ) then
 		Board:SetMouseInputEnabled( false )
 		Board:Hide()
+		if IsValid( Board.DropZone ) then Board.DropZone:Hide() end
 	end
 	CloseDermaMenus()
 	gui.EnableScreenClicker( false )

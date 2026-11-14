@@ -125,36 +125,33 @@ else
 		if IsValid( menu ) then menu:Remove() end
 		menu = nil
 	end
+	function LBR.KitMenuOpen() return IsValid( menu ) end
 
-	// the kit as a bar of green magazines; hovering a color shows (in its color)
-	// the part one magazine of it takes
-	local function drawCharge( kit, x, y, w, h, hoverColor )
+	local WHITE = Color( 235, 238, 245 )
+
+	// the kit as a row of magazines (one per green magazine it holds), white;
+	// hovering a color paints in that color (pulsing) the magazines one pick takes
+	local function drawRow( kit, x, y, w, size, hoverColor )
 		local charge = kit:GetCharge()
 		local total = math.max( kit.Mags or 8, math.ceil( charge / 100 ) )
-		local gap = math.max( S( 3 ), 2 )
-		local sw = ( w - gap * ( total - 1 ) ) / total
+		local step = math.min( size * 0.8, w / total )
+		size = math.min( size, step / 0.8 )
+		local rowW = step * ( total - 1 ) + size * 0.6
+		local sx0 = x + ( w - rowW ) / 2 - size * 0.2 // the icon is drawn from 0.2 to 0.8 of its box
 		local cost = hoverColor and colorCost( hoverColor ) or 0
 		local from = math.max( charge - cost, 0 ) // hundredths still there after the pick
 		local hc = hoverColor and LBR.TierById[hoverColor].color
+		local pulse = 150 + math.abs( math.sin( CurTime() * 6 ) ) * 105
 		for i = 1, total do
-			local sx = x + ( i - 1 ) * ( sw + gap )
-			local lo, hi = ( i - 1 ) * 100, i * 100
-			surface.SetDrawColor( 255, 255, 255, 18 )
-			surface.DrawRect( sx, y, sw, h )
-			// full part of this green magazine
+			local lo = ( i - 1 ) * 100
 			local full = math.Clamp( ( charge - lo ) / 100, 0, 1 )
-			if full > 0 then
-				local keep = math.Clamp( ( from - lo ) / 100, 0, 1 )
-				surface.SetDrawColor( 90, 215, 95, 230 )
-				surface.DrawRect( sx, y, sw * keep, h )
-				if hc and full > keep then
-					surface.SetDrawColor( hc.r, hc.g, hc.b, 140 + math.abs( math.sin( CurTime() * 6 ) ) * 115 )
-					surface.DrawRect( sx + sw * keep, y, sw * ( full - keep ), h )
-				end
-			end
-			if hi > charge and lo < charge then // a part of a magazine left
-				surface.SetDrawColor( 255, 255, 255, 40 )
-				surface.DrawOutlinedRect( sx, y, sw, h )
+			local keep = math.Clamp( ( from - lo ) / 100, 0, 1 )
+			local ix = sx0 + ( i - 1 ) * step
+			if hc and full > keep then
+				// (part of) this one goes with the pick: colored, the rest stays white
+				LBR.DrawClipIcon( ix, y, size, hc, pulse, full, keep, WHITE )
+			else
+				LBR.DrawClipIcon( ix, y, size, WHITE, full > 0 and 255 or 70, full )
 			end
 		end
 	end
@@ -162,9 +159,11 @@ else
 	local function open( kit )
 		close()
 		local colors = LBR.ClipColors()
-		local bw, bh, gap = S( 170 ), S( 112 ), S( 8 )
+		local bw, bh, gap = S( 170 ), S( 96 ), S( 8 )
 		local w = bw * #colors + gap * ( #colors - 1 ) + S( 32 )
-		local h = bh + S( 142 )
+		local rowY, rowH = S( 44 ), S( 42 )
+		local btnY = rowY + rowH + S( 14 )
+		local h = btnY + bh + S( 34 )
 		local f = vgui.Create( "DFrame" )
 		menu = f
 		f:SetSize( w, h )
@@ -175,23 +174,16 @@ else
 		f.Kit = kit
 		local btns = {}
 		f.Paint = function( self, pw, ph )
-			surface.SetDrawColor( 10, 14, 24, 240 )
+			surface.SetDrawColor( 10, 14, 24, 245 )
 			surface.DrawRect( 0, 0, pw, ph )
 			surface.SetDrawColor( 255, 210, 70 )
 			surface.DrawRect( 0, 0, pw, S( 3 ) )
 			if not IsValid( kit ) then return end
 			draw.SimpleText( "PICK YOUR MAGAZINES", "LBR_UI_Head", S( 16 ), S( 12 ), color_white )
 			draw.SimpleText( string.upper( kit.PrintName or "Ammo kit" ), "LBR_UI_Tiny", pw - S( 16 ), S( 18 ), Color( 150, 158, 175 ), TEXT_ALIGN_RIGHT )
-			// what is left in the kit, as green magazines
 			local hover
 			for _, b in ipairs( btns ) do if b:IsHovered() then hover = b.Color end end
-			draw.SimpleText( "LEFT IN THE KIT: " .. kit:LeftText() .. " green", "LBR_UI_Small", S( 16 ), S( 42 ), Color( 90, 215, 95 ) )
-			if hover then
-				local t = LBR.TierById[hover]
-				local left = math.max( kit:GetCharge() - colorCost( hover ), 0 ) / 100
-				draw.SimpleText( "after 1 " .. t.name .. ": " .. LBR.ClipText( left ) .. " green", "LBR_UI_Small", pw - S( 16 ), S( 42 ), t.color, TEXT_ALIGN_RIGHT )
-			end
-			drawCharge( kit, S( 16 ), S( 62 ), pw - S( 32 ), S( 14 ), hover )
+			drawRow( kit, S( 16 ), rowY, pw - S( 32 ), rowH, hover )
 			draw.SimpleText( "Click or 1-" .. #colors .. ": take one   -   Right click: all in that color   -   E: close", "LBR_UI_Tiny", pw / 2, ph - S( 16 ), Color( 150, 158, 175 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		end
 		local opened = CurTime()
@@ -209,7 +201,7 @@ else
 			btns[i] = b
 			b.Color = color
 			b:SetText( "" )
-			b:SetPos( S( 16 ) + ( i - 1 ) * ( bw + gap ), S( 90 ) )
+			b:SetPos( S( 16 ) + ( i - 1 ) * ( bw + gap ), btnY )
 			b:SetSize( bw, bh )
 			b.DoClick = function() take( kit, color, false ) end
 			b.DoRightClick = function() take( kit, color, true ) end
@@ -217,21 +209,25 @@ else
 				if not IsValid( kit ) then return end
 				local c = t.color
 				local can = kit:GetCharge() / cost // how many of this color the kit still gives
-				local a = can > 0 and 1 or 0.35
+				local room = LBR.ClipRoom( LocalPlayer(), color )
+				local a = ( can > 0 and room >= 0.01 ) and 1 or 0.35
 				surface.SetDrawColor( c.r, c.g, c.b, ( self:IsHovered() and 80 or 28 ) * a )
 				surface.DrawRect( 0, 0, pw, ph )
 				surface.SetDrawColor( c.r, c.g, c.b, 230 * a )
 				surface.DrawOutlinedRect( 0, 0, pw, ph, self:IsHovered() and 3 or 2 )
-				LBR.DrawClipIcon( S( 12 ), S( 12 ), S( 30 ), c, 255 * a, can )
-				draw.SimpleText( string.upper( t.name ), "LBR_UI_Head", S( 40 ), S( 12 ), Color( c.r, c.g, c.b, 255 * a ) )
-				draw.SimpleText( "costs " .. LBR.ClipText( cost / 100 ) .. " green", "LBR_UI_Tiny", S( 40 ), S( 34 ), Color( 200, 205, 215, 220 * a ) )
-				draw.SimpleText( "[" .. i .. "]", "LBR_UI_Head", pw - S( 10 ), S( 10 ), Color( 255, 255, 255, 140 * a ), TEXT_ALIGN_RIGHT )
-				// how many the kit gives, how many you have
-				draw.SimpleText( "kit: x" .. LBR.ClipText( can ), "LBR_UI_Text", S( 12 ), S( 58 ), Color( 255, 255, 255, 255 * a ) )
-				draw.SimpleText( "you: x" .. LBR.ClipText( LBR.GetClips( LocalPlayer(), color ) ) .. LBR.ClipLimitText( color ), "LBR_UI_Text", pw - S( 12 ), S( 58 ), Color( c.r, c.g, c.b, 255 * a ), TEXT_ALIGN_RIGHT )
-				local room = LBR.ClipRoom( LocalPlayer(), color )
+				LBR.DrawClipIcon( S( 10 ), S( 10 ), S( 30 ), c, 255 * a, 1 )
+				draw.SimpleText( string.upper( t.name ), "LBR_UI_Head", S( 38 ), S( 14 ), Color( c.r, c.g, c.b, 255 * a ) )
+				draw.SimpleText( "[" .. i .. "]", "LBR_UI_Head", pw - S( 10 ), S( 12 ), Color( 255, 255, 255, 140 * a ), TEXT_ALIGN_RIGHT )
+				// what one costs, as white magazines of the kit
+				local n = cost / 100
+				local isz = S( 20 )
+				local step = isz * 0.75
+				draw.SimpleText( "=", "LBR_UI_Text", S( 14 ), S( 56 ), Color( 255, 255, 255, 200 * a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+				for k = 1, math.ceil( n ) do
+					LBR.DrawClipIcon( S( 26 ) + ( k - 1 ) * step, S( 56 ) - isz / 2, isz, WHITE, 255 * a, math.min( n - ( k - 1 ), 1 ) )
+				end
 				local next1 = math.min( can, 1, room )
-				draw.SimpleText( can <= 0 and "EMPTY" or ( room < 0.01 and "FULL" or ( next1 < 1 and "TAKE x" .. LBR.ClipText( next1 ) or "TAKE 1" ) ), "LBR_UI_Small", pw / 2, ph - S( 16 ), Color( 255, 255, 255, ( self:IsHovered() and 255 or 170 ) * a ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+				draw.SimpleText( can <= 0 and "EMPTY" or ( room < 0.01 and "FULL" or ( next1 < 1 and "TAKE x" .. LBR.ClipText( next1 ) or "TAKE 1" ) ), "LBR_UI_Small", pw / 2, ph - S( 14 ), Color( 255, 255, 255, ( self:IsHovered() and 255 or 170 ) * a ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 			end
 		end
 		f:MakePopup()

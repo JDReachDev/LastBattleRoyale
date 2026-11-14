@@ -102,7 +102,9 @@ if CLIENT then
 			{ x = cx( t1 ) + hw( t1 ), y = y1 }, { x = cx( t1 ) - hw( t1 ), y = y1 },
 		}
 	end
-	function LBR.DrawClipIcon( x, y, size, c, alpha, fill )
+	// low / lowColor (optional): the bottom part of the fill, up to low, in another
+	// color (ammo kit: what stays in the kit under what a pick takes)
+	function LBR.DrawClipIcon( x, y, size, c, alpha, fill, low, lowColor )
 		alpha = alpha or 255
 		fill = math.Clamp( fill or 1, 0, 1 )
 		local top, bot = y + size * 0.04, y + size * 0.96
@@ -127,6 +129,12 @@ if CLIENT then
 			local tf = fb - ( fb - ft ) * fill
 			surface.SetDrawColor( c.r, c.g, c.b, alpha )
 			surface.DrawPoly( quad( cx, fhw, tf, fb, ty( tf ), ty( fb ) ) )
+			low = math.Clamp( low or 0, 0, fill )
+			if low > 0 and lowColor then
+				local tl = fb - ( fb - ft ) * low
+				surface.SetDrawColor( lowColor.r, lowColor.g, lowColor.b, alpha )
+				surface.DrawPoly( quad( cx, fhw, tl, fb, ty( tl ), ty( fb ) ) )
+			end
 		end
 	end
 	return
