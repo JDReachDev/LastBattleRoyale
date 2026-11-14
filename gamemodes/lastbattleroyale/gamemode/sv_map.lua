@@ -49,6 +49,37 @@ function LBR.ComputeMapBounds( mins, maxs, points )
 	end
 	if not skyZ or skyZ < maxs.z then skyZ = maxs.z + 3000 end
 
+	// top of the outermost sky: some maps have a sky above the sky (rp_ineu_pass_v1e:
+	// ceiling at ~2000, a shell at 4096). The camera of the map picture must be above
+	// all of them, out of the map: between two skies it is inside a leaf of the map
+	// and the engine draws only what is visible from there (map almost all black).
+	// Climbs from each sky hit through the brush and on up to the next sky.
+	local topZ = skyZ
+	for i = 1, #points, step do
+		local p = points[i] + Vector( 0, 0, 40 )
+		local tr = util.TraceLine( { start = p, endpos = p + Vector( 0, 0, 65536 ), mask = MASK_SOLID_BRUSHONLY } )
+		if tr.HitSky and not tr.StartSolid then
+			local z = tr.HitPos.z
+			for _ = 1, 16 do
+				local s = Vector( p.x, p.y, z + 1 )
+				local up = util.TraceLine( { start = s, endpos = s + Vector( 0, 0, 32768 ), mask = MASK_SOLID_BRUSHONLY } )
+				if up.StartSolid then
+					// through the brush: where the trace leaves it, else solid up to the
+					// top (the void out of the map): done
+					if up.AllSolid or up.FractionLeftSolid >= 1 then break end
+					local left = s.z + 32768 * up.FractionLeftSolid + 1
+					up = util.TraceLine( { start = Vector( p.x, p.y, left ), endpos = Vector( p.x, p.y, left + 32768 ), mask = MASK_SOLID_BRUSHONLY } )
+					if up.StartSolid or not up.Hit then break end
+				elseif not up.Hit then
+					break
+				end
+				if up.HitSky then topZ = math.max( topZ, up.HitPos.z ) end
+				z = up.HitPos.z
+			end
+		end
+	end
+	SetGlobalFloat( "LBR_SkyTop", math.min( topZ, 15000 ) )
+
 	// Map area: scan the map from above. A grid of traces goes down from the sky
 	// ceiling; where one lands on ground there is map. Outside the outer walls the
 	// trace starts in the void (StartSolid) and is skipped, so the area stops at the
@@ -100,8 +131,8 @@ function LBR.ComputeMapBounds( mins, maxs, points )
 	end
 
 	return Vector( x1, y1, mins.z - 1000 ), Vector( x2, y2, skyZ ),
-		string.format( "map area x %d..%d  y %d..%d  sky %d  ground cells %d/%d  scanned x %d..%d y %d..%d (world bounds %s)",
-		x1, x2, y1, y2, skyZ, hits, N * N, sx1, sx2, sy1, sy2, wmins and "found" or "not found" )
+		string.format( "map area x %d..%d  y %d..%d  sky %d  outer sky %d  ground cells %d/%d  scanned x %d..%d y %d..%d (world bounds %s)",
+		x1, x2, y1, y2, skyZ, topZ, hits, N * N, sx1, sx2, sy1, sy2, wmins and "found" or "not found" )
 end
 
 function LBR.UpdateMapBounds()
@@ -132,11 +163,6 @@ function LBR.UpdateMapBounds()
 	local a, b, info = LBR.ComputeMapBounds( mins, maxs, points )
 	SetGlobalVector( "LBR_MapMins", a )
 	SetGlobalVector( "LBR_MapMaxs", b )
-	// top of the world box: the map camera must be above it (sky brushes higher than
-	// the sky ceiling, or the 3D skybox room up there, put it inside a leaf of the map:
-	// the engine then drew only what is visible from that leaf, rp_ineu_pass_v1e)
-	local _, wmaxs = worldBounds()
-	SetGlobalFloat( "LBR_WorldTop", wmaxs and wmaxs.z or 0 )
 	LBR.MapBoundsInfo = info
 end
 
