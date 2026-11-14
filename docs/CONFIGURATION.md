@@ -53,7 +53,7 @@ New ConVars / commands:
 | `lbr_mapvote` | server | `1` | Map vote at the end of the match. Only installed maps with a valid config (made with `F8` or built in) are in the vote; the current map is always one of them |
 | `lbr_mapvote_rounds` | server | `1` | Matches played on the same map before the vote |
 | `lbr_mapvote_time` | server | `20` | Seconds to vote |
-| `lbr_mapvote_maps` | server | `8` | Max maps in the vote (random pick when more are ready) |
+| `lbr_mapvote_maps` | server | `12` | Max maps in the vote (random pick when more are ready) |
 | `lbr_mapvote_start` | command | — | Admin: start a map vote now (in the lobby or after a match) |
 | `lbr_changemap <map>` | command | — | Admin: change map (also `F2`: list of every installed map, ready ones and ones still to configure) |
 | `lbr_editor` | command | — | Open / close the map editor (same as `F8`) |

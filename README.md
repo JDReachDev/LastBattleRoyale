@@ -158,7 +158,7 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_editor_superadminonly` | `0` | `1` = only superadmins can use the map editor |
 | `lbr_mapvote` | `1` | `1` = map vote at the end of the match (only configured maps) |
 | `lbr_mapvote_rounds` | `1` | Matches on the same map before the vote |
-| `lbr_mapvote_maps` | `8` | Max maps in the vote |
+| `lbr_mapvote_maps` | `12` | Max maps in the vote |
 | `lbr_mapvote_time` | `20` | Seconds to vote |
 | `lbr_cw_spawn_attachments` | `0` | `1` = every CW 2.0 attachment on spawn, `0` = attachments only from the loot |
 | `lst_maxrounds` | *(not created)* | Optional, created by the map vote addon: after this many rounds the `MapChange` hook runs |

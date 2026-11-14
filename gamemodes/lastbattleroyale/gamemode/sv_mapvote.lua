@@ -13,7 +13,7 @@ util.AddNetworkString( "LBR_ChangeMap" )
 local cvVote   = CreateConVar( "lbr_mapvote", "1", { FCVAR_ARCHIVE, FCVAR_NOTIFY }, "Map vote at the end of the match (only configured maps)" )
 local cvRounds = CreateConVar( "lbr_mapvote_rounds", "1", { FCVAR_ARCHIVE }, "Matches on the same map before the vote" )
 local cvTime   = CreateConVar( "lbr_mapvote_time", "20", { FCVAR_ARCHIVE }, "Seconds to vote" )
-local cvMaps   = CreateConVar( "lbr_mapvote_maps", "8", { FCVAR_ARCHIVE }, "Max maps in the vote (the current map is always one of them)" )
+local cvMaps   = CreateConVar( "lbr_mapvote_maps", "12", { FCVAR_ARCHIVE }, "Max maps in the vote (the current map is always one of them)" )
 
 local STATUS_NONE, STATUS_BROKEN, STATUS_CUSTOM, STATUS_BUILTIN = 0, 1, 2, 3
 
