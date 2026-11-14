@@ -611,17 +611,25 @@ function ED.OpenMenu()
 		row:DockMargin( 0, S( 1 ), S( 8 ), S( 1 ) )
 		row:SetTall( S( 28 ) )
 		row.Paint = function( self, w, h ) UI.Box( 0, 0, w, h, C.row ) end
-		local ic = vgui.Create( "DImage", row )
+		local tier = LBR.TierById[LBR.WeaponCountTiers[i] or ""]
+		local ic
+		if tier then
+			// weapon tiers: a box of the tier color
+			ic = vgui.Create( "DPanel", row )
+			ic.Paint = function( _, w, h ) LBR.DrawTierBox( 0, 0, w, h, tier.color ) end
+		else
+			ic = vgui.Create( "DImage", row )
+			ic:SetImage( LBR.WeaponCountIcons[i] or "icon16/box.png" )
+		end
 		ic:Dock( LEFT )
 		ic:DockMargin( S( 8 ), S( 6 ), 0, S( 6 ) )
 		ic:SetWide( S( 16 ) )
-		ic:SetImage( LBR.WeaponCountIcons[i] or "icon16/box.png" )
 		local l = vgui.Create( "DLabel", row )
 		l:Dock( LEFT )
 		l:DockMargin( S( 8 ), 0, 0, 0 )
 		l:SetWide( S( 220 ) )
 		l:SetFont( "LBR_UI_Small" )
-		l:SetTextColor( C.text )
+		l:SetTextColor( tier and tier.color or C.text )
 		l:SetText( name )
 		local wang = vgui.Create( "DNumberWang", row )
 		wang:Dock( RIGHT )
@@ -654,6 +662,9 @@ function ED.OpenMenu()
 	button( "Loot and vehicles: which weapons / items / vehicles spawn...", function()
 		if LBR.OpenLootEditor then LBR.OpenLootEditor() end
 	end, C.accent ):DockMargin( 0, S( 8 ), S( 8 ), S( 3 ) )
+	button( "Classes: health, armor, speed, loadout and unlock of the F3 classes...", function()
+		if LBR.OpenClassEditor then LBR.OpenClassEditor() end
+	end, C.accent ):DockMargin( 0, S( 3 ), S( 8 ), S( 3 ) )
 
 	label( "Player models (one per line)" )
 	local pm = scroll:Add( "DTextEntry" )

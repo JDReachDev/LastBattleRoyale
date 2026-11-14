@@ -13,6 +13,9 @@ local NUKE_RADIUS = 3500    // red area on the map (67 m): inside it you die nea
 local NUKE_LETHAL = 0.6     // part of the radius where the blast always kills
 local IMPLOSION_DELAY = 6
 local IMPLOSION_RADIUS = 10000
+// the nuclear siren of HBOMBS (the one the gamemode always had) when the client
+// has that addon, else the Half-Life 2 one
+local SIREN_OLD = "gbombs_5/sirens/nuclear_siren.wav"
 local SIREN = "npc/attack_helicopter/aheli_megabomb_siren1.wav"
 
 local pending = {}
@@ -29,7 +32,7 @@ function LBR.StopEvents()
 end
 
 function LBR.PlaySiren()
-	BroadcastLua( 'surface.PlaySound("' .. SIREN .. '")' )
+	BroadcastLua( 'surface.PlaySound(file.Exists("sound/' .. SIREN_OLD .. '","GAME") and "' .. SIREN_OLD .. '" or "' .. SIREN .. '")' )
 end
 
 // ground under a point placed in the air (the blast happens on the ground): the nuke

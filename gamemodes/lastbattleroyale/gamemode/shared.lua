@@ -4,14 +4,18 @@ include( "classes.lua" )
 include( "sh_mapconfig.lua" )
 include( "sh_zone.lua" )
 include( "sh_spawn.lua" )
+include( "sh_tiers.lua" ) // weapon tiers: colors, tier ammo
 include( "sh_loot.lua" )
 include( "sh_notify.lua" )
 include( "sh_inventory.lua" )
+include( "sh_clips.lua" ) // ammo: magazines by color
+include( "sh_profile.lua" ) // lbr_profile: what makes the game stutter
 
 for k,v in pairs(CLASSES) do
 	local cls = "player_class/" .. v["class"] .. ".lua"
 	include(cls)
 end
+include( "sh_classcfg.lua" ) // classes.txt: class stats, loadout, unlock (F8 editor)
 
 GM.Name 	= "Last Battle Royale"
 GM.Author 	= "DarkReach"

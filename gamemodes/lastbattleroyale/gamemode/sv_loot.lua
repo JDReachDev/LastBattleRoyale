@@ -7,30 +7,31 @@ util.AddNetworkString( "LBR_Loot_Data" )
 util.AddNetworkString( "LBR_Loot_Save" )
 util.AddNetworkString( "LBR_Loot_Reset" )
 
-LBR.LootDefaults = LBR.LootDefaults or LBR.LootFromTables( ITEMS, VEHICLES, FLYING_VEHICLES )
+LBR.LootDefaults = LBR.LootFromTables( ITEMS, VEHICLES, FLYING_VEHICLES, TIERS, WEAPON_DAMAGE, SUPPLY_DROP )
 LBR.LootSource = "default"
 
 // Rebuild the lists used by sv_round.lua
 function LBR.ApplyLoot( groups )
 	ITEMS = ITEMS or {}
-	ITEMS.BETTERWEAPONS     = LBR.LootExpand( groups.BETTERWEAPONS )
-	ITEMS.WEAPONS           = LBR.LootExpand( groups.WEAPONS )
-	ITEMS.ADDITIONALWEAPONS = LBR.LootExpand( groups.ADDITIONALWEAPONS )
-	ITEMS.ITEMS             = LBR.LootExpand( groups.ITEMS )
-	ITEMS.AMMO              = LBR.LootExpand( groups.AMMO )
-	ITEMS.ATTACHMENTS       = LBR.LootExpand( groups.ATTACHMENTS )
+	for _, id in ipairs( { "GREEN", "BLUE", "PURPLE", "THROWABLES", "ITEMS", "AMMO", "ATTACHMENTS" } ) do
+		ITEMS[id] = LBR.LootExpand( groups[id] )
+	end
 	VEHICLES                = LBR.LootExpand( groups.CARS )
 	FLYING_VEHICLES = FLYING_VEHICLES or {}
 	FLYING_VEHICLES.RARE     = LBR.LootExpand( groups.HELI_RARE )
 	FLYING_VEHICLES.VERYRARE = LBR.LootExpand( groups.HELI_VERYRARE )
-	// extra ammo given on pickup, per weapon class
+	// extra ammo given on pickup and damage percent, per weapon class
 	LBR.LootAmmo = {}
-	for _, list in pairs( groups ) do
-		for _, e in ipairs( list ) do
+	LBR.WeaponDamage = {}
+	for _, g in ipairs( LBR.LootGroups ) do
+		for _, e in ipairs( groups[g.id] or {} ) do
 			if ( e.ammo or 0 ) > 0 then LBR.LootAmmo[e.class] = e.ammo end
+			if e.damage and e.damage ~= 100 then LBR.WeaponDamage[e.class] = e.damage end
 		end
 	end
+	LBR.SupplyConfig = LBR.LootCleanSupply( groups.SUPPLY )
 	LBR.LootCurrent = groups
+	if LBR.SetTiersFromLoot then LBR.SetTiersFromLoot( groups ) end
 end
 
 function LBR.LoadLoot()
@@ -127,4 +128,26 @@ concommand.Add( "lbr_loot_reload", function( ply )
 	LBR.LoadLoot()
 	local msg = "[LBR] Loot tables reloaded (" .. LBR.LootSource .. ")"
 	if IsValid( ply ) then LBR.Chat( ply, msg ) else print( msg ) end
+end )
+
+------------------------------------------------------------------------
+// Damage percent per weapon (Loot editor: DAMAGE %, config.lua: WEAPON_DAMAGE)
+// Any weapon base: the damage the weapon deals is scaled here.
+------------------------------------------------------------------------
+
+hook.Add( "EntityTakeDamage", "LBR_WeaponDamage", function( target, dmg )
+	local map = LBR.WeaponDamage
+	if not map or next( map ) == nil then return end
+	local inf = dmg:GetInflictor()
+	local class = IsValid( inf ) and inf:GetClass()
+	local pct = class and map[class]
+	if not pct then
+		// bullets: the inflictor is often the player, the weapon is the one in hand
+		local att = dmg:GetAttacker()
+		if IsValid( att ) and att:IsPlayer() and ( inf == att or not IsValid( inf ) ) then
+			local w = att:GetActiveWeapon()
+			pct = IsValid( w ) and map[w:GetClass()]
+		end
+	end
+	if pct then dmg:ScaleDamage( pct / 100 ) end
 end )

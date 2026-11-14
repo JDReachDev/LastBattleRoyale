@@ -20,84 +20,98 @@ FLYING_VEHICLES = {
 	}
 }
 
+// Loot tables (the defaults: the Loot editor, F8 -> Q -> Loot and vehicles, saves
+// its own copy in data/lastbattleroyale/loot.txt and that one wins).
+// A class written twice is twice as likely.
+// GREEN / BLUE / PURPLE = weapon tiers (sh_tiers.lua): outline color, own ammo,
+// ammo kits give 100% / 50% / 25% of their magazines (TIERS below).
+// Every map sets how many of each spawn (editor F8: Loot amount per round).
 ITEMS = {
-	BETTERWEAPONS = {
+	// simple weapons: pistols, small revolvers, simple SMGs, short shotgun
+	GREEN = {
+		"cw_m1911",
+		"cw_p99",
+		"cw_g4p_glock17",
+		"cw_g4p_usp40",
+		"cw_fiveseven",
+		"cw_makarov",
+		"khr_tokarev",
+		"khr_makarov",
+		"khr_m92fs",
+		"khr_mp443",
+		"khr_gsh18",
+		"khr_cz52",
+		"khr_ruby",
+		"khr_p345",
+		"khr_microdeagle",
+		"khr_sr1m",
+		"khr_38snub",
+		"cw_mr96",
+		"cw_g4p_mp412_rex",
+		"khr_swr8",
+		"cw_mac11",
+		"khr_fmg9",
+		"khr_l2a3",
+		"khr_mp40",
+		"cw_shorty"
+	},
+	// good weapons: assault rifles, battle rifles, semi-auto rifles, good SMGs,
+	// pump shotgun, heavy pistols
+	BLUE = {
 		"cw_ak74",
 		"cw_l85a2",
-		"cw_m249_official",
-		"cw_g4p_an94",
-		"cw_g4p_fn_fal",
 		"cw_g36c",
-		"cw_g4p_m16a4",
-		"cw_g4p_magpul_masada",
-		"cw_g4p_masada_acr",
-		"cw_g4p_xm8",
-		"cw_scarh",
-		"cw_g3a3",
-		"cw_m14",
 		"cw_ar15",
 		"cw_g4p_m4a1",
-		"khr_svt40q",
-		"khr_veresk",
-		"khr_sks",
-		"khr_simsks",
-		"khr_mp40",
-		"khr_mosin",
+		"cw_g4p_m16a4",
+		"cw_g4p_an94",
+		"cw_g4p_xm8",
+		"cw_g4p_magpul_masada",
+		"cw_g4p_masada_acr",
 		"khr_m4a4",
-		"khr_m1carbine",
-		"khr_delisle",
-		"khr_cz858",
 		"khr_ak103",
 		"khr_aek971",
-		"khr_pkm",
-		"khr_m60",
-		"khr_hmg",
-		"cw_l115",
-		"khr_t5000"
-	},
-	WEAPONS = {
-		"cw_mac11",
-		"cw_shorty",
-		"cw_m3super90",
+		"khr_cz858",
+		"cw_m14",
+		"cw_g3a3",
+		"cw_scarh",
+		"cw_g4p_fn_fal",
+		"khr_sks",
+		"khr_simsks",
+		"khr_m1carbine",
+		"khr_svt40q",
 		"cw_mp5",
 		"cw_ump45",
-		"khr_ragingbull",
-		"khr_410jury",
-		"khr_swr8",
-		"khr_38snub",
-		"khr_model29",
-		"khr_p345",
-		"khr_deagle",
-		"khr_ots33",
 		"khr_mp5a4",
-		"khr_l2a3",
-		"khr_fmg9"
+		"khr_veresk",
+		"cw_m3super90",
+		"cw_deagle",
+		"khr_deagle",
+		"khr_ragingbull",
+		"khr_model29",
+		"khr_410jury",
+		"khr_ots33"
 	},
-	ADDITIONALWEAPONS = {
+	// special weapons: snipers, machine guns
+	PURPLE = {
+		"cw_l115",
+		"khr_t5000",
+		"khr_mosin",
+		"khr_delisle",
+		"cw_g4p_m98b",
+		"cw_m249_official",
+		"khr_pkm",
+		"khr_m60",
+		"khr_hmg"
+	},
+	// grenades, molotov, mines: no tier, no magazines
+	THROWABLES = {
+		"cw_frag_grenade",
 		"cw_frag_grenade",
 		"cw_smoke_grenade",
 		"cw_flash_grenade",
 		"weapon_molotov_c",
-		"cw_fiveseven",
-		"cw_deagle",
-		"cw_m1911",
-		"cw_g4p_usp40",
-		"cw_p99",
-		"cw_g4p_glock17",
-		"weapon_grenadeplacer",
-		"cw_makarov",
-		"cw_g4p_mp412_rex",
-		"cw_mr96",
-		"khr_tokarev",
-		"khr_sr1m",
-		"khr_ruby",
-		"khr_mp443",
-		"khr_microdeagle",
-		"khr_makarov",
-		"khr_m92fs",
-		"khr_gsh18",
-		"khr_cz52"
-
+		"weapon_grenadeplacer"
 	},
 	ITEMS = {
 		"sg_adrenaline_fix",
@@ -108,20 +122,48 @@ ITEMS = {
 		"kevlar_armor",
 		"suit_ghillie"
 	},
-	// attachment kits (6th loot number): small = 1 attachment, medium = 2, big = 4
+	// attachment kits (6th loot number): small = 1 attachment, medium = 2, big = 4,
+	// for the weapon in your hands (CW 2.0 or ArcCW)
 	ATTACHMENTS = {
-		"cw_attpack_random_small",
-		"cw_attpack_random_medium",
-		"cw_attpack_random_medium",
-		"cw_attpack_random_medium",
-		"cw_attpack_random_big"
+		"lbr_attpack_small",
+		"lbr_attpack_medium",
+		"lbr_attpack_medium",
+		"lbr_attpack_medium",
+		"lbr_attpack_big"
 	},
+	// ammo kits: magazines for the weapon in your hands (small 6, medium 10,
+	// big 24 green magazines; blue / purple weapons get the TIERS percent)
 	AMMO = {
-		"cw_ammo_kit_small",
-		"cw_ammo_kit_regular",
-		"cw_ammo_crate_small",
+		"lbr_ammo_small",
+		"lbr_ammo_small",
+		"lbr_ammo_medium",
+		"lbr_ammo_medium",
+		"lbr_ammo_big",
 		"cw_ammo_fraggrenades"
 	}
+}
+
+// percent of an ammo kit a weapon of the tier gets (100 = all its magazines)
+TIERS = {
+	green = 100,
+	blue = 50,
+	purple = 25
+}
+
+// damage of single weapons, percent of the normal damage (100 = unchanged).
+// Works with any weapon base. Also set in the Loot editor (DAMAGE %).
+WEAPON_DAMAGE = {
+	// cw_l115 = 120,
+}
+
+// supply drop (airdrop): E opens it (a few seconds), then the loot comes out
+SUPPLY_DROP = {
+	time = 5,          // seconds to open it
+	purple = 1,        // purple weapons
+	blue = 1,          // blue weapons
+	purple_chance = 50, // percent: one more purple weapon instead of a blue one
+	purple_clips = 2,  // purple magazines (sh_clips.lua) in a box next to the crate
+	items = { "kevlar_armor", "sg_medkit_fix", "sg_adrenaline_fix", "lbr_ammo_medium" }
 }
 
 MAPCONFIG = {

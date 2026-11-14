@@ -115,8 +115,13 @@ local function buildColumns( center, radius, eye, viewDist, segs )
 	return count
 end
 
+// one Vector reused for every vertex: a new Vector per vertex made thousands
+// per frame (about 30 MB of garbage per second, and the garbage collector
+// made the game stutter)
+local vpos = Vector()
 local function vert( x, y, z, u, v, col, a )
-	mesh.Position( Vector( x, y, z ) )
+	vpos:SetUnpacked( x, y, z )
+	mesh.Position( vpos )
 	mesh.TexCoord( 0, u, v )
 	mesh.Color( col.r, col.g, col.b, a )
 	mesh.AdvanceVertex()
@@ -284,6 +289,16 @@ local haloEnts = {}
 local nextScan = 0
 local haloColor = Color( 50, 250, 180 )
 
+// green / blue / purple for tier weapons and tier magazines, teal for the rest
+local function lootColor( ent )
+	if ent:GetClass() == "lbr_ammo_box" then
+		local t = ent.TierTable and ent:TierTable()
+		return t and t.color or haloColor
+	end
+	return LBR.TierColor( ent:GetClass(), haloColor )
+end
+LBR.LootColor = lootColor
+
 local function track( ent )
 	if IsValid( ent ) and ( LBR.IsLootClass( ent:GetClass() ) or ent:GetClass() == "lbr_ammo_box" ) then
 		candidates[ent] = true
@@ -348,19 +363,127 @@ local function scanLoot()
 	end
 end
 
-hook.Add( "PreDrawHalos", "AddPropHalos", function()
+// Our own halo: like halo.Add (garrysmod/lua/includes/modules/halo.lua) but
+// every item keeps its own color in ONE pass. halo.Add makes a full screen pass
+// (copy the screen, draw the models, blur, add back) for every color: with the
+// tiers that was 4-5 passes per frame. Here every color gets its own stencil
+// value: the models are drawn once, each color is painted where its value is,
+// then one blur and one add, as much as a single halo.
+local matCopy = Material( "pp/copy" )
+local matAdd = Material( "pp/add" )
+local rtStore = render.GetScreenEffectTexture( 0 )
+local rtBlur = render.GetScreenEffectTexture( 1 )
+local BLUR_X, BLUR_Y, ADD_PASSES = 2, 2, 1 // same look as halo.Add( ents, col, 2, 2, 1 )
+
+local function drawOutlines( groups, count )
+	local rtScene = render.GetRenderTarget()
+	render.CopyRenderTargetToTexture( rtStore )
+	render.Clear( 0, 0, 0, 255, false, true )
+	render.ClearStencil()
+
+	cam.Start3D()
+		render.SetStencilEnable( true )
+		render.SuppressEngineLighting( true )
+		render.SetStencilWriteMask( 255 )
+		render.SetStencilTestMask( 255 )
+		render.SetStencilCompareFunction( STENCIL_ALWAYS )
+		render.SetStencilPassOperation( STENCIL_REPLACE )
+		render.SetStencilFailOperation( STENCIL_KEEP )
+		render.SetStencilZFailOperation( STENCIL_KEEP )
+		// 1) the models, each color with its own stencil value (1, 2, 3...)
+		for i = 1, count do
+			render.SetStencilReferenceValue( i )
+			for _, ent in ipairs( groups[i].ents ) do
+				if IsValid( ent ) and not ent:GetNoDraw() then ent:DrawModel() end
+			end
+		end
+		// 2) each color painted where its value is
+		render.SetStencilCompareFunction( STENCIL_EQUAL )
+		render.SetStencilPassOperation( STENCIL_KEEP )
+		cam.Start2D()
+			for i = 1, count do
+				render.SetStencilReferenceValue( i )
+				surface.SetDrawColor( groups[i].color )
+				surface.DrawRect( 0, 0, ScrW(), ScrH() )
+			end
+		cam.End2D()
+		render.SuppressEngineLighting( false )
+		render.SetStencilEnable( false )
+	cam.End3D()
+
+	// 3) one blur of all the colors
+	render.CopyRenderTargetToTexture( rtBlur )
+	render.BlurRenderTarget( rtBlur, BLUR_X, BLUR_Y, 1 )
+
+	// 4) the scene back, then the blur added around the models (not on them)
+	render.SetRenderTarget( rtScene )
+	matCopy:SetTexture( "$basetexture", rtStore )
+	matCopy:SetString( "$color", "1 1 1" )
+	matCopy:SetString( "$alpha", "1" )
+	render.SetMaterial( matCopy )
+	render.DrawScreenQuad()
+
+	render.SetStencilEnable( true )
+		render.SetStencilReferenceValue( 0 )
+		render.SetStencilCompareFunction( STENCIL_EQUAL )
+		matAdd:SetTexture( "$basetexture", rtBlur )
+		render.SetMaterial( matAdd )
+		for _ = 0, ADD_PASSES do render.DrawScreenQuad() end
+	render.SetStencilEnable( false )
+	render.SetStencilTestMask( 0 )
+	render.SetStencilWriteMask( 0 )
+	render.SetStencilReferenceValue( 0 )
+end
+
+hook.Add( "PostDrawEffects", "LBR_LootOutline", function()
 	if cvOutline:GetInt() ~= 1 then return end
 	if LBR.MapRendering or ( LBR.Editor and LBR.Editor.active ) then return end
 	scanLoot()
-	if #haloEnts > 0 then
-		halo.Add( haloEnts, haloColor, 2, 2, 1 )
+	if #haloEnts == 0 then return end
+	// group by color (few: teal + the tiers). Only the items in front of the
+	// camera: with none on screen the full screen passes are skipped
+	local groups, byColor, count = {}, {}, 0
+	local eye, fwd = EyePos(), EyeVector()
+	local ex, ey, ez = eye:Unpack()
+	local fx, fy, fz = fwd:Unpack()
+	for _, ent in ipairs( haloEnts ) do
+		local onScreen = false
+		if IsValid( ent ) and not ent:IsDormant() then
+			local px, py, pz = ent:GetPos():Unpack()
+			px, py, pz = px - ex, py - ey, pz - ez
+			local len = math.sqrt( px * px + py * py + pz * pz )
+			// in front, inside a cone wider than any field of view, or very close
+			onScreen = len < 80 or ( px * fx + py * fy + pz * fz ) > len * 0.25
+		end
+		if onScreen then
+			local c = lootColor( ent )
+			local g = byColor[c]
+			if not g then
+				count = count + 1
+				g = { color = c, ents = {} }
+				groups[count] = g
+				byColor[c] = g
+			end
+			g.ents[#g.ents + 1] = ent
+		end
 	end
+	if count == 0 then return end
+	drawOutlines( groups, math.min( count, 250 ) )
 end )
 
 // light beam going up from the loot: soft, fading to the top, and fading out near
 // the outline distance (same items as the outline, nothing farther)
 local matBeam = Material( "sprites/light_glow02_add" )
 local BEAM_HEIGHT, BEAM_WIDTH = 110, 7
+// reused every frame: no new Color / Vector per beam
+local beamC1, beamC2, beamC3 = Color( 0, 0, 0 ), Color( 0, 0, 0 ), Color( 0, 0, 0 )
+local beamMid, beamTop = Vector(), Vector()
+// additive sprite: the color itself is dimmed (alpha alone may not fade it)
+local function beamCol( c, hc, k )
+	k = k * 0.7
+	c.r, c.g, c.b, c.a = hc.r * k, hc.g * k, hc.b * k, 255 * k
+	return c
+end
 hook.Add( "PostDrawTranslucentRenderables", "LBR_LootBeams", function( depth, skybox )
 	if depth or skybox then return end
 	if cvBeam:GetInt() ~= 1 then return end
@@ -378,11 +501,13 @@ hook.Add( "PostDrawTranslucentRenderables", "LBR_LootBeams", function( depth, sk
 			local f = math.Clamp( ( 1 - base:Distance( eye ) / maxd ) / 0.3, 0, 1 ) * pulse
 			if f > 0 then
 				// additive sprite: the color itself is dimmed (alpha alone may not fade it)
-				local function col( k ) k = k * f * 0.7 return Color( haloColor.r * k, haloColor.g * k, haloColor.b * k, 255 * k ) end
+				local hc = lootColor( ent )
 				render.StartBeam( 3 )
-				render.AddBeam( base, BEAM_WIDTH, 0.5, col( 1 ) )
-				render.AddBeam( base + Vector( 0, 0, BEAM_HEIGHT * 0.4 ), BEAM_WIDTH, 0.5, col( 0.6 ) )
-				render.AddBeam( base + Vector( 0, 0, BEAM_HEIGHT ), BEAM_WIDTH, 0.5, col( 0 ) )
+				render.AddBeam( base, BEAM_WIDTH, 0.5, beamCol( beamC1, hc, f ) )
+				beamMid:SetUnpacked( base.x, base.y, base.z + BEAM_HEIGHT * 0.4 )
+				render.AddBeam( beamMid, BEAM_WIDTH, 0.5, beamCol( beamC2, hc, f * 0.6 ) )
+				beamTop:SetUnpacked( base.x, base.y, base.z + BEAM_HEIGHT )
+				render.AddBeam( beamTop, BEAM_WIDTH, 0.5, beamCol( beamC3, hc, 0 ) )
 				render.EndBeam()
 			end
 		end

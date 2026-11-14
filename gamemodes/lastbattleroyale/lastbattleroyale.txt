@@ -167,5 +167,29 @@
 			"type"		"Numeric"
 			"default"	"120"
 		}
+		21
+		{
+			"name"		"lbr_clips_max_green"
+			"text"		"Max green clips"
+			"help"		"Most green magazines (clips) a player carries, 0 = no limit"
+			"type"		"Numeric"
+			"default"	"10"
+		}
+		22
+		{
+			"name"		"lbr_clips_max_blue"
+			"text"		"Max blue clips"
+			"help"		"Most blue magazines (clips) a player carries, 0 = no limit"
+			"type"		"Numeric"
+			"default"	"8"
+		}
+		23
+		{
+			"name"		"lbr_clips_max_purple"
+			"text"		"Max purple clips"
+			"help"		"Most purple magazines (clips) a player carries, 0 = no limit"
+			"type"		"Numeric"
+			"default"	"6"
+		}
 	}
 }

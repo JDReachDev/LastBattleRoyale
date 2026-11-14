@@ -40,11 +40,14 @@ local function SG_IsActive(self)
 	if not IsValid(self) then return false end
 	if not self.Owner or not IsValid(self.Owner) then return false end
 	if not IsValid(self.Owner:GetActiveWeapon()) then return false end
-	if not self.Owner:GetActiveWeapon() == self then return false end
+	// (was "not x == self", always false: the timers of the medkit played its
+	// animations on the next weapon, two pairs of arms / the kit over the pistol)
+	if self.Owner:GetActiveWeapon() ~= self then return false end
 	return true
 end
 
 function SWEP:Deploy()
+	self.CanHolster = true // a use cut short (weapon dropped / taken away) does not lock it
 	self:SendWeaponAnim( ACT_VM_DRAW )
 	self:SetNextPrimaryFire(CurTime()+0.8)
 	self:SetNextSecondaryFire(CurTime()+0.8)
@@ -228,6 +231,7 @@ end
 function SWEP:Reload() end
 
 function SWEP:Holster()
-
+	// dead, stripped, swapped by the inventory: always let it go
+	if not IsValid( self.Owner ) or not self.Owner:Alive() then return true end
 	return self.CanHolster
 end

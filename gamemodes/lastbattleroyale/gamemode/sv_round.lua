@@ -30,6 +30,12 @@ end
 
 function SetState(num)
 	SetGlobalInt("state", num)
+	// the random events (supply drops, nuke) belong to a match: none after it ends
+	if num ~= STATE_LIVE then
+		timer.Remove("timer_event1")
+		timer.Remove("timer_event2")
+		SetGlobalFloat( "LBR_EventTime", 0 )
+	end
 end
 
 local cvZoneSpeed = GetConVar("lbr_zone_speed")
@@ -377,13 +383,19 @@ function SpawnAllVehicles()
 	end
 end
 
-local itemCategories = { "BETTERWEAPONS", "WEAPONS", "ADDITIONALWEAPONS", "ITEMS", "AMMO", "ATTACHMENTS" }
+// order = loot numbers of the map (weaponsc)
+local itemCategories = { "GREEN", "BLUE", "PURPLE", "ITEMS", "AMMO", "ATTACHMENTS", "THROWABLES" }
 
 function GetItemsToSpawn(...)
 	local counts = { ... }
 	local tabl = {}
 	for i, cat in ipairs( itemCategories ) do
-		local pool = ITEMS[cat] or {}
+		// only classes installed on this server: a missing addon (KHR, Malorian...)
+		// does not leave empty loot points, the others take its place
+		local pool = {}
+		for _, c in ipairs( ITEMS[cat] or {} ) do
+			if weapons.GetStored( c ) or scripted_ents.GetStored( c ) then pool[#pool + 1] = c end
+		end
 		if #pool > 0 then
 			for _ = 1, ( counts[i] or 0 ) do
 				tabl[#tabl + 1] = pool[math.random( #pool )]
@@ -412,7 +424,7 @@ end
 function NewSpawnAllItems()
 	timer.Remove( "LBR_SpawnItems" )
 	local wc = MapCfg().weaponsc or {}
-	local items = LBR.ShuffledCopy( GetItemsToSpawn( wc[1], wc[2], wc[3], wc[4], wc[5] ) )
+	local items = LBR.ShuffledCopy( GetItemsToSpawn( wc[1], wc[2], wc[3], wc[4], wc[5], 0, wc[7] ) )
 	local spawns = LBR.ShuffledCopy( CatList( "weaponspawns" ) )
 	local total = math.min( #items, #spawns )
 	if #spawns == 0 then return end
@@ -449,10 +461,52 @@ function NewSpawnAllItems()
 				LBR.PlaceOnFloor( it, spawns[index] )
 				it.kanadelootable = true
 				it.LBR_Ammo = LBR.LootAmmo and LBR.LootAmmo[items[index]] // extra ammo on pickup (Loot editor)
+				local tier = LBR.TierOf( it )
+				if tier and tier.id == "purple" then it.LBR_PresetAtt = true end // comes with an attachment mounted (see below)
 			end
 		end
 	end )
 end
+
+// purple loot weapons come with one attachment: the first player who picks one up
+// gets a random attachment of that weapon (CW 2.0), mounted on it. Only once per
+// loot weapon: a weapon dropped with Q is a new entity without the flag.
+local function mountRandomAtt( wep, ply )
+	local cw = CustomizableWeaponry
+	if not cw or not wep.CW20Weapon or not istable( wep.Attachments ) or not wep.attach then return end
+	ply.CWAttachments = ply.CWAttachments or {}
+	local cands = {}
+	for cat, data in pairs( wep.Attachments ) do
+		if not data.last then // category still empty
+			for key, att in ipairs( data.atts or {} ) do
+				if cw.registeredAttachmentsSKey[att] then cands[#cands + 1] = { cat, key, att } end
+			end
+		end
+	end
+	for _ = 1, 5 do
+		if #cands == 0 then return end
+		local c = table.remove( cands, math.random( #cands ) )
+		local cat, key, att = c[1], c[2], c[3]
+		if not ply.CWAttachments[att] then cw.giveAttachments( ply, { att }, true ) end
+		wep:attach( cat, key - 1 )
+		local data = wep.Attachments[cat]
+		local got = data.last and data.atts[data.last]
+		if got then
+			local a = cw.registeredAttachmentsSKey[got]
+			LBR.Notify( ply, ( wep.GetPrintName and wep:GetPrintName() or wep:GetClass() ) .. " comes with: " .. ( a and ( a.displayNameShort or a.displayName ) or got ), "good", 4 )
+			return
+		end
+	end
+end
+
+hook.Add( "WeaponEquip", "LBR_PurpleAtt", function( wep, ply )
+	if not IsValid( wep ) or not wep.LBR_PresetAtt then return end
+	wep.LBR_PresetAtt = nil
+	// after CW 2.0 has set the weapon up for its new owner
+	timer.Simple( 0.3, function()
+		if IsValid( wep ) and IsValid( ply ) and ply:Alive() and wep:GetOwner() == ply then mountRandomAtt( wep, ply ) end
+	end )
+end )
 
 function SpawnAllFlyingVehicles()
 	for _, spawn in ipairs( CatList( "flying_vehiclespawns" ) ) do

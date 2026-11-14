@@ -232,13 +232,30 @@ local function weaponName( wep )
 	return string.upper( name )
 end
 
-local function ammoText( wep )
-	local lp = LocalPlayer()
+// rounds in the weapon (nil: no magazine) and spare rounds (nil: no ammo at all)
+local function ammoOf( wep )
 	local clip = wep:Clip1()
-	local ammoType = wep:GetPrimaryAmmoType()
-	local reserve = ammoType >= 0 and lp:GetAmmoCount( ammoType ) or 0
-	if clip >= 0 then return clip .. " / " .. reserve end
-	if ammoType >= 0 then return tostring( reserve ) end
+	local ammoType = LBR.WeaponAmmoID( wep )
+	local reserve = ammoType >= 0 and LocalPlayer():GetAmmoCount( ammoType ) or nil
+	return clip >= 0 and clip or nil, reserve
+end
+
+// "6 / 40": the rounds in the weapon bright, the spare rounds dim after the slash
+// (red when 0). Drawn from x; returns its width (measure only when doDraw is false)
+local function drawAmmo( wep, x, y, numCol, alignY, doDraw )
+	local clip, spare = ammoOf( wep )
+	if not clip and not spare then return 0 end
+	local first = clip or spare
+	local rest = clip and spare and ( " / " .. spare ) or ""
+	surface.SetFont( "LBR_UI_Small" )
+	local fw = surface.GetTextSize( tostring( first ) )
+	surface.SetFont( "LBR_UI_Tiny" )
+	local rw = rest ~= "" and surface.GetTextSize( rest ) or 0
+	if doDraw ~= false then
+		UI.Text( tostring( first ), "LBR_UI_Small", x, y, first <= 0 and C.bad or numCol, TEXT_ALIGN_LEFT, alignY )
+		if rest ~= "" then UI.Text( rest, "LBR_UI_Tiny", x + fw, y, spare <= 0 and C.bad or C.dim, TEXT_ALIGN_LEFT, alignY ) end
+	end
+	return fw + rw
 end
 
 // weapon icons: CW 2.0 weapons use a letter of the Counter-Strike icon font
@@ -366,14 +383,15 @@ local function drawWeaponIcon( wep, x, y, w, h, col )
 	local s = h
 	if c.tex then
 		surface.SetTexture( c.tex )
-		if c.color then surface.SetDrawColor( 255, 255, 255, 255 ) else surface.SetDrawColor( col ) end
+		if c.color then surface.SetDrawColor( 255, 255, 255, col.a or 255 ) else surface.SetDrawColor( col ) end
 	else
 		surface.SetMaterial( c.mat )
-		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.SetDrawColor( 255, 255, 255, col.a or 255 )
 	end
 	surface.DrawTexturedRect( x + ( w - s ) / 2, y, s, s )
 	return true
 end
+LBR.DrawWeaponIcon = drawWeaponIcon // weapon bar (cl_weaponselect.lua)
 
 // small backpack symbol for the backpack slots
 local function drawBag( x, y, s, col )
@@ -409,6 +427,70 @@ local function sideHeader( parent, label, rightFn )
 		UI.Box( tw + S( 10 ), h / 2, w - tw - S( 10 ) - rw, 1, C.line )
 	end
 	return p
+end
+
+// the magazine stores (sh_clips.lua): one tile per color, right click to drop
+// one magazine, the part after the point or all of them in a box on the ground
+local function clipRow( parent )
+	local row = vgui.Create( "DPanel", parent )
+	row:Dock( TOP )
+	row:SetTall( S( 40 ) )
+	row:DockMargin( 0, 0, 0, S( 4 ) )
+	row.Paint = nil
+	local tiles = {}
+	for i, color in ipairs( LBR.ClipColors() ) do
+		local t = LBR.TierById[color]
+		local b = vgui.Create( "DButton", row )
+		b:SetText( "" )
+		tiles[i] = b
+		local function have() return LBR.GetClips( LocalPlayer(), color ) end
+		b.DoRightClick = function()
+			local n = have()
+			if n <= 0 then return end
+			local function send( what )
+				net.Start( "LBR_ClipDrop" )
+				net.WriteString( color )
+				net.WriteUInt( what, 2 )
+				net.SendToServer()
+				surface.PlaySound( "ui/buttonclick.wav" )
+			end
+			local m = DermaMenu()
+			local whole = math.floor( n + 0.0001 )
+			local rest = n - whole
+			local o = m:AddOption( "Drop one magazine", function() send( 1 ) end )
+			o:SetIcon( "icon16/arrow_down.png" )
+			if n < 1 then o:SetEnabled( false ) end
+			o = m:AddOption( "Drop the rest (x" .. LBR.ClipText( rest ) .. ")", function() send( 2 ) end )
+			o:SetIcon( "icon16/arrow_down.png" )
+			if rest < 0.0001 then o:SetEnabled( false ) end
+			m:AddOption( "Drop all (x" .. LBR.ClipText( n ) .. ")", function() send( 3 ) end ):SetIcon( "icon16/box.png" )
+			m:Open()
+		end
+		b.Paint = function( self, w, h )
+			local n = have()
+			local c = t.color
+			UI.Box( 0, 0, w, h, self:IsHovered() and C.rowHover or C.row )
+			UI.Box( 0, 0, w, h, Color( c.r, c.g, c.b, 22 ) )
+			UI.Box( 0, h - S( 3 ), w, S( 3 ), c )
+			local isz = S( 24 )
+			LBR.DrawClipIcon( S( 10 ), math.floor( ( h - isz ) / 2 ), isz, c, n > 0 and 255 or 90, n )
+			local txt = "x" .. LBR.ClipText( n )
+				UI.Text( txt, "LBR_UI_Text", S( 10 ) + isz + S( 6 ), h / 2, n > 0 and c or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+				// the limit of the color, dim after it
+				surface.SetFont( "LBR_UI_Text" )
+				local tw = surface.GetTextSize( txt )
+				UI.Text( LBR.ClipLimitText( color ), "LBR_UI_Tiny", S( 10 ) + isz + S( 6 ) + tw, h / 2 + S( 1 ), LBR.ClipRoom( LocalPlayer(), color ) < 0.0001 and C.bad or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		end
+	end
+	row.PerformLayout = function( self, w, h )
+		local gap = S( 4 )
+		local bw = math.floor( ( w - gap * ( #tiles - 1 ) ) / math.max( #tiles, 1 ) )
+		for i, b in ipairs( tiles ) do
+			b:SetPos( ( i - 1 ) * ( bw + gap ), 0 )
+			b:SetSize( bw, h )
+		end
+	end
+	return row
 end
 
 // one inventory slot: drag it on another slot to swap, right click for the menu
@@ -452,14 +534,13 @@ local function invTile( parent, slot )
 		end
 		local m = DermaMenu()
 		m:AddOption( "Drop weapon", function() send( "LBR_InvDrop" ) end ):SetIcon( "icon16/arrow_down.png" )
-		// only weapons with a magazine and some ammo of that caliber
-		local id = wep:GetPrimaryAmmoType()
-		if id >= 0 and wep:GetMaxClip1() > 0 then
-			// whole magazines only: greyed out until you have a full one
-			local size, have = LBR.UnloadInfo( LocalPlayer(), wep )
-			local o = m:AddOption( "Unload a magazine (" .. have .. " / " .. size .. ")", function() send( "LBR_InvUnload" ) end )
+		// weapons with a magazine: the rounds in it go back in the magazine store
+		if LBR.UsesMagazines( wep ) then
+			local n = LBR.ClipValueOfLoaded( wep )
+			local t = LBR.TierById[LBR.ClipColorOf( wep )]
+			local o = m:AddOption( "Unload (+" .. LBR.ClipText( n ) .. " " .. ( t and t.name or "" ) .. " magazine)", function() send( "LBR_InvUnload" ) end )
 			o:SetIcon( "icon16/box.png" )
-			if have < size then o:SetEnabled( false ) end
+			if wep:Clip1() <= 0 then o:SetEnabled( false ) end
 		end
 		m:Open()
 	end
@@ -473,8 +554,10 @@ local function invTile( parent, slot )
 		if active then UI.Accent( 0, 0, h, C.accent ) end
 		if self:IsDragging() then UI.Box( 0, 0, w, h, Color( 255, 210, 70, 25 ) ) end
 
+		// small tiles (many slots): name and ammo on one line
+		local compact = h < S( 42 )
 		// left: key you press (equipment) or a backpack (backpack)
-		local ks = S( 28 )
+		local ks = math.min( S( 28 ), h - S( 6 ) )
 		local kx, ky = S( 10 ), math.floor( ( h - ks ) / 2 )
 		if bag then
 			drawBag( kx, ky, ks, IsValid( wep ) and C.dim or Color( C.dim.r, C.dim.g, C.dim.b, 90 ) )
@@ -489,17 +572,30 @@ local function invTile( parent, slot )
 			return
 		end
 
+		// tier: colored tint + stripe on the right edge
+		local tc = LBR.TierColor( wep )
+		if tc then
+			UI.Box( 0, 0, w, h, Color( tc.r, tc.g, tc.b, 22 ) )
+			UI.Box( w - S( 4 ), 0, S( 4 ), h, tc )
+		end
+
 		// weapon icon
 		local ix, iw = S( 50 ), S( 120 )
-		drawWeaponIcon( wep, ix, S( 4 ), iw, h - S( 8 ), active and C.accent or C.text )
+		drawWeaponIcon( wep, ix, S( 4 ), iw, h - S( 8 ), tc or ( active and C.accent or C.text ) ) // tier color first: gold on purple is unreadable
 		local tx = ix + iw + S( 12 ) // same column for every slot, icon or not
 
 		// name + ammo
-		local ammo = ammoText( wep )
-		UI.Text( UI.Fit( weaponName( wep ), "LBR_UI_Small", w - tx - S( 10 ) ), "LBR_UI_Small", tx, h / 2 - ( ammo and S( 8 ) or 0 ), active and C.accent or C.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-		if ammo then
-			local empty = string.match( ammo, "^0 / 0$" ) or ammo == "0"
-			UI.Text( ammo, "LBR_UI_Tiny", tx, h / 2 + S( 9 ), empty and C.bad or C.dim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		local clip, spare = ammoOf( wep )
+		local hasAmmo = clip or spare
+		local nameCol = tc or ( active and C.accent or C.text )
+		if compact then
+			// ammo first (right side), the name gets the room left
+			local ax = w - S( 14 ) - drawAmmo( wep, 0, 0, C.text, TEXT_ALIGN_CENTER, false ) - S( 8 )
+			if hasAmmo then drawAmmo( wep, ax + S( 8 ), h / 2, C.text, TEXT_ALIGN_CENTER ) end
+			UI.Text( UI.Fit( weaponName( wep ), "LBR_UI_Small", ( hasAmmo and ax or w ) - tx - S( 10 ) ), "LBR_UI_Small", tx, h / 2, nameCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		else
+			UI.Text( UI.Fit( weaponName( wep ), "LBR_UI_Small", w - tx - S( 10 ) ), "LBR_UI_Small", tx, h / 2 - ( hasAmmo and S( 8 ) or 0 ), nameCol, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+			if hasAmmo then drawAmmo( wep, tx, h / 2 + S( 9 ), C.text, TEXT_ALIGN_CENTER ) end
 		end
 	end
 	return t
@@ -608,8 +704,10 @@ local function buildSide( f )
 		end
 	end
 	local heads = {}
+	heads[3] = sideHeader( inv, "MAGAZINES" )
+	heads[3]:DockMargin( 0, 0, 0, S( 4 ) )
+	local clips = clipRow( inv )
 	heads[1] = sideHeader( inv, "EQUIPMENT", count( false ) )
-	heads[1]:DockMargin( 0, 0, 0, S( 4 ) )
 	local equipTiles, bagTiles = {}, {}
 	for s = 1, LBR.INV_EQUIP_MAX do equipTiles[s] = invTile( inv, s ) end
 	heads[2] = sideHeader( inv, "BACKPACK", count( true ) )
@@ -629,6 +727,8 @@ local function buildSide( f )
 		local function vis( p, v ) if p:IsVisible() ~= v then p:SetVisible( v ) end end
 		vis( hint, show )
 		vis( heads[1], show )
+		vis( heads[3], show )
+		vis( clips, show )
 		vis( heads[2], show and LBR.INV_BAG > 0 )
 		for s, t in ipairs( equipTiles ) do vis( t, show and s <= LBR.INV_EQUIP ) end
 		for k, t in ipairs( bagTiles ) do vis( t, show and k <= LBR.INV_BAG ) end
@@ -636,9 +736,10 @@ local function buildSide( f )
 		local h = self:GetTall()
 		if LBR.INV_EQUIP ~= lastE or LBR.INV_BAG ~= lastB or h ~= lastH then
 			lastE, lastB, lastH = LBR.INV_EQUIP, LBR.INV_BAG, h
-			local fixed = S( 18 ) + ( S( 30 ) * ( LBR.INV_BAG > 0 and 2 or 1 ) )
+			// hint + MAGAZINES header and row + EQUIPMENT (+ BACKPACK) header
+			local fixed = S( 18 ) + S( 24 ) + S( 44 ) + S( 30 ) * ( LBR.INV_BAG > 0 and 2 or 1 ) + S( 4 )
 			local th = math.floor( ( h - fixed ) / math.max( LBR.INV_SLOTS, 1 ) ) - S( 3 )
-			th = math.Clamp( th, S( 38 ), S( 52 ) )
+			th = math.Clamp( th, S( 24 ), S( 52 ) ) // 6 + 6 slots: compact tiles (one line)
 			for _, t in ipairs( equipTiles ) do t:SetTall( th ) end
 			for _, t in ipairs( bagTiles ) do t:SetTall( th ) end
 			self:InvalidateLayout()

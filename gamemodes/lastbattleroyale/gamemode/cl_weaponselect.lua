@@ -198,7 +198,7 @@ hook.Add( "HUDPaint", "LBR_WeaponSelect", function()
 	if #list == 0 then return end
 	local cur = currentWeapon( lp )
 
-	local cw, ch, gap = S( 150 ), S( 58 ), S( 6 )
+	local cw, ch, gap = S( 150 ), S( 92 ), S( 6 )
 	local maxCards = math.max( 1, math.floor( ( ScrW() - S( 40 ) ) / ( cw + gap ) ) )
 	local n = math.min( #list, maxCards )
 	local total = n * cw + ( n - 1 ) * gap
@@ -213,6 +213,12 @@ hook.Add( "HUDPaint", "LBR_WeaponSelect", function()
 
 		surface.SetDrawColor( 10, 14, 24, ( active and 215 or 150 ) * alpha )
 		surface.DrawRect( cx, cy, cw, ch )
+		// tier color on top of the card
+		local tc = LBR.TierColor( w )
+		if tc then
+			surface.SetDrawColor( tc.r, tc.g, tc.b, ( active and 255 or 190 ) * alpha )
+			surface.DrawRect( cx, cy, cw, S( 3 ) )
+		end
 		if active then
 			surface.SetDrawColor( colGold.r, colGold.g, colGold.b, 255 * alpha )
 			surface.DrawRect( cx, cy + ch - S( 3 ), cw, S( 3 ) )
@@ -222,13 +228,17 @@ hook.Add( "HUDPaint", "LBR_WeaponSelect", function()
 		local a = ( active and 255 or 170 ) * alpha
 		draw.SimpleText( tostring( slotLabel[w] or "" ), "LBR_HUD_Tiny", cx + S( 8 ), cy + S( 6 ), Color( colDim.r, colDim.g, colDim.b, a ) )
 
-		// name
-		local nameCol = active and colGold or colText
-		draw.SimpleText( fit( shortName( w ), "LBR_HUD_Small", cw - S( 16 ) ), "LBR_HUD_Small", cx + S( 8 ), cy + S( 22 ), Color( nameCol.r, nameCol.g, nameCol.b, a ) )
+		// icon (as in the TAB inventory) in the tier color, name under it
+		local nameCol = active and colGold or ( tc or colText )
+		if LBR.DrawWeaponIcon then
+			local ic = tc or ( active and colGold or colText )
+			LBR.DrawWeaponIcon( w, cx + S( 8 ), cy + S( 20 ), cw - S( 16 ), S( 44 ), Color( ic.r, ic.g, ic.b, a ) )
+		end
+		draw.SimpleText( fit( shortName( w ), "LBR_HUD_Small", cw - S( 16 ) ), "LBR_HUD_Small", cx + cw / 2, cy + ch - S( 6 ), Color( nameCol.r, nameCol.g, nameCol.b, a ), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM )
 
 		// ammo
 		local clip = w:Clip1()
-		local ammoType = w:GetPrimaryAmmoType()
+		local ammoType = LBR.WeaponAmmoID( w )
 		local reserve = ammoType >= 0 and lp:GetAmmoCount( ammoType ) or 0
 		local txt
 		if clip >= 0 then txt = clip .. " / " .. reserve

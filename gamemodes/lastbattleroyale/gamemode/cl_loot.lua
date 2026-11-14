@@ -6,7 +6,7 @@ local UI = LBR.UI
 local S = UI.S
 local C = UI.col
 
-local L = { groups = nil, source = "default", sel = "BETTERWEAPONS", dirty = false }
+local L = { groups = nil, source = "default", sel = "GREEN", dirty = false }
 LBR.LootEditor = L
 
 ------------------------------------------------------------------------
@@ -104,6 +104,18 @@ local function addClass( class )
 		end
 	end
 	if #list >= LBR.LootMaxPerGroup then return false end
+	// a weapon is in one tier only: adding it here takes it out of the others
+	local g = LBR.LootGroupById( L.sel )
+	if g and g.tier then
+		for _, o in ipairs( LBR.LootGroups ) do
+			if o.tier and o.id ~= g.id then
+				local ol = L.groups[o.id] or {}
+				for k = #ol, 1, -1 do
+					if ol[k].class == class then table.remove( ol, k ) end
+				end
+			end
+		end
+	end
 	list[#list + 1] = { class = class, weight = 1, on = true }
 	markDirty()
 	return true
@@ -193,10 +205,120 @@ local function openPicker()
 	addManual:SetWide( S( 70 ) )
 end
 
+local function numberBox( parent, minv, maxv, value, tip, onChange )
+	local wang = vgui.Create( "DNumberWang", parent )
+	wang:SetMinMax( minv, maxv )
+	wang:SetDecimals( 0 )
+	wang:SetValue( value )
+	if tip then wang:SetTooltip( tip ) end
+	wang.OnValueChanged = function( _, v )
+		onChange( math.Clamp( math.floor( tonumber( v ) or minv ), minv, maxv ) )
+	end
+	return wang
+end
+
+// one line of the settings page: label on the left, control on the right
+local function settingRow( label, sub, col )
+	local row = L.rows:Add( "DPanel" )
+	row:Dock( TOP )
+	row:SetTall( S( 40 ) )
+	row:DockMargin( 0, 0, 0, S( 2 ) )
+	row.Paint = function( self, w, h )
+		UI.Box( 0, 0, w, h, C.row )
+		local x = S( 12 )
+		if col then
+			UI.Accent( 0, 0, h, col )
+			LBR.DrawTierBox( S( 10 ), S( 10 ), S( 20 ), S( 20 ), col )
+			x = S( 40 )
+		end
+		UI.Text( label, "LBR_UI_Text", x, S( 4 ), col or C.text )
+		local s = isfunction( sub ) and sub() or sub
+		if s then UI.Text( UI.Fit( s, "LBR_UI_Tiny", w - x - S( 120 ) ), "LBR_UI_Tiny", x, h - S( 16 ), C.dim ) end
+	end
+	return row
+end
+
+local function rowControl( ctrl, wide )
+	ctrl:Dock( RIGHT )
+	ctrl:DockMargin( 0, S( 7 ), S( 10 ), S( 7 ) )
+	ctrl:SetWide( wide or S( 80 ) )
+	return ctrl
+end
+
+// Magazines per tier + supply drop (whole addon, saved in loot.txt too)
+local function buildSettings()
+	L.groups.TIERS = L.groups.TIERS or {}
+	L.groups.SUPPLY = LBR.LootCleanSupply( L.groups.SUPPLY )
+	local T, SUP = L.groups.TIERS, L.groups.SUPPLY
+
+	UI.Section( L.rows, "Ammo kits: magazines per tier" )
+	for _, tier in ipairs( LBR.Tiers ) do
+		local function mags( n, p ) return math.max( 1, math.floor( n * p / 100 ) ) end
+		local row = settingRow( string.upper( tier.id ) .. " weapons", function()
+			local p = T[tier.id] or tier.defaultPercent
+			return string.format( "%d%% of a kit: small %d, medium %d, big %d magazines", p, mags( 6, p ), mags( 10, p ), mags( 24, p ) )
+		end, tier.color )
+		rowControl( numberBox( row, 1, 1000, T[tier.id] or tier.defaultPercent,
+			"Percent of the magazines of an ammo kit given to a weapon of this tier", function( v )
+				if v ~= T[tier.id] then T[tier.id] = v markDirty() end
+			end ) )
+	end
+
+	UI.Section( L.rows, "Supply drop" )
+	local function supNum( key, label, sub, minv, maxv )
+		local row = settingRow( label, sub )
+		rowControl( numberBox( row, minv, maxv, SUP[key], nil, function( v )
+			if v ~= SUP[key] then SUP[key] = v markDirty() end
+		end ) )
+	end
+	supNum( "time", "Opening time (seconds)", "Press E and stay close: the bar fills up in this time, then the loot comes out", 0, 60 )
+	supNum( "purple", "Purple weapons", "Purple weapons that always come out", 0, 10 )
+	supNum( "blue", "Blue weapons", "Blue weapons (each one can be a purple one, see below)", 0, 10 )
+	supNum( "purple_chance", "Chance blue -> purple (%)", "Chance that each blue weapon is a purple one instead", 0, 100 )
+	supNum( "purple_clips", "Purple magazines", "Purple magazines in a box next to the crate (any weapon takes them)", 0, 10 )
+
+	local row = settingRow( "Items" )
+	row:SetTall( S( 72 ) )
+	row.Paint = function( _, w, h )
+		UI.Box( 0, 0, w, h, C.row )
+		UI.Text( "Items", "LBR_UI_Text", S( 12 ), S( 4 ), C.text )
+		UI.Text( UI.Fit( "Classes that always come out, separated by commas (armor, medkits, ammo kits...)", "LBR_UI_Tiny", w - S( 24 ) ), "LBR_UI_Tiny", S( 12 ), S( 24 ), C.dim )
+	end
+	local entry = vgui.Create( "DTextEntry", row )
+	entry:Dock( BOTTOM )
+	entry:DockMargin( S( 12 ), 0, S( 10 ), S( 8 ) )
+	entry:SetTall( S( 26 ) )
+	entry:SetValue( table.concat( SUP.items, ", " ) )
+	entry.OnChange = function( self )
+		local items = {}
+		for _, c in ipairs( string.Explode( ",", self:GetValue() or "" ) ) do
+			c = string.Trim( c )
+			if LBR.LootValidClass( c ) and #items < 20 then items[#items + 1] = c end
+		end
+		SUP.items = items
+		markDirty()
+	end
+end
+
+local function baseDamage( class )
+	local t = weapons.Get( class )
+	if not t then return end
+	local prim = t.Primary or {}
+	return tonumber( t.Damage ) or tonumber( prim.Damage ), tonumber( t.Shots ) or tonumber( t.Num ) or tonumber( prim.NumShots )
+end
+
 function L.Rebuild()
 	if not IsValid( L.rows ) then return end
 	L.rows:Clear()
+	if L.sel == "SETTINGS" then
+		buildSettings()
+		return
+	end
 	local list = curList()
+	local group = LBR.LootGroupById( L.sel )
+	local tier = group.tier and LBR.TierById[group.tier]
+	local accent = tier and tier.color or C.accent
+	local hasDamage = group.tier ~= nil or group.id == "THROWABLES"
 	for i, e in ipairs( list ) do
 		local name, kind = classInfo( e.class )
 		local row = L.rows:Add( "DPanel" )
@@ -205,7 +327,7 @@ function L.Rebuild()
 		row:DockMargin( 0, 0, 0, S( 2 ) )
 		row.Paint = function( self, w, h )
 			UI.Box( 0, 0, w, h, self:IsHovered() and C.rowHover or C.row )
-			if e.on then UI.Accent( 0, 0, h, name and C.accent or C.bad ) end
+			if e.on then UI.Accent( 0, 0, h, name and accent or C.bad ) end
 			local a = e.on and 255 or 90
 			// checkbox
 			local bs = S( 16 )
@@ -213,19 +335,19 @@ function L.Rebuild()
 			surface.SetDrawColor( 255, 255, 255, 120 )
 			surface.DrawOutlinedRect( bx, by, bs, bs )
 			if e.on then UI.Box( bx + S( 3 ), by + S( 3 ), bs - S( 6 ), bs - S( 6 ), C.good ) end
-			UI.Text( UI.Fit( e.class, "LBR_UI_Text", S( 230 ) ), "LBR_UI_Text", S( 40 ), h / 2, Color( C.text.r, C.text.g, C.text.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+			UI.Text( UI.Fit( e.class, "LBR_UI_Text", S( 220 ) ), "LBR_UI_Text", S( 40 ), h / 2, Color( C.text.r, C.text.g, C.text.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 			if name then
-				UI.Text( UI.Fit( name, "LBR_UI_Small", S( 200 ) ), "LBR_UI_Small", S( 280 ), h / 2, Color( C.dim.r, C.dim.g, C.dim.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+				UI.Text( UI.Fit( name, "LBR_UI_Small", S( 150 ) ), "LBR_UI_Small", S( 270 ), h / 2, Color( C.dim.r, C.dim.g, C.dim.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 			else
-				UI.Text( "NOT INSTALLED", "LBR_UI_Tiny", S( 280 ), h / 2, Color( C.bad.r, C.bad.g, C.bad.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+				UI.Text( "NOT INSTALLED", "LBR_UI_Tiny", S( 270 ), h / 2, Color( C.bad.r, C.bad.g, C.bad.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 			end
 			local total = totalWeight( list )
 			local chance = ( e.on and total > 0 ) and ( e.weight / total * 100 ) or 0
-			UI.Text( e.on and string.format( "%.1f%%", chance ) or "OFF", "LBR_UI_Small", w - S( 180 ), h / 2, e.on and C.accent or C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+			UI.Text( e.on and string.format( "%.1f%%", chance ) or "OFF", "LBR_UI_Small", w - S( 240 ), h / 2, e.on and accent or C.dim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 		end
 		row.OnMousePressed = function( self, code )
 			local x = self:CursorPos()
-			if code == MOUSE_LEFT and x < S( 270 ) then
+			if code == MOUSE_LEFT and x < S( 260 ) then
 				e.on = not e.on
 				markDirty()
 				surface.PlaySound( "ui/buttonclick.wav" )
@@ -242,49 +364,44 @@ function L.Rebuild()
 		del:DockMargin( S( 6 ), S( 5 ), S( 6 ), S( 5 ) )
 		del:SetWide( S( 26 ) )
 
-		local wang = vgui.Create( "DNumberWang", row )
+		local wang = numberBox( row, 1, LBR.LootMaxWeight, e.weight, "Weight: 2 = twice as likely as an entry with 1", function( nv )
+			if nv ~= e.weight then e.weight = nv markDirty() end
+		end )
 		wang:Dock( RIGHT )
 		wang:DockMargin( 0, S( 5 ), S( 6 ), S( 5 ) )
 		wang:SetWide( S( 54 ) )
-		wang:SetMinMax( 1, LBR.LootMaxWeight )
-		wang:SetDecimals( 0 )
-		wang:SetValue( e.weight )
-		wang:SetTooltip( "Weight: 2 = twice as likely as an entry with 1" )
-		wang.OnValueChanged = function( _, v )
-			local nv = math.Clamp( math.floor( tonumber( v ) or 1 ), 1, LBR.LootMaxWeight )
-			if nv ~= e.weight then
-				e.weight = nv
-				markDirty()
-			end
-		end
 
-		// extra reserve ammo on pickup (weapons only)
-		local isWeapon = not LBR.LootGroupById( L.sel ).vehicle and ( kind == "weapon" or not name )
+		// extra reserve ammo on pickup and damage percent (weapons only)
+		local isWeapon = not group.vehicle and ( kind == "weapon" or not name )
 		if isWeapon then
-			local am = vgui.Create( "DNumberWang", row )
+			local t = weapons.Get( e.class )
+			local prim = t and t.Primary or {}
+			local am = numberBox( row, 0, LBR.LootMaxAmmo, e.ammo or 0, "Extra ammo given when this weapon is picked up (0 = only the loaded magazine)"
+				.. ( prim.Ammo and ( "\nAmmo type: " .. tostring( prim.Ammo ) ) or "" )
+				.. ( prim.ClipSize and prim.ClipSize > 0 and ( "\nMagazine: " .. prim.ClipSize ) or "" ), function( nv )
+				if nv ~= ( e.ammo or 0 ) then e.ammo = nv markDirty() end
+			end )
 			am:Dock( RIGHT )
 			am:DockMargin( 0, S( 5 ), S( 6 ), S( 5 ) )
 			am:SetWide( S( 60 ) )
-			am:SetMinMax( 0, LBR.LootMaxAmmo )
-			am:SetDecimals( 0 )
-			am:SetValue( e.ammo or 0 )
-			local t = weapons.Get( e.class )
-			local prim = t and t.Primary or {}
-			am:SetTooltip( "Extra ammo given when this weapon is picked up (0 = only the loaded magazine)"
-				.. ( prim.Ammo and ( "\nAmmo type: " .. tostring( prim.Ammo ) ) or "" )
-				.. ( prim.ClipSize and prim.ClipSize > 0 and ( "\nMagazine: " .. prim.ClipSize ) or "" ) )
-			am.OnValueChanged = function( _, v )
-				local nv = math.Clamp( math.floor( tonumber( v ) or 0 ), 0, LBR.LootMaxAmmo )
-				if nv ~= ( e.ammo or 0 ) then
-					e.ammo = nv
-					markDirty()
-				end
-			end
 		else
 			local sp = vgui.Create( "DPanel", row )
 			sp:Dock( RIGHT )
 			sp:SetWide( S( 66 ) )
 			sp.Paint = nil
+		end
+		if hasDamage and isWeapon then
+			local d, shots = baseDamage( e.class )
+			local dm = numberBox( row, 1, LBR.LootMaxDamage, e.damage or 100, "Damage of this weapon in percent (100 = as the weapon pack made it)"
+				.. ( d and ( "\nBase damage: " .. d .. ( shots and shots > 1 and ( " x" .. shots ) or "" ) ) or "" ), function( nv )
+				if nv ~= ( e.damage or 100 ) then
+					e.damage = nv ~= 100 and nv or nil
+					markDirty()
+				end
+			end )
+			dm:Dock( RIGHT )
+			dm:DockMargin( 0, S( 5 ), S( 6 ), S( 5 ) )
+			dm:SetWide( S( 54 ) )
 		end
 	end
 	if #list == 0 then
@@ -302,7 +419,7 @@ function L.Open()
 	if IsValid( L.frame ) then L.frame:Remove() end
 	if LBR.Editor and IsValid( LBR.Editor.menu ) then LBR.Editor.menu:Remove() end
 
-	local fr = UI.Frame( S( 1000 ), S( 720 ), "Loot and vehicles", "What spawns in the rounds. Weight = how likely, extra ammo = given on pickup; untick to disable. Saved in data/" .. LBR.LootFile )
+	local fr = UI.Frame( S( 1000 ), S( 720 ), "Loot and vehicles", "What spawns in the rounds. Weight = how likely, extra ammo = given on pickup, damage % = weapon damage; untick to disable. Saved in data/" .. LBR.LootFile )
 	L.frame = fr
 	fr:SetKeyboardInputEnabled( true )
 	local baseClose = fr.Close
@@ -357,6 +474,27 @@ function L.Open()
 	left:SetWide( S( 240 ) )
 	left:DockMargin( 0, 0, S( 14 ), 0 )
 	left.Paint = nil
+	local function groupButton( id, h )
+		local b = vgui.Create( "DButton", left )
+		b:SetText( "" )
+		b:Dock( TOP )
+		b:SetTall( S( h ) )
+		b:DockMargin( 0, 0, 0, S( 3 ) )
+		b.DoClick = function()
+			L.sel = id
+			surface.PlaySound( "ui/buttonclick.wav" )
+			if IsValid( L.picker ) then L.picker:Remove() end
+			L.Rebuild()
+		end
+		return b
+	end
+	local sb = groupButton( "SETTINGS", 36 )
+	sb.Paint = function( self, w, h )
+		local sel = L.sel == "SETTINGS"
+		UI.Box( 0, 0, w, h, ( sel or self:IsHovered() ) and C.rowHover or C.row )
+		if sel then UI.Accent( 0, 0, h ) end
+		UI.Text( "Tiers and supply drop", "LBR_UI_Text", S( 12 ), h / 2, sel and C.accent or C.text, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	end
 	for _, g in ipairs( LBR.LootGroups ) do
 		if g.vehicle and g.id == "CARS" then UI.Section( left, "Vehicles" ) end
 		local b = vgui.Create( "DButton", left )
@@ -373,12 +511,17 @@ function L.Open()
 		b.Paint = function( self, w, h )
 			local sel = L.sel == g.id
 			UI.Box( 0, 0, w, h, ( sel or self:IsHovered() ) and C.rowHover or C.row )
-			if sel then UI.Accent( 0, 0, h ) end
+			local tier = g.tier and LBR.TierById[g.tier]
+			if sel then UI.Accent( 0, 0, h, tier and tier.color ) end
 			local list = L.groups[g.id] or {}
 			local on = 0
 			for _, e in ipairs( list ) do if e.on then on = on + 1 end end
-			UI.Text( g.name, "LBR_UI_Text", S( 12 ), S( 6 ), sel and C.accent or C.text )
-			UI.Text( on .. " active / " .. #list, "LBR_UI_Tiny", S( 12 ), h - S( 18 ), on == 0 and C.bad or C.dim )
+			local x = S( 12 )
+			if tier then
+				LBR.DrawTierBox( w - S( 34 ), S( 10 ), S( 24 ), S( 24 ), tier.color )
+			end
+			UI.Text( g.name, "LBR_UI_Text", x, S( 6 ), tier and tier.color or ( sel and C.accent or C.text ) )
+			UI.Text( on .. " active / " .. #list, "LBR_UI_Tiny", x, h - S( 18 ), on == 0 and C.bad or C.dim )
 		end
 	end
 
@@ -391,12 +534,24 @@ function L.Open()
 	head:Dock( TOP )
 	head:SetTall( S( 58 ) )
 	head.Paint = function( _, w, h )
+		if L.sel == "SETTINGS" then
+			UI.Text( "TIERS AND SUPPLY DROP", "LBR_UI_Head", 0, 0, C.text )
+			UI.Text( "For the whole addon (every map). Saved in data/" .. LBR.LootFile .. " with the loot.", "LBR_UI_Small", 0, S( 26 ), C.dim )
+			return
+		end
 		local g = LBR.LootGroupById( L.sel )
-		UI.Text( string.upper( g.name ), "LBR_UI_Head", 0, 0, C.text )
+		local tier = g.tier and LBR.TierById[g.tier]
+		local x = 0
+		if tier then
+			LBR.DrawTierBox( 0, S( 2 ), S( 22 ), S( 22 ), tier.color )
+			x = S( 30 )
+		end
+		UI.Text( string.upper( g.name ), "LBR_UI_Head", x, 0, tier and tier.color or C.text )
 		UI.Text( g.desc, "LBR_UI_Small", 0, S( 26 ), C.dim )
 		UI.Text( "CLASS", "LBR_UI_Tiny", S( 40 ), h - S( 12 ), C.dim )
-		UI.Text( "NAME", "LBR_UI_Tiny", S( 280 ), h - S( 12 ), C.dim )
-		UI.Text( "CHANCE", "LBR_UI_Tiny", w - S( 180 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
+		UI.Text( "NAME", "LBR_UI_Tiny", S( 270 ), h - S( 12 ), C.dim )
+		UI.Text( "CHANCE", "LBR_UI_Tiny", w - S( 240 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
+		if tier or g.id == "THROWABLES" then UI.Text( "DAMAGE %", "LBR_UI_Tiny", w - S( 170 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT ) end
 		if not g.vehicle then UI.Text( "EXTRA AMMO", "LBR_UI_Tiny", w - S( 104 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT ) end
 		UI.Text( "WEIGHT", "LBR_UI_Tiny", w - S( 44 ), h - S( 12 ), C.dim, TEXT_ALIGN_RIGHT )
 	end
@@ -404,6 +559,7 @@ function L.Open()
 	local addBtn = UI.Button( head, "+ ADD", C.good, openPicker )
 	addBtn:SetSize( S( 110 ), S( 30 ) )
 	head.PerformLayout = function( self, w ) addBtn:SetPos( w - S( 110 ), 0 ) end
+	head.Think = function() addBtn:SetVisible( L.sel ~= "SETTINGS" ) end
 
 	L.rows = UI.Scroll( right )
 	L.rows:Dock( FILL )

@@ -16,15 +16,20 @@ add maps/weapons and run it on their own server.
 - Round flow: lobby → preparing → live → post round, with a configurable minimum player count
 - Shrinking safe zone with damage outside it: a glowing wall, brightest at eye height and fading up and down, plus a storm effect (fog, grey colors) while you are outside
 - Random loot (weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo) on every round
+- **Weapon tiers**: green (pistols, simple SMGs), blue (assault rifles, good SMGs, shotguns) and purple (snipers, machine guns, special weapons). The tier color is on the loot outline and beam, the `[E]` prompt, the inventory, the weapon bar and the editors. Weapons always spawn without attachments
+- **Magazines by color**: your ammo is three stores of magazines, green, blue and purple (shown over the ammo and in TAB), shared by every weapon of that color. A green M4 (30) with 2.5 green magazines has 75 rounds of reserve, a green SKS (20) 50; reloading 15 rounds of the M4 takes 0.5. An ammo kit opens a menu with E: pick the colors you want (a magazine costs 1 / 2 / 4 green ones, a kit of 8 = 8 green, or 6 green + 1 blue, or 2 green + 1 blue + 1 purple). When you die your magazines fall in one box per color; the supply drop has 2 purple magazines
+- **Attachment kits** give attachments for the weapon in your hands (CW 2.0; ArcCW too, if a server adds ArcCW weapons)
+- **Supply drops**: press `E` and stay close while the bar fills up, then purple / blue weapons, armor and medkits come out
+- Built on **CW 2.0** weapons; ArcCW is not needed, but a server that installs it can put ArcCW weapons in the tiers from the loot editor
 - Cars (SCars) and helicopters (WAC) spawned around the map
 - Random supply airdrops (only inside the safe zone), optional nuclear strike event (20 s warning, red area on the map) and optional implosion when the zone closes, built in (no HBOMBS needed)
-- 9 classes unlocked by levelling up (EXP saved per player with PData)
+- 9 classes unlocked by levelling up (EXP saved per player with PData); health, armor, speed, loadout and unlock of every class are editable in game (F8 → Q → *Classes*, saved in `data/lastbattleroyale/classes.txt`, the same for every map)
 - Squads: invite other players to your team
 - **Map** (`M`): the whole map seen from above on any map, with a battleship grid, your squad, the safe zone, supply drops and the nuke target; click to place a marker for your squad
 - **In-game map editor (F8)**: configure any map by flying around and placing spawns, loot, vehicles and zone centers, and check them all from above on the map (`M`); configs are plain `.txt` files you can share
-- **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons, items and vehicles spawn and how often, pick them from the installed addons; saved in `data/lastbattleroyale/loot.txt`
+- **Loot editor** (F8 → Q → *Loot and vehicles*): choose which weapons go in each tier, which items and vehicles spawn and how often, the damage of every weapon (%), the magazines per tier and the supply drop contents; pick them from the installed addons; one file for the whole addon, `data/lastbattleroyale/loot.txt`
 - **Map vote** at the end of the match, only between the maps ready to play (configured with F8 or built in); admins change map with `F2`, where every installed map shows if it is ready or still to configure
-- On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop
+- On-screen prompts when you look at something usable: `[E] PICK UP M4A1`, `[E] USE Personal Armor`, `[E] ENTER` a vehicle, `[E] OPEN` a supply drop, `[E] TAKE AMMO x5` from a kit
 - Optimized for big maps: distance culling of loot and vehicles, lighter zone rendering and outlines
 - Outline (halo) on loot to see it in the dark, only on the loot you can see (not through walls and floors)
 - One look for everything: HUD, menus, map vote, map editor, dialogs, messages in the middle of the screen and in chat (`[LBR]` tag)
@@ -33,7 +38,7 @@ add maps/weapons and run it on their own server.
 
 | Key | Action |
 |---|---|
-| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (4 equipment + 2 backpack slots: drag to move, right click to drop the weapon or **unload a full magazine** in a box on the ground: anyone with a weapon of the same type, pistol / SMG, rifle, sniper or shotgun, takes it with `E` and gets one magazine of that weapon), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
+| `TAB` (hold) | Scoreboard on the left (right click a player to mute; admins: *START NOW* in the lobby), on the right your **inventory** (4 equipment + 2 backpack slots: drag to move, right click to drop the weapon or **unload** it into its magazine store; on top your **magazines** by color: right click to drop one, the part after the point or all of them in a box on the ground, anyone takes it with `E`, one magazine at a time), your stats and the Classes / Squad / Map (admins: Change map) buttons. The view stays still |
 | `M` | **Map**: the whole map seen from above, up to its borders (found automatically on any map), with a battleship grid (A–H / 1–8), you, your squad (even far away), the safe zone with its timer and a dashed line to it when you are outside (outside the zone the map is darker and striped in the zone color), supply drops still to open, the nuke target and where teammates fell. **Left click** places a marker for your squad (also on the compass and on screen with the distance), **right click** removes it. Also from the *MAP* button in `TAB` |
 | `F3` | Class menu: stats, loadout, level and what unlocks each class |
 | `F4` | Squad menu: invite players, remove mates — `F6` decline / `F7` accept an invite |
@@ -41,6 +46,7 @@ add maps/weapons and run it on their own server.
 | `C` | CW 2.0 weapon customization: put on the attachments you found (press the category number `1`, `2`, `3`…; the ones you don't have are red) |
 | `Q` | Drop the active weapon |
 | `E` | Pick up a weapon, use an item, enter a vehicle, open a supply drop (a prompt shows what you are looking at) |
+| `E` (hold) on a weapon, inventory full | Swap it with the weapon in your hands (a bar fills up under the prompt) |
 | `E` (hold) + left click | Throw grenades (with a CW 2.0 weapon) |
 | `F2` | Admin: change map. Every installed map, split in *ready to play* and *to configure* (go there and press `F8`) |
 | `F8` | Admin: map editor (configure spawns, loot, zone… of any map) |
@@ -59,7 +65,7 @@ Server **and** clients need them. The full list is in the Workshop collection
 | [Unofficial Extra Customizable Weaponry 2.0](https://steamcommunity.com/workshop/filedetails/?id=359830105) | `cw_g4p_*` weapons |
 | [CW 2.0 - Melee](https://steamcommunity.com/workshop/filedetails/?id=707343339) | Knife (`cw_extrema_ratio_official`) |
 | [[CW 2.0] Extra Rails](https://steamcommunity.com/workshop/filedetails/?id=462668882) | Attachments |
-| [[CW2] Hitmarker plugin V2](https://steamcommunity.com/workshop/filedetails/?id=512986704) | Hitmarkers |
+| [Battlefield 6 Hitmarkers](https://steamcommunity.com/sharedfiles/filedetails/?id=3550189961) | Hitmarkers and damage log (the gamemode keeps *dynamic position* off, server and client) |
 | Khris CW 2.0 packs: [Shared Content](https://steamcommunity.com/workshop/filedetails/?id=886451400), [Pistols](https://steamcommunity.com/workshop/filedetails/?id=886125449), [Revolvers](https://steamcommunity.com/workshop/filedetails/?id=886156547), [SMGs](https://steamcommunity.com/workshop/filedetails/?id=886132509), [Shotguns](https://steamcommunity.com/workshop/filedetails/?id=886148959), [Assault Rifles](https://steamcommunity.com/workshop/filedetails/?id=886137508), [Long-range rifles](https://steamcommunity.com/workshop/filedetails/?id=886146194), [Heavy Weapons](https://steamcommunity.com/workshop/filedetails/?id=886153712) | `khr_*` weapons |
 | [Medkit and Adrenaline](https://steamcommunity.com/workshop/filedetails/?id=180842642) | Base for `sg_medkit_fix` / `sg_adrenaline_fix` |
 | [Arctic's Slightly Nicer Armor and Medkits](https://steamcommunity.com/workshop/filedetails/?id=494180444) | Armor / ghillie models |
@@ -128,6 +134,9 @@ All server settings are ConVars (`lbr_*`). They used to be called `lst_*`: the o
 | `lbr_min_players` | `2` | Players needed to start a round |
 | `lbr_inv_equipment` | `4` | Equipment slots (weapons in hand, keys 1-N), 1 to 6; applied in the lobby |
 | `lbr_inv_backpack` | `2` | Backpack slots, 0 to 6; applied in the lobby |
+| `lbr_clips_max_green` | `10` | Most green magazines a player carries, 0 = no limit |
+| `lbr_clips_max_blue` | `8` | Most blue magazines a player carries, 0 = no limit |
+| `lbr_clips_max_purple` | `6` | Most purple magazines a player carries, 0 = no limit |
 | `lbr_time_preparing` | `30` | Preparing time (seconds) |
 | `lbr_time_weapons_hot` | `30` | Time before the round goes live (seconds) |
 | `lbr_time_postround` | `15` | Time after the round ends (seconds) |
@@ -161,7 +170,9 @@ Loot and vehicles are chosen in game too (`F8` → `Q` → *Loot and vehicles*, 
 Classes and the default loot tables are plain Lua: see
 **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)**.
 
-Attachments are loot: players start with none and find them in the attachment kits, a loot category of their own (about one kit every 3 weapons, set per map in the editor; `lbr_cw_spawn_attachments 1` gives every attachment on spawn, as plain CW 2.0 does).
+Attachments are loot: players start with none and find them in the attachment kits, a loot category of their own (about one kit every 3 weapons, set per map in the editor; `lbr_cw_spawn_attachments 1` gives every attachment on spawn, as plain CW 2.0 does). With ArcCW the gamemode turns off free attachments and the extra magazines on the first deploy, so ArcCW weapons follow the same rules.
+
+Loot numbers per map (F8 → Q): green, blue and purple weapons, items, ammo kits, attachment kits, throwables. Old map configs are converted when loaded: their weapons become 50% green, 35% blue and 15% purple.
 
 ## Repository layout
 
@@ -171,7 +182,8 @@ gamemodes/lastbattleroyale/
     lastbattleroyale.txt         gamemode definition + Start New Game settings
     icon24.png, logo.png
     backgrounds/                 main menu backgrounds
-    entities/entities/           zone, loot, armor, supply drop, base_wire_entity placeholder (WAC),
+    entities/entities/           zone, loot, armor, supply drop, ammo kits (lbr_ammo_*), attachment kits
+                                 (lbr_attpack_*), base_wire_entity placeholder (WAC),
                                  base_gmodentity (Sandbox base needed by addon entities)
     entities/weapons/            medkit, adrenaline, supply signal
     gamemode/
@@ -192,7 +204,10 @@ gamemodes/lastbattleroyale/
         cl_map.lua / sv_map.lua  M map: top-down view rendered once, map borders scan, squad positions and markers, supply drops, nuke, fallen teammates
         cl_weaponselect.lua      weapon selection bar (mouse wheel / 1-N equipment, then hands)
         sh_inventory.lua / sv_inventory.lua  inventory: 4 equipment + 2 backpack slots, pickup limit, swap and drop
-        sv_attachments.lua       CW 2.0: no attachments on spawn (they are loot)
+        sv_attachments.lua       CW 2.0 / ArcCW: no attachments on spawn (they are loot)
+        sh_hitmarker.lua         Battlefield 6 Hitmarkers: dynamic position always off
+        sh_tiers.lua             weapon tiers (green / blue / purple), one ammo type per weapon
+        sh_clips.lua             ammo: magazine stores by color, boxes of magazines
         sv_mapvote.lua / cl_mapvote.lua  end of match map vote, F2 admin map menu
         sh_loot.lua / sv_loot.lua / cl_loot.lua  loot.txt format, loading, Loot panel of the editor
         sh_spawn.lua             safe spawn positions (players, loot, vehicles)
@@ -202,6 +217,7 @@ gamemodes/lastbattleroyale/
         sv_player.lua            player helpers, class switching
         config.lua               loot tables, vehicles, built-in map configs
         classes.lua              class list, unlock requirements, menu descriptions
+        sh_classcfg.lua / cl_classes.lua  classes.txt: class stats, loadout, unlock, Classes panel of the editor
         player_class/            one file per class (stats + loadout)
 materials/                       HUD icons and map images
 docs/                            documentation

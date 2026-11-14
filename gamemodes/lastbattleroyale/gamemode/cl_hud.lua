@@ -40,6 +40,9 @@ local colZone = Color( 200, 110, 255 )
 local colWarn = Color( 255, 80, 70 )
 local colGood = Color( 120, 255, 150 )
 local colGold = Color( 255, 210, 70 )
+local colDim = Color( 150, 158, 175 )
+local colFade = Color( 255, 255, 255 ) // reused, alpha changed per use (no new Color every frame)
+local function fade( a ) colFade.a = a return colFade end
 
 local STATE_NONE, STATE_PREPARING, STATE_LIVE, STATE_POST = 1, 2, 3, 4
 
@@ -137,12 +140,12 @@ local function drawVitals( ply )
 	surface.DrawRect( cx - cs / 2, cy - ct / 2, cs, ct )
 
 	// shield
-	ptext( "SHIELD", "LBR_HUD_Tiny", bx, y + S( 12 ), Color( 150, 158, 175 ) )
+	ptext( "SHIELD", "LBR_HUD_Tiny", bx, y + S( 12 ), colDim )
 	bar( bx, y + S( 30 ), bw, S( 10 ), shown.ar / 100, colShield, shown.arGhost / 100 )
 	ptext( tostring( ar ), "LBR_HUD_Small", x + w - pad, y + S( 35 ), colShield, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 
 	// health
-	ptext( "HEALTH", "LBR_HUD_Tiny", bx, y + S( 46 ), Color( 150, 158, 175 ) )
+	ptext( "HEALTH", "LBR_HUD_Tiny", bx, y + S( 46 ), colDim )
 	bar( bx, y + S( 64 ), bw, S( 16 ), shown.hp / maxhp, col, shown.hpGhost / maxhp )
 	ptext( tostring( hp ), "LBR_HUD_Big", x + w - pad, y + S( 72 ), low and colHealthLow or colWhite, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
 end
@@ -151,6 +154,37 @@ end
 // Ammo
 ------------------------------------------------------------------------
 
+// the magazine stores (sh_clips.lua) on top of the ammo panel: one cell per
+// color with its magazine icon and count, on a tint of the color; the color of
+// the weapon in hand is brighter and underlined
+local CLIPS_H = 40
+local function drawClips( ply, wep, x, y, w )
+	if not LBR.ClipColors then return end
+	local mine = LBR.UsesMagazines( wep ) and LBR.ClipColorOf( wep )
+	local colors = LBR.ClipColors()
+	local gap = S( 4 )
+	local cw = math.floor( ( w - gap * ( #colors - 1 ) ) / math.max( #colors, 1 ) )
+	local ch = S( CLIPS_H ) - S( 8 )
+	local isz = S( 26 )
+	for i, id in ipairs( colors ) do
+		local t = LBR.TierById[id]
+		local c = t.color
+		local n = LBR.GetClips( ply, id )
+		local on = not mine or mine == id
+		local cx = x + ( i - 1 ) * ( cw + gap )
+		surface.SetDrawColor( c.r, c.g, c.b, on and 45 or 18 )
+		surface.DrawRect( cx, y, cw, ch )
+		if mine == id then
+			surface.SetDrawColor( c.r, c.g, c.b, 255 )
+			surface.DrawRect( cx, y + ch - S( 2 ), cw, S( 2 ) )
+		end
+		local a = on and 255 or 120
+		LBR.DrawClipIcon( cx + S( 4 ), y + math.floor( ( ch - isz ) / 2 ), isz, c, a, n )
+		local full = LBR.ClipRoom( ply, id ) < 0.0001
+		ptext( "x" .. LBR.ClipText( n ), "LBR_HUD_Small", cx + cw - S( 6 ), y + ch / 2, full and colWarn or Color( c.r, c.g, c.b, a ), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER )
+	end
+end
+
 local function drawAmmo( ply )
 	if not ply:Alive() then return end
 	local wep = ply:GetActiveWeapon()
@@ -158,17 +192,23 @@ local function drawAmmo( ply )
 
 	local name = string.upper( wep.GetPrintName and wep:GetPrintName() or wep:GetClass() )
 	local clip = wep:Clip1()
-	local reserve = ply:GetAmmoCount( wep:GetPrimaryAmmoType() )
+	local reserve = ply:GetAmmoCount( LBR.WeaponAmmoID( wep ) )
 	local hasAmmo = clip >= 0 or reserve > 0
 
 	local pad = S( 14 )
 	surface.SetFont( "LBR_HUD_Small" )
 	local nw = surface.GetTextSize( name )
-	local w = math.max( S( 220 ), nw + pad * 2 )
-	local h = hasAmmo and S( 92 ) or S( 40 )
+	local w = math.max( S( 250 ), nw + pad * 2 )
+	local top = S( CLIPS_H ) // the magazines row on top
+	local h = ( hasAmmo and S( 92 ) or S( 40 ) ) + top
 	local x, y = ScrW() - S( 24 ) - w, ScrH() - S( 24 ) - h
 	panel( x, y, w, h )
-	ptext( name, "LBR_HUD_Small", x + w - pad, y + S( 12 ), colGold, TEXT_ALIGN_RIGHT )
+	drawClips( ply, wep, x + S( 6 ), y + S( 6 ), w - S( 12 ) )
+	surface.SetDrawColor( 255, 255, 255, 25 )
+	surface.DrawRect( x + pad, y + top, w - pad * 2, 1 )
+	y = y + top
+	h = h - top
+	ptext( name, "LBR_HUD_Small", x + w - pad, y + S( 12 ), LBR.TierColor( wep, colGold ), TEXT_ALIGN_RIGHT )
 	if not hasAmmo then return end
 
 	local by = y + h - S( 10 )
@@ -177,7 +217,7 @@ local function drawAmmo( ply )
 		local clipCol = ( maxclip > 0 and clip <= maxclip * 0.25 ) and colWarn or colWhite
 		surface.SetFont( "LBR_HUD_Med" )
 		local rw = surface.GetTextSize( tostring( reserve ) )
-		ptext( tostring( reserve ), "LBR_HUD_Med", x + w - pad, by - S( 4 ), Color( 150, 158, 175 ), TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
+		ptext( tostring( reserve ), "LBR_HUD_Med", x + w - pad, by - S( 4 ), colDim, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
 		surface.SetDrawColor( 255, 255, 255, 60 )
 		surface.DrawRect( x + w - pad - rw - S( 10 ), by - S( 30 ), S( 2 ), S( 24 ) )
 		ptext( tostring( clip ), "LBR_HUD_Huge", x + w - pad - rw - S( 18 ), by + S( 4 ), clipCol, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
@@ -216,11 +256,11 @@ local function drawCompass( lp )
 		local px = cx + diff * pxPerDeg
 		local alpha = 255 * ( 1 - math.abs( diff ) / ( fov / 2 ) )
 		if dirNames[d] then
-			draw.SimpleText( dirNames[d], d % 90 == 0 and "LBR_HUD_Med" or "LBR_HUD_Small", px, y + h / 2, Color( 255, 255, 255, alpha ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+			draw.SimpleText( dirNames[d], d % 90 == 0 and "LBR_HUD_Med" or "LBR_HUD_Small", px, y + h / 2, fade( alpha ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		else
 			surface.SetDrawColor( 255, 255, 255, alpha * 0.6 )
 			surface.DrawRect( px - 1, y + h - S( 10 ), 2, S( 8 ) )
-			draw.SimpleText( tostring( d ), "LBR_HUD_Tiny", px, y + S( 2 ), Color( 255, 255, 255, alpha * 0.5 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			draw.SimpleText( tostring( d ), "LBR_HUD_Tiny", px, y + S( 2 ), fade( alpha * 0.5 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 		end
 	end
 
@@ -368,10 +408,10 @@ local function drawInfo( lp, ply )
 		local tl = LBR.GetZoneTimeLeft()
 		local wait = LBR.GetZoneStartsIn()
 		if wait > 0 then
-			ptext( "ZONE STARTS IN", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
+			ptext( "ZONE STARTS IN", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), colDim )
 			ptext( fmtTime( wait ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT )
 		else
-			ptext( radius > 0 and "ZONE CLOSING" or "ZONE CLOSED", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), Color( 150, 158, 175 ) )
+			ptext( radius > 0 and "ZONE CLOSING" or "ZONE CLOSED", "LBR_HUD_Tiny", x - w + S( 14 ), y + S( 10 ), colDim )
 			if radius > 0 then ptext( fmtTime( tl ), "LBR_HUD_Small", x - S( 14 ), y + S( 8 ), colWhite, TEXT_ALIGN_RIGHT ) end
 		end
 		if toEdge > 0 then
@@ -412,7 +452,7 @@ local function drawTeam( lp )
 		local alive = pl:Alive() and pl:Team() == 2
 		surface.SetDrawColor( 255, 255, 255, 9 )
 		surface.DrawRect( x + S( 6 ), y, w - S( 12 ), rowH - S( 4 ) )
-		ptext( string.sub( pl:Nick(), 1, 18 ), "LBR_HUD_Tiny", x + S( 14 ), y + S( 4 ), alive and colWhite or Color( 150, 158, 175 ) )
+		ptext( string.sub( pl:Nick(), 1, 18 ), "LBR_HUD_Tiny", x + S( 14 ), y + S( 4 ), alive and colWhite or colDim )
 		if alive then
 			local frac = math.Clamp( pl:Health() / math.max( pl:GetMaxHealth(), 1 ), 0, 1 )
 			bar( x + S( 14 ), y + S( 22 ), w - S( 28 ), S( 7 ), frac, frac <= 0.25 and colHealthLow or colHealth )
@@ -497,4 +537,20 @@ hook.Add( "HUDPaint", "LBR_HUD", function()
 		drawVitals( ply )
 		drawAmmo( ply )
 	end
+end )
+
+------------------------------------------------------------------------
+// Victory sound: a round ends with a winner (the HEV suit jingle of Half-Life 2,
+// in the base game), once per round, for everyone
+------------------------------------------------------------------------
+
+local winPlayed = false
+hook.Add( "Think", "LBR_WinSound", function()
+	if GetGlobalInt( "state", 1 ) ~= STATE_POST then
+		winPlayed = false
+		return
+	end
+	if winPlayed or GetGlobalString( "LBR_Winner", "" ) == "" then return end
+	winPlayed = true
+	surface.PlaySound( "music/hl2_song23_suitsong3.mp3" )
 end )

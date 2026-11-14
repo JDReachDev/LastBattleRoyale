@@ -110,6 +110,8 @@ local function buildDetail( detail, c )
 	UI.Section( detail, "Stats" )
 	local hp = bc.MaxHealth or 100
 	statBar( detail, "HEALTH", hp, 120, tostring( hp ), hp < 60 and C.bad or C.good )
+	local ar = LBR.ClassCfg and LBR.ClassCfg[c.class] and LBR.ClassCfg[c.class].armor or 0
+	if ar > 0 then statBar( detail, "ARMOR", ar, 100, tostring( ar ), C.blue ) end
 	local run = bc.RunSpeed or 1
 	statBar( detail, "SPEED", run, 1.6, math.Round( run * 100 ) .. "%", C.blue )
 

@@ -9,9 +9,15 @@ AddCSLuaFile( "shared.lua" )
 AddCSLuaFile( "sh_mapconfig.lua" )
 AddCSLuaFile( "sh_zone.lua" )
 AddCSLuaFile( "sh_spawn.lua" )
+AddCSLuaFile( "sh_tiers.lua" )
 AddCSLuaFile( "sh_loot.lua" )
 AddCSLuaFile( "sh_notify.lua" )
 AddCSLuaFile( "sh_inventory.lua" )
+AddCSLuaFile( "sh_clips.lua" )
+AddCSLuaFile( "sh_hitmarker.lua" )
+AddCSLuaFile( "sh_classcfg.lua" )
+AddCSLuaFile( "sh_profile.lua" )
+AddCSLuaFile( "cl_classes.lua" )
 AddCSLuaFile( "cl_hud.lua" )
 AddCSLuaFile( "cl_zone.lua" )
 AddCSLuaFile( "cl_editor.lua" )
@@ -32,6 +38,7 @@ include( "sv_mapconfig.lua" ) // after config.lua: replaces MAPCONFIG[map] with 
 include( "sv_player.lua" )
 include( "sv_perf.lua" )
 include( "sv_attachments.lua" )
+include( "sh_hitmarker.lua" ) // Battlefield 6 Hitmarkers: dynamic position always off
 include( "sv_mapvote.lua" )
 include( "sv_map.lua" )
 include( "sv_menus.lua" )
@@ -316,9 +323,9 @@ net.Receive( "ChangeClass", function( len, ply )
 	if LBR_SendClassInfo then LBR_SendClassInfo( ply ) end
 end)
 
+// starting melee weapons of the classes (classes.lua): they are not loot
 cantdropweapons = {
 	"weapon_crowbar",
-	"weapon_molotov_c",
 	"cw_extrema_ratio_official",
 	"weapon_stunstick"
 }
@@ -643,12 +650,12 @@ end
 function GM:PlayerCanPickupWeapon( ply, wep )
 	if ply:Team() == TEAM_CONT then
 		if wep.kanadelootable == true then
-			if ply:KeyDown(IN_USE) then
+			if ply:KeyDown(IN_USE) or ply.LBR_SwapEnt == wep then
 				if not LBR.InvCanPickup( ply, wep ) then return false end // all slots full
 				// extra reserve ammo set in the Loot editor, given once if the pickup happens
 				if ( wep.LBR_Ammo or 0 ) > 0 and not wep.LBR_AmmoPending then
 					wep.LBR_AmmoPending = true
-					local amount, ammoType = wep.LBR_Ammo, wep:GetPrimaryAmmoType()
+					local amount, ammoType = wep.LBR_Ammo, LBR.WeaponAmmoID( wep )
 					timer.Simple( 0, function()
 						if IsValid( wep ) and not IsValid( wep:GetOwner() ) then
 							wep.LBR_AmmoPending = nil // not picked up (for example ammo full)

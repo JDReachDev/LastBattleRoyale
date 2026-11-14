@@ -5,6 +5,7 @@
 util.AddNetworkString( "LBR_InvMove" )
 util.AddNetworkString( "LBR_InvDrop" )
 util.AddNetworkString( "LBR_InvUnload" )
+util.AddNetworkString( "LBR_InvSwap" )
 
 local function layout( ply )
 	ply.LBR_Inv = ply.LBR_Inv or {}
@@ -111,7 +112,8 @@ local function syncSoon( ply )
 end
 
 // drops a weapon on the ground in front of the player (the Q drop)
-function LBR.DropWeapon( ply, wep )
+// noSelect: do not pick the next weapon (the swap puts the new one in hand)
+function LBR.DropWeapon( ply, wep, noSelect )
 	if not IsValid( ply ) or not IsValid( wep ) or wep:GetOwner() ~= ply then return false end
 	local class = wep:GetClass()
 	if cantdropweapons and intab and intab( class, cantdropweapons ) then return false end
@@ -126,9 +128,22 @@ function LBR.DropWeapon( ply, wep )
 		if IsValid( phys ) then phys:SetVelocity( ply:GetVelocity() + ply:GetAimVector() * 500 ) end
 		ent:SetClip1( wep:Clip1() )
 		ent.kanadelootable = true
+		// you do not take it back at once while E is still held (swap, Q next to it)
+		ent.LBR_DropBy, ent.LBR_DropTime = ply, CurTime()
+	end
+	// grenades, molotovs, mines: no magazine, the count is the reserve ammo. The
+	// dropped one gives its default ammo to whoever takes it: take the same from
+	// the reserve, so dropping and taking it back does not make new ones
+	if wep:GetMaxClip1() <= 0 then
+		local id = wep:GetPrimaryAmmoType()
+		if id and id >= 0 then
+			local full = weapons.Get( class )
+			local give = math.max( tonumber( full and full.Primary and full.Primary.DefaultClip ) or 1, 1 )
+			ply:RemoveAmmo( math.min( give, ply:GetAmmoCount( id ) ), id )
+		end
 	end
 	ply:StripWeapon( class )
-	if wasActive then
+	if wasActive and not noSelect then
 		// go to the first weapon left in the equipment, else the hands
 		timer.Simple( 0, function()
 			if not IsValid( ply ) or not ply:Alive() then return end
@@ -165,14 +180,75 @@ end )
 // pickup limit: all the slots (a weapon you already have only gives ammo)
 function LBR.InvCanPickup( ply, wep )
 	if LBR.InvIsHands( wep ) then return true end
+	if ply.LBR_SwapEnt == wep then return true end // the swap made room for it
+	if wep.LBR_DropBy == ply and CurTime() - ( wep.LBR_DropTime or 0 ) < 1 then return false end
 	if ply:HasWeapon( wep:GetClass() ) then return true end
 	if counted( ply ) < LBR.INV_SLOTS then return true end
 	if ( ply.LBR_InvFullMsg or 0 ) < CurTime() then
 		ply.LBR_InvFullMsg = CurTime() + 2
-		LBR.Notify( ply, "Inventory full: drop something first (Q, or right click in TAB)", "bad", 2.5 )
+		LBR.Notify( ply, "Inventory full: hold E to swap it with the weapon in hand", "bad", 2.5 )
 	end
 	return false
 end
+
+// inventory full, E held on a weapon on the ground (LBR.SWAP_TIME, the client
+// counts it and shows the bar): the weapon in hand is dropped, that one goes in
+// the same slot and in hand
+net.Receive( "LBR_InvSwap", function( _, ply )
+	local ent = net.ReadEntity()
+	if not ply:Alive() or ply:Team() ~= TEAM_CONT or not ply:KeyDown( IN_USE ) then return end
+	if ( ply.LBR_SwapNext or 0 ) > CurTime() then return end
+	ply.LBR_SwapNext = CurTime() + 0.5
+	if not IsValid( ent ) or not ent:IsWeapon() or IsValid( ent:GetOwner() ) or not ent.kanadelootable then return end
+	if ply:GetShootPos():Distance( ent:NearestPoint( ply:GetShootPos() ) ) > 130 then return end
+	if ply:HasWeapon( ent:GetClass() ) then return end
+	LBR.InvSync( ply )
+	if counted( ply ) < LBR.INV_SLOTS then return end // room: the normal pickup does it
+	local act = ply:GetActiveWeapon()
+	if not IsValid( act ) or LBR.InvIsHands( act ) then
+		LBR.Notify( ply, "Hold the weapon you want to swap", "bad", 2 )
+		return
+	end
+	local slot
+	for s = 1, LBR.INV_SLOTS do
+		if layout( ply )[s] == act then slot = s end
+	end
+	if not LBR.DropWeapon( ply, act, true ) then
+		LBR.Notify( ply, "You can not drop this", "bad", 2 )
+		return
+	end
+	local class = ent:GetClass()
+	// next tick: the old weapon is really gone from the player by then
+	timer.Simple( 0, function()
+		if not IsValid( ply ) or not ply:Alive() then return end
+		local ok = false
+		if IsValid( ent ) and not IsValid( ent:GetOwner() ) then
+			ply.LBR_SwapEnt = ent
+			ok = ply:PickupWeapon( ent )
+			ply.LBR_SwapEnt = nil
+		end
+		LBR.InvSync( ply )
+		if not ok or not ply:HasWeapon( class ) then
+			LBR.InvSelectBest( ply )
+			return
+		end
+		// the new weapon in the slot of the old one (the sync puts it in the first free one)
+		local new = ply:GetWeapon( class )
+		local inv = layout( ply )
+		if slot and IsValid( new ) and inv[slot] ~= new then
+			for s = 1, LBR.INV_SLOTS do
+				if inv[s] == new then inv[s], inv[slot] = inv[slot], new break end
+			end
+			send( ply )
+		end
+		ply:SelectWeapon( class )
+		timer.Simple( 0.1, function()
+			if not IsValid( ply ) or not ply:Alive() or not ply:HasWeapon( class ) then return end
+			local act = ply:GetActiveWeapon()
+			if not IsValid( act ) or act:GetClass() ~= class then ply:SelectWeapon( class ) end
+		end )
+	end )
+end )
 
 // swap two slots (drag and drop in TAB)
 net.Receive( "LBR_InvMove", function( _, ply )
@@ -185,7 +261,8 @@ net.Receive( "LBR_InvMove", function( _, ply )
 	LBR.InvCheckActive( ply )
 end )
 
-// right click > Unload a magazine: a full magazine (see LBR.UnloadInfo) goes in a box on the ground, anyone with a weapon of the same group takes it with E
+// right click > Unload: the rounds in the weapon go back in its magazine store
+// (sh_clips.lua): 15 rounds of an M4 (30) = 0.5 magazine
 net.Receive( "LBR_InvUnload", function( _, ply )
 	local s = net.ReadUInt( 4 )
 	if not ply:Alive() or ( ply.LBR_UnloadNext or 0 ) > CurTime() then return end
@@ -193,31 +270,26 @@ net.Receive( "LBR_InvUnload", function( _, ply )
 	LBR.InvSync( ply )
 	local w = layout( ply )[s]
 	if not IsValid( w ) or w:GetOwner() ~= ply then return end
-	local id = w:GetPrimaryAmmoType()
-	if id < 0 or w:GetMaxClip1() <= 0 then
-		LBR.Notify( ply, "This weapon has no ammo to unload", "bad", 2 )
+	if not LBR.UsesMagazines( w ) or w:Clip1() <= 0 then
+		LBR.Notify( ply, "This weapon has no rounds to unload", "bad", 2 )
 		return
 	end
-	local size, have = LBR.UnloadInfo( ply, w )
-	if have < size then
-		LBR.Notify( ply, "Not enough ammo for a full magazine (" .. have .. " / " .. size .. ")", "bad", 2 )
+	local color = LBR.ClipColorOf( w )
+	LBR.ClipSync( ply )
+	// only what fits under the limit of that color, the rest stays in the weapon
+	local size = math.max( w:GetMaxClip1(), 1 )
+	local rounds = math.min( w:Clip1(), math.floor( LBR.ClipRoom( ply, color ) * size + 0.0001 ) )
+	if rounds <= 0 then
+		LBR.Notify( ply, "Your " .. LBR.TierById[color].name .. " magazines are full (x" .. LBR.ClipMax( color ) .. ")", "bad", 2 )
 		return
 	end
-	local box = ents.Create( "lbr_ammo_box" )
-	if not IsValid( box ) then return end
-	// the reserve first, the rest from the magazine in the weapon
-	local fromReserve = math.min( ply:GetAmmoCount( id ), size )
-	if fromReserve > 0 then ply:RemoveAmmo( fromReserve, id ) end
-	if size > fromReserve then w:SetClip1( math.max( w:Clip1(), 0 ) - ( size - fromReserve ) ) end
-	box:SetPos( ply:GetShootPos() + ply:GetAimVector() * 20 )
-	box:SetAngles( Angle( 0, ply:EyeAngles().y, 0 ) )
-	box:SetAmmoID( id )
-	box:SetAmount( 1 )
-	box:Spawn()
-	local phys = box:GetPhysicsObject()
-	if IsValid( phys ) then phys:SetVelocity( ply:GetVelocity() + ply:GetAimVector() * 250 ) end
+	local n = rounds / size
+	w:SetClip1( w:Clip1() - rounds )
+	LBR.ClipAdd( ply, color, n )
+	LBR.ClipSync( ply )
 	ply:EmitSound( "items/ammo_pickup.wav", 60, 80 )
-	LBR.Notify( ply, "Unloaded a " .. box:GroupName() .. " (" .. size .. ")", "event", 2 )
+	local t = LBR.TierById[color]
+	LBR.Notify( ply, "Unloaded: +" .. LBR.ClipText( n ) .. " " .. ( t and t.name or "" ) .. " magazine", "event", 2 )
 end )
 
 net.Receive( "LBR_InvDrop", function( _, ply )

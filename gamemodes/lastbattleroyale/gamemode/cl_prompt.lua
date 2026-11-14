@@ -17,10 +17,12 @@ local colGold = Color( 255, 210, 70 )
 local colText = Color( 236, 239, 245 )
 local colBg = Color( 10, 14, 24, 190 )
 
-// Entities that do something on E but are not found by the generic rules
-local SPECIAL = {
-	ent_supplydrop_fix = { "OPEN", "Supply Drop" },
-}
+local function wepName( w )
+	if not IsValid( w ) then return "" end
+	local n = w.GetPrintName and w:GetPrintName() or w.PrintName or w:GetClass()
+	if isstring( n ) and string.sub( n, 1, 1 ) == "#" then n = language.GetPhrase( string.sub( n, 2 ) ) end
+	return n
+end
 
 local function niceName( ent )
 	local name = ent.PrintName
@@ -33,32 +35,55 @@ local function niceName( ent )
 	return name
 end
 
-// returns action, name or nil
+// returns action, name, name color (nil = gold), progress 0..1 (nil = none) or nil
 local function describe( lp, ent )
 	if not IsValid( ent ) or ent == lp or ent:IsPlayer() then return end
 	local class = ent:GetClass()
 
-	if SPECIAL[class] then return SPECIAL[class][1], SPECIAL[class][2] end
+	if class == "ent_supplydrop_fix" then
+		local p = ent.OpenProgress and ent:OpenProgress()
+		if p then
+			local who = ent:GetOpener()
+			return who == lp and "OPENING" or "BEING OPENED", "Supply Drop", nil, p
+		end
+		return "OPEN", "Supply Drop"
+	end
 
 	if class == "lbr_ammo_box" then
-		local label = ent:GroupName()
-		local w = ent:WeaponFor( lp )
-		if not IsValid( w ) then return "NO WEAPON FOR THIS AMMO", label end
-		// what you get: magazines of the weapon that takes it
-		return "TAKE AMMO", label .. " (+" .. ent:GetAmount() * math.max( w:GetMaxClip1(), 1 ) .. ")"
+		// one magazine per press (hold E for more), the last part with the last press
+		local t = ent:TierTable()
+		local room = LBR.ClipRoom( lp, ent:GetTier() )
+		if room < 0.0001 then return "FULL", ent:Label() .. "  (you: x" .. LBR.ClipText( LBR.ClipMax( ent:GetTier() ) ) .. ")", t and t.color end
+		return "TAKE x" .. LBR.ClipText( math.min( ent:NextTake(), room ) ), ent:Label(), t and t.color
+	end
+
+	if ent.LBR_AmmoKit then
+		// E opens the menu of the colors
+		return "CHOOSE MAGAZINES", niceName( ent ) .. "  (" .. ent:LeftText() .. " green)"
+	end
+
+	if ent.LBR_AttKit then
+		local w = lp:GetActiveWeapon()
+		return "USE", niceName( ent ) .. ( IsValid( w ) and ( " - " .. wepName( w ) ) or "" ), LBR.TierColor( w )
 	end
 
 	if ent:IsWeapon() then
 		if IsValid( ent:GetOwner() ) then return end
-		if lp:HasWeapon( class ) then return "TAKE AMMO", niceName( ent ) end
+		local col = LBR.TierColor( ent )
+		if lp:HasWeapon( class ) then return "TAKE AMMO", niceName( ent ), col end
 		if LBR.InvGet and not LBR.InvIsHands( ent ) then
 			local n = 0
 			for _, w in ipairs( lp:GetWeapons() ) do
 				if not LBR.InvIsHands( w ) then n = n + 1 end
 			end
-			if n >= LBR.INV_SLOTS then return "INVENTORY FULL, DROP SOMETHING", niceName( ent ) end
+			if n >= LBR.INV_SLOTS then
+				// full: hold E to swap with the weapon in hand (bar under the prompt)
+				local act = lp:GetActiveWeapon()
+				if not IsValid( act ) or LBR.InvIsHands( act ) then return "FULL: HOLD A WEAPON TO SWAP", niceName( ent ), col end
+				return "HOLD: SWAP " .. string.upper( wepName( act ) ) .. " FOR", niceName( ent ), col, nil, true
+			end
 		end
-		return "PICK UP", niceName( ent )
+		return "PICK UP", niceName( ent ), col
 	end
 
 	if ent:IsVehicle() or LBR.IsVehicleClass( class ) then
@@ -87,11 +112,12 @@ local function canPrompt( lp )
 	return true
 end
 
-local target, action, label
+local target, action, label, labelCol, canSwap
 local nextScan = 0
+local swapEnt, swapStart, swapSent
 
 local function scan( lp )
-	target, action, label = nil, nil, nil
+	target, action, label, labelCol, canSwap = nil, nil, nil, nil, nil
 	local eye = lp:EyePos()
 	local aim = lp:GetAimVector()
 
@@ -103,8 +129,8 @@ local function scan( lp )
 		mask = MASK_SHOT
 	} )
 	if IsValid( tr.Entity ) then
-		local a, n = describe( lp, tr.Entity )
-		if a then target, action, label = tr.Entity, a, n return end
+		local a, n, c, _, sw = describe( lp, tr.Entity )
+		if a then target, action, label, labelCol, canSwap = tr.Entity, a, n, c, sw return end
 	end
 
 	// 2) small loot near the crosshair (weapons on the ground are hard to aim at)
@@ -130,12 +156,13 @@ local function scan( lp )
 	end
 	if best then
 		target = best
-		action, label = describe( lp, best )
+		local _
+		action, label, labelCol, _, canSwap = describe( lp, best )
 	end
 end
 
 local alpha = 0
-local shownAction, shownLabel
+local shownAction, shownLabel, shownCol
 
 hook.Add( "HUDPaint", "LBR_InteractPrompt", function()
 	local lp = LocalPlayer()
@@ -148,9 +175,26 @@ hook.Add( "HUDPaint", "LBR_InteractPrompt", function()
 		scan( lp )
 	end
 
+	// swap: E held on the same weapon for LBR.SWAP_TIME, then the server does it
+	// one swap per press: E must be let go before the next one (the dropped weapon
+	// lands in front of you)
+	if not lp:KeyDown( IN_USE ) then swapSent = false end
+	if canSwap and IsValid( target ) and lp:KeyDown( IN_USE ) and not swapSent then
+		if swapEnt ~= target then swapEnt, swapStart = target, CurTime() end
+		if CurTime() - swapStart >= LBR.SWAP_TIME then
+			swapSent = true
+			swapEnt = nil
+			net.Start( "LBR_InvSwap" )
+			net.WriteEntity( target )
+			net.SendToServer()
+		end
+	else
+		swapEnt = nil
+	end
+
 	local show = IsValid( target ) and action ~= nil
 	alpha = math.Approach( alpha, show and 1 or 0, FrameTime() * 8 )
-	if show then shownAction, shownLabel = action, label end
+	if show then shownAction, shownLabel, shownCol = action, label, labelCol end
 	if alpha <= 0 or not shownAction then return end
 
 	local key = string.upper( input.LookupBinding( "+use" ) or "E" )
@@ -184,6 +228,22 @@ hook.Add( "HUDPaint", "LBR_InteractPrompt", function()
 	local tx = kx + boxW + pad
 	draw.SimpleText( act, "LBR_HUD_Small", tx, y + h / 2, Color( colText.r, colText.g, colText.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 	if name ~= "" then
-		draw.SimpleText( name, "LBR_HUD_Small", tx + aw + S( 8 ), y + h / 2, Color( colGold.r, colGold.g, colGold.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		local nc = shownCol or colGold
+		draw.SimpleText( name, "LBR_HUD_Small", tx + aw + S( 8 ), y + h / 2, Color( nc.r, nc.g, nc.b, a ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	end
+	if shownCol then
+		surface.SetDrawColor( shownCol.r, shownCol.g, shownCol.b, a )
+		surface.DrawRect( x, y + h - S( 2 ), w, S( 2 ) )
+	end
+
+	// opening bar (supply drop): progress read live from the entity; swap bar
+	local p = IsValid( target ) and target.OpenProgress and target:OpenProgress()
+	if swapEnt and swapEnt == target then p = math.min( ( CurTime() - swapStart ) / LBR.SWAP_TIME, 1 ) end
+	if p then
+		local by = y + h + S( 4 )
+		surface.SetDrawColor( colBg.r, colBg.g, colBg.b, colBg.a * alpha )
+		surface.DrawRect( x, by, w, S( 8 ) )
+		surface.SetDrawColor( colGold.r, colGold.g, colGold.b, a )
+		surface.DrawRect( x + S( 2 ), by + S( 2 ), math.floor( ( w - S( 4 ) ) * p ), S( 4 ) )
 	end
 end )

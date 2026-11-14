@@ -109,7 +109,15 @@ timer.Create("HurtAllPlayers", 0.36, 0, HurtPlayers)   -- tick interval in secon
 
 Open the map editor (`F8`), press `Q` and click **Loot and vehicles**:
 
-- the groups are on the left (rare weapons, weapons, pistols & grenades, items, ammo, cars, helicopters);
+- the groups are on the left: **green**, **blue** and **purple** weapons (the tiers), throwables, items,
+  ammo kits, attachment kits, cars, helicopters. A weapon is in one tier only: adding it to a tier takes
+  it out of the others. Any CW 2.0 or ArcCW weapon can go in a tier;
+- **damage %** (tiers and throwables): damage of that weapon, `100` = as the weapon pack made it
+  (the tooltip shows the base damage);
+- **Tiers and supply drop** (first button): the price of a magazine of each color in an ammo kit
+  (green 100%, blue 50%, purple 25% by default: a magazine costs 1 / 2 / 4 green ones, a medium kit =
+  10 green or 5 blue or 2.5 purple, mixed as the player likes), and the supply drop: opening time,
+  purple and blue weapons, chance that a blue one is purple, purple magazines, items that always come out;
 - **extra ammo** (weapons only): reserve ammo given when the weapon is picked up, on top of the
   loaded magazine (`0` = only the magazine, as before; the tooltip shows the ammo type);
 - untick an entry to disable it, change its **weight** to make it more or less likely (the *chance*
@@ -119,23 +127,28 @@ Open the map editor (`F8`), press `Q` and click **Loot and vehicles**:
 - **SAVE** writes `garrysmod/data/lastbattleroyale/loot.txt` on the server; it is used from the next round;
 - **RESET TO DEFAULT** deletes the file and goes back to the lists in `config.lua`.
 
-Without `loot.txt` nothing changes: the gamemode uses the `config.lua` tables below, exactly as before.
+Without `loot.txt` the gamemode uses the `config.lua` tables below. A version 1 file (old groups
+BETTERWEAPONS / WEAPONS / ADDITIONALWEAPONS, CW 2.0 kits) is converted when read.
 The file is the same on every map (how *many* items spawn is per map, see `weaponsc`).
 `lbr_loot_reload` (superadmin / server console) reloads the file after editing it by hand.
 
 ```json
 {
   "format": "lastbattleroyale-loot",
-  "version": 1,
+  "version": 2,
   "groups": {
-    "BETTERWEAPONS": [ { "class": "cw_ak74", "weight": 1, "on": true }, ... ],
-    "WEAPONS": [...], "ADDITIONALWEAPONS": [...], "ITEMS": [...], "AMMO": [...],
-    "CARS": [...], "HELI_RARE": [...], "HELI_VERYRARE": [...]
-  }
+    "GREEN": [ { "class": "cw_m1911", "weight": 1, "on": true, "ammo": 0, "damage": 100 }, ... ],
+    "BLUE": [...], "PURPLE": [...], "THROWABLES": [...], "ITEMS": [...], "AMMO": [...],
+    "ATTACHMENTS": [...], "CARS": [...], "HELI_RARE": [...], "HELI_VERYRARE": [...]
+  },
+  "tiers": { "green": 100, "blue": 50, "purple": 25 },
+  "supply": { "time": 5, "purple": 1, "blue": 1, "purple_chance": 50,
+              "items": [ "kevlar_armor", "sg_medkit_fix", "sg_adrenaline_fix", "lbr_ammo_medium" ] }
 }
 ```
 
-`ammo` (optional, 0–9999): extra reserve ammo on pickup.
+`ammo` (optional, 0–9999): extra reserve ammo on pickup. `damage` (optional, 1–1000): damage percent.
+`tiers`: percent of an ammo kit's magazines for each tier.
 `weight` 1–100: an entry with weight 2 is twice as likely as one with weight 1 (in the old lists that
 meant writing the class twice). `on: false` keeps the entry but never spawns it.
 
@@ -143,13 +156,27 @@ meant writing the class twice). `on: false` keeps the entry but never spawns it.
 
 ```lua
 ITEMS = {
-	BETTERWEAPONS     = { ... },  -- rare rifles, snipers, machine guns
-	WEAPONS           = { ... },  -- SMGs, shotguns, revolvers
-	ADDITIONALWEAPONS = { ... },  -- pistols, grenades, molotov
-	ITEMS             = { ... },  -- medkit, adrenaline, armor, ghillie, attachment packs
-	AMMO              = { ... }   -- CW 2.0 ammo kits
+	GREEN       = { ... },  -- pistols, simple SMGs
+	BLUE        = { ... },  -- assault rifles, good SMGs, shotguns
+	PURPLE      = { ... },  -- snipers, machine guns, special weapons
+	THROWABLES  = { ... },  -- grenades, molotov, mines
+	ITEMS       = { ... },  -- medkit, adrenaline, armor, ghillie
+	ATTACHMENTS = { ... },  -- lbr_attpack_small / medium / big (1 / 2 / 4 attachments)
+	AMMO        = { ... },  -- lbr_ammo_small / medium / big (6 / 10 / 24 green magazines)
 }
+TIERS = { green = 100, blue = 50, purple = 25 }   -- price of a magazine per color: 100 / percent green ones
+WEAPON_DAMAGE = { cw_l115 = 80 }                  -- damage percent per weapon class
+SUPPLY_DROP = { time = 5, purple = 1, blue = 1, purple_chance = 50, purple_clips = 2, items = { ... } }
 ```
+
+Ammo is three stores of magazines, one per color (green, blue, purple; weapons not in any tier use the
+green one). The reserve of a weapon is its store x its magazine size, reloading takes the part of a
+magazine you loaded (15 rounds of a 30 round M4 = 0.5). Every weapon with a magazine gets its own
+engine ammo type (`lbr_w_<class>`) for this.
+Each color has a limit, set in the server settings when you start a game: `lbr_clips_max_green`,
+`lbr_clips_max_blue`, `lbr_clips_max_purple` (10 / 8 / 6, `0` = no limit). Boxes and kits give only up to
+it, the rest stays in them.
+Weapons always spawn with no attachments.
 
 Each entry is an entity / weapon class name. A class listed more than once is more likely to be picked.
 To add a weapon from another pack, add its class name (shown in the spawn menu → right click → *Copy to clipboard*)
@@ -229,8 +256,10 @@ Categories: player spawns, lobby spawns, loot spawns, cars, helicopters, zone ce
 }
 ```
 
-`weaponsc` = items to spawn for BETTERWEAPONS, WEAPONS, ADDITIONALWEAPONS, ITEMS, AMMO, ATTACHMENTS
-(attachment kits). Without the 6th number a map gets one kit every 3 weapons.
+`weaponsc` = items to spawn for GREEN, BLUE, PURPLE, ITEMS, AMMO, ATTACHMENTS (attachment kits),
+THROWABLES. Without the 6th number a map gets one kit every 3 weapons. Configs without `"lootv": 2`
+(made before the tiers) are converted when loaded: 10% of the weapons become throwables, the rest
+50% green, 35% blue, 15% purple.
 
 Rules:
 
@@ -248,6 +277,28 @@ built-in files.
 ---
 
 ## 5. Classes
+
+### In game: Classes editor (recommended)
+
+Open the map editor (`F8`), press `Q` and click **Classes**: for every class you can change the name,
+the description shown in the F3 menu, health, armor at spawn, walk and run speed (percent of the server
+speed), the loadout (+ ADD WEAPON lists the installed weapons) and the levels needed in other classes
+to unlock it. **SAVE** writes `garrysmod/data/lastbattleroyale/classes.txt` (one file for every map);
+the changes are used from the next spawn. **RESET TO DEFAULT** deletes the file and goes back to the
+Lua files below. `lbr_classes_reload` (superadmin / server console) reloads the file after editing it by hand.
+
+```json
+{
+  "format": "lastbattleroyale-classes", "version": 1,
+  "classes": {
+    "class_soldier": { "name": "Soldier", "desc": "...", "health": 100, "armor": 0, "walk": 100, "run": 100,
+                       "loadout": [ "weapon_crowbar", "cw_p99", "cw_frag_grenade" ],
+                       "needs": [ { "class": "class_scout", "level": 25 } ] }
+  }
+}
+```
+
+### In Lua (defaults)
 
 Classes are listed in [`gamemode/classes.lua`](../gamemodes/lastbattleroyale/gamemode/classes.lua)
 and implemented in [`gamemode/player_class/`](../gamemodes/lastbattleroyale/gamemode/player_class/).

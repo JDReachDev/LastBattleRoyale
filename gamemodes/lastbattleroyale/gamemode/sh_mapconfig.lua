@@ -23,13 +23,29 @@ LBR.MapCategories = {
 	{ key = "supplydrops",          name = "Supply drops",    desc = "Airdrops, place them high in the sky", parent = "events", color = Color( 240, 240, 240 ), offset = 0, hull = "small", eye = true },
 }
 
-LBR.WeaponCountNames = { "Better weapons", "Weapons", "Additional weapons", "Items", "Ammo", "Attachment kits" }
-LBR.WeaponCountIcons = { "icon16/star.png", "icon16/gun.png", "icon16/bomb.png", "icon16/heart.png", "icon16/box.png", "icon16/wrench.png" }
+// loot numbers of a map (weaponsc): 1 green, 2 blue, 3 purple weapons, 4 items,
+// 5 ammo kits, 6 attachment kits, 7 throwables. tier = drawn as a box of the tier color.
+LBR.WeaponCountNames = { "Green weapons", "Blue weapons", "Purple weapons", "Items", "Ammo kits", "Attachment kits", "Throwables" }
+LBR.WeaponCountIcons = { "icon16/box.png", "icon16/box.png", "icon16/box.png", "icon16/heart.png", "icon16/box.png", "icon16/wrench.png", "icon16/bomb.png" }
+LBR.WeaponCountTiers = { "green", "blue", "purple" }
+LBR.LootCountVersion = 2
 
 // attachment kits of a map that does not set them (configs made before the 6th
 // number): one kit every 3 weapons
 function LBR.DefaultAttachmentKits( wc )
 	return math.Round( ( ( wc[1] or 0 ) + ( wc[2] or 0 ) + ( wc[3] or 0 ) ) / 3 )
+end
+
+// maps made before the tiers: 1 better, 2 weapons, 3 pistols and grenades.
+// Same number of weapons: 10% throwables, the rest 50% green, 35% blue, 15% purple
+function LBR.ConvertOldLootCounts( wc )
+	local total = ( wc[1] or 0 ) + ( wc[2] or 0 ) + ( wc[3] or 0 )
+	local throw = math.Round( total * 0.1 )
+	local rest = total - throw
+	local green = math.Round( rest * 0.5 )
+	local blue = math.Round( rest * 0.35 )
+	local out = { green, blue, rest - green - blue, wc[4] or 0, wc[5] or 0, wc[6], throw }
+	return out
 end
 
 LBR.DefaultPlayerModels = {
@@ -141,6 +157,11 @@ function LBR.SanitizeMapConfig( raw )
 
 	cfg.weaponsc = {}
 	local wc = istable( raw.weaponsc ) and raw.weaponsc or {}
+	if ( tonumber( raw.lootv ) or 1 ) < LBR.LootCountVersion then
+		if tonumber( wc[6] ) == nil then wc[6] = LBR.DefaultAttachmentKits( wc ) end
+		wc = LBR.ConvertOldLootCounts( wc )
+	end
+	cfg.lootv = LBR.LootCountVersion
 	for i = 1, #LBR.WeaponCountNames do
 		cfg.weaponsc[i] = math.Clamp( math.floor( tonumber( wc[i] ) or 0 ), 0, 1000 )
 	end
@@ -170,6 +191,7 @@ function LBR.MapConfigToJSON( cfg, map )
 		zone_radius = cfg.zone_radius,
 		zone_delay = cfg.zone_delay,
 		weaponsc = cfg.weaponsc,
+		lootv = LBR.LootCountVersion,
 		playermodels = cfg.playermodels
 	}
 	for _, cat in ipairs( LBR.MapCategories ) do
@@ -197,7 +219,7 @@ end
 // do not, when the positions are all taken they spawn next to other loot
 function LBR.CountWeapons( cfg )
 	local n = 0
-	for i = 1, 5 do n = n + ( ( cfg.weaponsc or {} )[i] or 0 ) end
+	for _, i in ipairs( { 1, 2, 3, 4, 5, 7 } ) do n = n + ( ( cfg.weaponsc or {} )[i] or 0 ) end
 	return n
 end
 
@@ -256,7 +278,7 @@ end
 // Entity classes used by the performance code (sv_perf.lua / cl_perf.lua / cl_zone.lua)
 ------------------------------------------------------------------------
 
-LBR.LootPrefixes = { "khr_", "cw_", "weapon_", "sg_", "kevlar_", "suit_", "rust_" }
+LBR.LootPrefixes = { "khr_", "cw_", "arccw_", "weapon_", "sg_", "kevlar_", "suit_", "rust_", "lbr_ammo_", "lbr_attpack_" }
 LBR.VehiclePrefixes = { "sent_sakarias_", "wac_" }
 
 local function hasPrefix( class, list )

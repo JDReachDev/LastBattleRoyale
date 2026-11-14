@@ -6,21 +6,27 @@ A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attach
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]Inventory[/b] (hold TAB): 4 equipment + 2 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, mouse wheel / number keys switch instantly. [b]Right click[/b]: drop a weapon or [b]unload a full magazine[/b] in an ammo box: anyone with a weapon of the same type (pistol / SMG, rifle, sniper, shotgun) takes it with E and gets one magazine of their own weapon
+[*][b]Weapon tiers[/b]: [b]green[/b] (pistols, simple SMGs), [b]blue[/b] (assault rifles, good SMGs, shotguns), [b]purple[/b] (snipers, machine guns, special weapons). The color is on the loot outline and beam, the E prompt, the inventory and the weapon bar. Weapons always spawn without attachments
+[*][b]Magazines by color[/b]: your ammo is three stores of magazines, green, blue and purple, shared by every weapon of that color (2.5 green magazines = 75 rounds for a green M4, 50 for a green SKS). Ammo kits open a menu: pick the colors you want (1 / 2 / 4 green each). When you die your magazines fall in one box per color
+[*][b]Attachment kits[/b] give attachments for the weapon in your hands
+[*][b]Supply drops[/b]: press E and stay close while the bar fills up, then purple / blue weapons, armor and medkits come out
+[*][b]CW 2.0[/b] weapons: put any weapon in a tier from the loot editor (ArcCW is not needed, a server can add ArcCW weapons too)
+[*][b]Classes editor[/b] (F8 > Q > Classes): health, armor, speed, loadout and unlock of every class
+[*][b]Inventory[/b] (hold TAB): 4 equipment + 2 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, mouse wheel / number keys switch instantly. [b]Right click[/b]: drop a weapon, [b]unload[/b] it into its magazines, drop magazines in a box anyone takes with E. Inventory full? [b]Hold E[/b] on a weapon to swap it with the one in your hands
 [*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen)
 [*][b]Attachments are loot[/b]: attachment kits have their own loot category, about one kit every 3 weapons (set per map in the editor). In the C menu the missing ones are red
 [*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 2 minutes before shrinking and always starts outside the map. Inside it your health regenerates up to 20
 [*][b]New HUD and menus[/b]: shield and health bars, compass with zone and teammates, squad panel, TAB menu with stats, F3 classes, F4 squad
 [*][b]Loot is easy to spot[/b]: outline and a small light beam on loot close by and in sight. The screen tells you what E does
-[*][b]Supply drops[/b] land only inside the safe zone
+[*]Supply drops land only inside the safe zone
 [*][b]Map vote[/b] at the end of the match, admins change level with F2
-[*][b]In-game map editor and loot editor[/b] (F8): set up any map and choose what spawns, no code needed
+[*][b]In-game map editor, loot editor and classes editor[/b] (F8): set up any map, choose what spawns (tiers, damage %, magazines per tier, supply drop contents) and edit the classes, no code needed
 [*][b]Much better performance on big maps[/b], safe spawns, settings renamed from lst_* to lbr_* (old names still work), many bug fixes
 [/list]
 
 [h2]Features[/h2]
 [list]
-[*]Random loot every round: CW 2.0 weapons, attachments, medkits, adrenaline, armor, ghillie suit, ammo
+[*]Random loot every round: CW 2.0 weapons in three tiers, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*]Vehicles: cars (SCars) and helicopters (WAC)
 [*]Events: supply airdrops, optional nuclear strike (20 s warning, red area on the map) and implosion when the zone closes (built in, no extra addons)
 [*]Squads of up to 4 players
@@ -65,9 +71,9 @@ As admin between rounds press [b]F8[/b]: you fly around and see every point alre
 [*][b]Left click[/b] place / [b]Right click[/b] remove - [b]Wheel / 1-8[/b] category (player spawns, lobby, loot, cars, helicopters, zone centers, nuke targets, supply drops)
 [*][b]R[/b] at aim / at your position - [b]E[/b] next point - [b]Z[/b] undo - [b]WASD[/b] fly, [b]SHIFT[/b] faster, [b]CTRL[/b] slower
 [*][b]M[/b] map from above with every point: wheel / 0-8 all or one category, left click flies there, right click removes
-[*][b]Q[/b] menu: save, zone size and delay, loot amount, player models, copy / import, [b]Loot and vehicles[/b]
+[*][b]Q[/b] menu: save, zone size and delay, loot amount per tier, player models, copy / import, [b]Loot and vehicles[/b], [b]Classes[/b]
 [/list]
-Configs are in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share them, drop one there and the map is ready. Loot tables: [b]garrysmod/data/lastbattleroyale/loot.txt[/b].
+Configs are in [b]garrysmod/data/lastbattleroyale/maps/<mapname>.txt[/b]: share them, drop one there and the map is ready. Loot tables: [b]garrysmod/data/lastbattleroyale/loot.txt[/b], classes: [b]classes.txt[/b] (the same for every map).
 
 [h2]Server settings[/h2]
 [list]
