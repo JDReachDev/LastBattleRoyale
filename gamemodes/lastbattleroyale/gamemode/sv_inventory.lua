@@ -137,6 +137,8 @@ function LBR.DropWeapon( ply, wep, noSelect )
 	// The ammo taken goes with the dropped one (LBR_Charges, given back exactly on
 	// pickup, see init.lua): a medkit with 2 charges left is 2 charges on the
 	// ground, not 0 and not a full new one
+	// One kit at a time: with more left (3 adrenaline shots, 2 medkits) the item
+	// stays in the hands with the rest (it was stripped, the rest was lost from view)
 	if wep:GetMaxClip1() <= 0 then
 		local id = wep:GetPrimaryAmmoType()
 		if id and id >= 0 then
@@ -147,6 +149,10 @@ function LBR.DropWeapon( ply, wep, noSelect )
 			if IsValid( ent ) then
 				ent.LBR_Charges = moved
 				if moved <= 0 then ent:Remove() end // empty: nothing to drop
+			end
+			if ply:GetAmmoCount( id ) > 0 then
+				syncSoon( ply )
+				return true
 			end
 		end
 	end
