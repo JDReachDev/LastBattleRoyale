@@ -35,6 +35,19 @@ local function niceName( ent )
 	return name
 end
 
+// CW 2.0 ammo boxes draw a sign over them in the opaque pass: leaves and other
+// see-through things behind it are drawn on top of it. Only the model here, the
+// E prompt shows what the sign said.
+local function cwAmmoModelOnly( ent )
+	if IsValid( ent ) and string.sub( ent:GetClass(), 1, 8 ) == "cw_ammo_" then
+		ent.Draw = function( self ) self:DrawModel() end
+	end
+end
+hook.Add( "OnEntityCreated", "LBR_CWAmmoNoSign", function( ent )
+	timer.Simple( 0, function() cwAmmoModelOnly( ent ) end ) // the class is not always ready on the same frame
+end )
+for _, ent in ipairs( ents.GetAll() ) do cwAmmoModelOnly( ent ) end // lua refresh
+
 // returns action, name, name color (nil = gold), progress 0..1 (nil = none) or nil
 local function describe( lp, ent )
 	if not IsValid( ent ) or ent == lp or ent:IsPlayer() then return end
@@ -60,6 +73,12 @@ local function describe( lp, ent )
 	if ent.LBR_AmmoKit then
 		// E opens the menu of the colors
 		return "CHOOSE MAGAZINES", niceName( ent ) .. "  (" .. ent:LeftText() .. " green)"
+	end
+
+	// CW 2.0 ammo boxes (frag grenades...): their floating sign is off (below), the
+	// prompt says what is left
+	if string.sub( class, 1, 8 ) == "cw_ammo_" and ent.dt and ent.dt.ammoCharge then
+		return "USE", niceName( ent ) .. "  (" .. ent.dt.ammoCharge .. " left)"
 	end
 
 	if ent.LBR_AttKit then
