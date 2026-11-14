@@ -123,9 +123,11 @@ if CLIENT then
 		surface.SetDrawColor( 0, 0, 0, alpha * 0.75 )
 		surface.DrawPoly( quad( cx, ihw, it, ib, ty( it ), ty( ib ) ) )
 		if fill > 0 then
-			// the fill touches the frame (no thin dark line between them)
-			local fhw = ihw
-			local ft, fb = it, ib
+			// a dark gap from the frame (thick enough to read, grows with the icon),
+			// so a full one still reads as a magazine
+			local gap = math.max( math.floor( size * 0.07 ), 2 )
+			local function fhw( t ) return math.max( ihw( t ) - gap, 1 ) end
+			local ft, fb = it + gap / ( bot - top ), ib - gap / ( bot - top )
 			local tf = fb - ( fb - ft ) * fill
 			surface.SetDrawColor( c.r, c.g, c.b, alpha )
 			surface.DrawPoly( quad( cx, fhw, tf, fb, ty( tf ), ty( fb ) ) )
