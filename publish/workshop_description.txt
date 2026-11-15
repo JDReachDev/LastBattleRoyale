@@ -6,28 +6,27 @@ A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attach
 
 [h2]What's new in 2.0[/h2]
 [list]
-[*][b]Weapon tiers[/b]: [b]green[/b] (pistols, simple SMGs), [b]blue[/b] (assault rifles, good SMGs, shotguns), [b]purple[/b] (snipers, machine guns, special weapons). The color is on the loot outline and beam, the E prompt, the inventory and the weapon bar. [b]Purple weapons come with an attachment[/b]
+[*][b]Weapon tiers[/b]: [b]green[/b] (pistols, simple SMGs), [b]blue[/b] (assault rifles, good SMGs, shotguns), [b]purple[/b] (snipers, machine guns, special weapons). The color shows on loot, E prompt, inventory and weapon bar. [b]Purple weapons come with an attachment[/b]
 [*][b]Magazines by color[/b]: your ammo is three stores of magazines, green, blue and purple, shared by every weapon of that color (2.5 green magazines = 75 rounds for a green M4, 50 for a green SKS). Up to 10 / 8 / 6. Ammo kits open a menu: pick the colors you want (1 / 2 / 4 green each). When you die your magazines fall in one box per color
-[*][b]Attachment kits[/b] give attachments for the weapon in your hands
 [*][b]Supply drops[/b] land in the safe zone: press E and stay close while the bar fills up for purple / blue weapons, armor and medkits
-[*][b]CW 2.0[/b] weapons: put any weapon in a tier from the loot editor (ArcCW is not needed, a server can add ArcCW weapons too)
+[*][b]CW 2.0[/b] weapons: put any weapon in a tier from the loot editor (ArcCW weapons can be added too)
 [*][b]Classes editor[/b] (F8 > Q > Classes): health, armor, speed, loadout and unlock of every class
 [*][b]Inventory[/b] (hold TAB): 4 equipment + 2 backpack slots (server: 1-6 + 0-6), weapon icons and ammo. Drag to move, [b]drag out to drop[/b]. [b]Right click[/b]: [b]unload[/b] a weapon into its magazines or drop it, drop magazines in a box anyone takes with E. Inventory full? [b]Hold E[/b] on a weapon to swap it with the one in your hands
-[*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen), or [b]middle mouse[/b] in game where you look
-[*][b]Attachments are loot[/b]: attachment kits have their own loot category, about one kit every 3 weapons (set per map in the editor). In the C menu the missing ones are red
-[*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 1 minute before shrinking and always starts outside the map. Outside it the damage grows as it closes, inside it your health regenerates up to 20
+[*][b]Map (M)[/b]: the whole map from above with an A-H / 1-8 grid, you and your squad, the safe zone and its timer, supply drops, nuke target. Click to place a marker for your squad (also on compass and screen)
+[*][b]Attachments are loot[/b]: attachment kits (for the weapon in your hands) have their own loot category, about one kit every 3 weapons. In the C menu the missing ones are red
+[*][b]New zone[/b]: a glowing wall with a storm effect outside. It waits 1 minute before shrinking and always starts outside the map. Outside, damage grows as it closes; inside, health regenerates up to 20
 [*][b]New HUD and menus[/b]: shield and health bars, compass with teammates, squad panel, TAB menu with stats, kill feed, F3 classes, F4 squad
 [*][b]Loot is easy to spot[/b]: outline and a small light beam on loot close by and in sight. The screen tells you what E does
 [*][b]Map vote[/b] at the end of the match, admins change level with F2
 [*][b]In-game map editor, loot editor and classes editor[/b] (F8): set up any map (several admins together, live), choose what spawns (tiers, damage %, magazines per tier, supply drop contents) and edit the classes, no code needed
-[*][b]Much better performance on big maps[/b], safe spawns, settings renamed from lst_* to lbr_* (old names still work), many bug fixes
+[*][b]Much better performance on big maps[/b], safe spawns, settings renamed lst_* to lbr_* (old names still work), many bug fixes
 [/list]
 
 [h2]Features[/h2]
 [list]
 [*]Random loot every round: CW 2.0 weapons in three tiers, attachments, medkits, adrenaline, armor, ghillie suit, ammo
 [*]Vehicles: cars (SCars) and helicopters (WAC)
-[*]Events: supply airdrops, optional nuclear strike (20 s warning, red area on the map, take cover inside a building) and implosion when the zone closes (built in, no extra addons)
+[*]Events: supply airdrops, optional nuclear strike (20 s warning, red area on the map, take cover indoors) and implosion when the zone closes (built in, no extra addons)
 [*]Squads of up to 4 players
 [*]Classes with their own loadout, unlocked by levelling up
 [/list]
@@ -51,7 +50,7 @@ Kills and wins give EXP to your class: level up to unlock new classes. Dead play
 [*][b]Q[/b] - drop your active weapon
 [*][b]C[/b] - CW 2.0 attachments: press the category number to mount the ones you found
 [*][b]E (hold) + Left Click[/b] - throw grenades
-[*][b]F3[/b] class menu / [b]F4[/b] squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite, or right click a player in TAB to invite)
+[*][b]F3[/b] class menu / [b]F4[/b] squad menu ([b]F6[/b] decline / [b]F7[/b] accept an invite, or right click a player in TAB)
 [*][b]F2[/b] / [b]F8[/b] / [b]!start[/b] - [i]admins:[/i] change level / map editor / start now (even alone)
 [/list]
 
