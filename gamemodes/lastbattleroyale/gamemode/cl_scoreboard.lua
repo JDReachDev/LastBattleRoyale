@@ -80,6 +80,16 @@ local Board
 local function playerMenu( ply )
 	if not IsValid( ply ) then return end
 	local m = DermaMenu()
+	// same request as the INVITE button of the F4 squad menu (the server says why when it can't be sent)
+	if ply ~= LocalPlayer() and ply:Team() ~= TEAM_SPEC and not isMate( ply ) then
+		m:AddOption( "Invite to squad", function()
+			if not IsValid( ply ) then return end
+			net.Start( "SendTeamRequest" )
+				net.WriteString( ply:Nick() )
+			net.SendToServer()
+		end ):SetIcon( "icon16/group_add.png" )
+		m:AddSpacer()
+	end
 	if ply ~= LocalPlayer() and not ply:IsBot() then
 		m:AddOption( ply:IsMuted() and "Unmute" or "Mute", function()
 			if IsValid( ply ) then ply:SetMuted( not ply:IsMuted() ) end

@@ -303,6 +303,7 @@ net.Receive( "SendTeamRequest", function( len, ply )
 		requestedlast = CurTime() + 15,
 		requestedplayer = gotplayer
 	})
+	LBR.Chat( ply, "Squad invite sent to " .. gotplayer:Nick() .. ".", "squad" )
 	print(ply:Nick() .. "'s request sent to " .. gotplayer:Nick())
 end)
 

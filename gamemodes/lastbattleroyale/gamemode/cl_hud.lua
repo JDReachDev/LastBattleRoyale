@@ -433,12 +433,95 @@ local function drawInfo( lp, ply )
 	infoBottom, infoFrame = y, FrameNumber()
 end
 
-// kill feed (GMod's death notices): under the boxes above, not on top of them
-function GM:DrawDeathNotice( x, y )
-	if infoBottom and FrameNumber() - ( infoFrame or 0 ) < 5 then
-		y = math.max( y, ( infoBottom + S( 6 ) ) / ScrH() )
+------------------------------------------------------------------------
+// Kill feed: small flat rows in the HUD style, top right under the boxes above
+// (replaces GMod's big death notices with kill icons)
+------------------------------------------------------------------------
+
+local FEED_LIFE, FEED_FADE, FEED_MAX = 6, 0.5, 5
+local feed = {}
+local colFeedMe = Color( 255, 210, 70 )
+local colFeedMate = Color( 120, 255, 150 )
+
+// what killed: the weapon's name, or nothing (world, zone, fall...)
+local function inflictorName( cls )
+	if not cls or cls == "" or cls == "worldspawn" or cls == "player" then return nil end
+	local w = weapons.Get( cls )
+	if w and w.PrintName and w.PrintName ~= "" then return language.GetPhrase( w.PrintName ) end
+	local phrase = language.GetPhrase( cls )
+	if phrase ~= cls then return phrase end
+	return nil
+end
+
+function GM:AddDeathNotice( attacker, attackerTeam, inflictor, victim, victimTeam, flags )
+	flags = flags or 0
+	local e = {
+		time = CurTime(),
+		victim = victim,
+		weapon = inflictorName( inflictor ),
+		headshot = bit.band( flags, 4 ) ~= 0,
+		victimMate = bit.band( flags, 1 ) ~= 0,
+		attackerMate = bit.band( flags, 2 ) ~= 0,
+	}
+	if attacker and attacker ~= "" and attacker ~= victim then e.attacker = attacker end
+	table.insert( feed, 1, e )
+	while #feed > FEED_MAX do table.remove( feed ) end
+end
+
+local function feedName( name, mate )
+	local lp = LocalPlayer()
+	if IsValid( lp ) and name == lp:Nick() then return colFeedMe end
+	if mate then return colFeedMate end
+	return colWhite
+end
+
+function GM:DrawDeathNotice()
+	if #feed == 0 then return end
+	local now = CurTime()
+	local x = ScrW() - S( 24 )
+	local y = S( 20 )
+	if infoBottom and FrameNumber() - ( infoFrame or 0 ) < 5 then y = infoBottom end
+	local h, gap, pad = S( 22 ), S( 4 ), S( 8 )
+	local lp = LocalPlayer()
+	local myNick = IsValid( lp ) and lp:Nick() or nil
+	surface.SetFont( "LBR_HUD_Tiny" )
+
+	for i = #feed, 1, -1 do
+		if now - feed[i].time > FEED_LIFE then table.remove( feed, i ) end
 	end
-	return self.BaseClass.DrawDeathNotice( self, x, y )
+
+	for _, e in ipairs( feed ) do
+		local a = math.Clamp( ( FEED_LIFE - ( now - e.time ) ) / FEED_FADE, 0, 1 )
+		local mid = e.weapon and ( "  " .. string.upper( e.weapon ) .. ( e.headshot and "  HS" or "" ) .. "  " ) or ( e.attacker and "  " or "" )
+		local aw = e.attacker and surface.GetTextSize( e.attacker ) or 0
+		local mw = surface.GetTextSize( mid )
+		local vw = surface.GetTextSize( e.victim or "" )
+		local sk = S( 12 )
+		local w = pad + aw + mw + sk + S( 4 ) + vw + pad
+
+		local mine = myNick and ( e.attacker == myNick or e.victim == myNick )
+		surface.SetAlphaMultiplier( a )
+		surface.SetDrawColor( colBg )
+		surface.DrawRect( x - w, y, w, h )
+		surface.SetDrawColor( mine and colGold or colDim )
+		surface.DrawRect( x - w, y, S( 2 ), h )
+
+		local cx, cy = x - w + pad, y + h / 2
+		if e.attacker then
+			ptext( e.attacker, "LBR_HUD_Tiny", cx, cy, feedName( e.attacker, e.attackerMate ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+			cx = cx + aw
+		end
+		ptext( mid, "LBR_HUD_Tiny", cx, cy, colDim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		cx = cx + mw
+		surface.SetDrawColor( colWarn )
+		surface.SetMaterial( matSkull )
+		surface.DrawTexturedRect( cx, cy - sk / 2, sk, sk )
+		cx = cx + sk + S( 4 )
+		ptext( e.victim or "", "LBR_HUD_Tiny", cx, cy, feedName( e.victim, e.victimMate ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+		surface.SetAlphaMultiplier( 1 )
+
+		y = y + h + gap
+	end
 end
 
 ------------------------------------------------------------------------
