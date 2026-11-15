@@ -271,6 +271,8 @@ end
 // the mouse cursor is on while the map is open (to place the squad marker)
 function Map.Toggle( state )
 	if state == nil then state = not Map.open end
+	// a window is open (editor menu, loot, classes, vote...): the map would cover it
+	if state and UI.AnyFrameOpen() then return end
 	if state == Map.open then return end
 	Map.open = state
 	Map.edMode = state and LBR.Editor and LBR.Editor.active or false
@@ -308,6 +310,10 @@ hook.Add( "Think", "LBR_MapKey", function()
 	if Map.open then
 		// opened in the editor and the editor closed, or the other way round
 		if Map.edMode ~= ( LBR.Editor and LBR.Editor.active or false ) then
+			Map.Toggle( false )
+		elseif UI.AnyFrameOpen() then
+			// a window opened over the map (Q in the editor, F3, vote...): the map is
+			// drawn over every panel and would hide it and keep the keys
 			Map.Toggle( false )
 		elseif not vgui.CursorVisible() and not gui.IsGameUIVisible() then
 			gui.EnableScreenClicker( true ) // the TAB menu turned it off when it closed

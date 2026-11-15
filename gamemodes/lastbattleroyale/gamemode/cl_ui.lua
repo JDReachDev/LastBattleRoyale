@@ -133,7 +133,19 @@ function UI.Frame( w, h, title, sub )
 
 	f:MakePopup()
 	f:SetKeyboardInputEnabled( false ) // keys (F3/F4 again, movement) keep working
+	UI.frames[f] = true
 	return f
+end
+
+// open windows: the map (M) is drawn over every panel, so it closes when one opens
+// and does not open while one is open (cl_map.lua)
+UI.frames = UI.frames or setmetatable( {}, { __mode = "k" } )
+function UI.AnyFrameOpen()
+	for f in pairs( UI.frames ) do
+		if IsValid( f ) and f:IsVisible() then return true end
+		UI.frames[f] = nil
+	end
+	return false
 end
 
 // Scroll panel with a slim scrollbar
