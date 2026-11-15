@@ -251,10 +251,39 @@ local function squadOf( ply )
 	return out
 end
 
+// sends ply's squad marker (nil pos removes it) to ply and his squad
+local function sendPing( ply, pos )
+	net.Start( "LBR_MapPing" )
+		net.WriteString( ply:SteamID64() or "" )
+		net.WriteBool( pos ~= nil )
+		if pos then net.WriteVector( pos ) end
+	net.Send( squadOf( ply ) )
+end
+
+local function pingReady( ply )
+	if ( ply.LBR_PingNext or 0 ) > CurTime() then return false end
+	ply.LBR_PingNext = CurTime() + 0.25
+	return true
+end
+
+// squad marker in game (middle mouse / lbr_ping): where the player looks
+util.AddNetworkString( "LBR_WorldPing" )
+net.Receive( "LBR_WorldPing", function( len, ply )
+	if not ply:Alive() or not pingReady( ply ) then return end
+	local start = ply:EyePos()
+	local tr = util.TraceLine( {
+		start = start,
+		endpos = start + ply:GetAimVector() * 30000,
+		filter = ply,
+		mask = MASK_SHOT,
+	} )
+	if not tr.Hit or tr.HitSky then return end
+	sendPing( ply, tr.HitPos )
+end )
+
 // squad marker: left click on the map sets it, right click removes it
 net.Receive( "LBR_MapPing", function( len, ply )
-	if ( ply.LBR_PingNext or 0 ) > CurTime() then return end
-	ply.LBR_PingNext = CurTime() + 0.25
+	if not pingReady( ply ) then return end
 	local set = net.ReadBool()
 	local pos
 	if set then
@@ -267,11 +296,7 @@ net.Receive( "LBR_MapPing", function( len, ply )
 		local z = ( tr.Hit and not tr.StartSolid ) and tr.HitPos.z or ply:GetPos().z
 		pos = Vector( x, y, z )
 	end
-	net.Start( "LBR_MapPing" )
-		net.WriteString( ply:SteamID64() or "" )
-		net.WriteBool( pos ~= nil )
-		if pos then net.WriteVector( pos ) end
-	net.Send( squadOf( ply ) )
+	sendPing( ply, pos )
 end )
 
 // where a teammate fell

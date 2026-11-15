@@ -1,7 +1,7 @@
 // Map (M, or the MAP button in the TAB menu): the map seen from above with you,
 // your squad, the safe zone, supply drops, the nuke target, where teammates fell and
-// the squad markers (left click on the map sets yours, right click removes it; they
-// also show on the compass and on screen).
+// the squad markers (left click on the map sets yours, right click removes it, middle
+// mouse in game puts it where you look; they also show on the compass and on screen).
 //
 // The picture is rendered only once (the first time the map is opened, and again
 // only if the map area changes) into a texture: an orthographic camera above the
@@ -354,6 +354,26 @@ hook.Add( "GUIMousePressed", "LBR_MapPing", function( code )
 	end
 end )
 
+// in game: middle mouse (or a key bound to lbr_ping) puts the marker where you look;
+// the server traces from your eyes, a new ping moves the old one
+local function worldPing()
+	local lp = LocalPlayer()
+	if not IsValid( lp ) or not lp:Alive() or Map.open then return end
+	net.Start( "LBR_WorldPing" )
+	net.SendToServer()
+end
+concommand.Add( "lbr_ping", worldPing )
+
+local midWasDown = false
+hook.Add( "Think", "LBR_WorldPing", function()
+	local down = input.IsMouseDown( MOUSE_MIDDLE )
+	if down and not midWasDown and not typing and not vgui.CursorVisible()
+		and not gui.IsGameUIVisible() and not gui.IsConsoleVisible() then
+		worldPing()
+	end
+	midWasDown = down
+end )
+
 local function mateInfo( sid, lp )
 	local pl = player.GetBySteamID64( sid )
 	if IsValid( pl ) then
@@ -698,7 +718,7 @@ local function drawMap()
 	label( ED and "MAP EDITOR" or "MAP", "LBR_UI_Head", mx, my - S( 50 ), ED and C.accent or C.text, TEXT_ALIGN_LEFT )
 	label( string.upper( game.GetMap() ), "LBR_UI_Tiny", mx + mw, my - S( 44 ), C.dim, TEXT_ALIGN_RIGHT )
 	label( ED and "WHEEL / 0-8  categories      LEFT CLICK  fly there      RIGHT CLICK  remove point      M  close"
-		or "LEFT CLICK  marker      RIGHT CLICK  remove      M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
+		or "LEFT CLICK  marker      RIGHT CLICK  remove      MIDDLE MOUSE in game  marker where you look      M  close", "LBR_UI_Tiny", mx + mw, my + mh + S( 14 ), C.dim, TEXT_ALIGN_RIGHT )
 	Map.layout = nil
 	Map.edHover = nil
 	Map.edRows = nil
