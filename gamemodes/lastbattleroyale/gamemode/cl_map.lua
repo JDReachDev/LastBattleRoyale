@@ -138,8 +138,21 @@ local function build()
 	// the near plane starts just under the sky ceiling so the sky does not cover the map
 	// and above the outermost sky (a sky above the sky: between them it is inside a
 	// leaf of the map, drawn only from there: rp_ineu_pass_v1e almost all black)
-	local camZ = math.max( skyZ + 1024, GetGlobalFloat( "LBR_SkyTop", 0 ) + 256 )
-	local origin = Vector( ( mins.x + maxs.x ) / 2, ( mins.y + maxs.y ) / 2, camZ )
+	// The camera must be in the void out of the map (solid): there the engine draws
+	// everything. Climbs from the sky ceiling to the first solid point. The outer sky
+	// from the server is only the fallback: on some maps (gm_rudmerge) the 3D skybox
+	// room sits right above the map and counts as a sky above the sky, the camera
+	// ended up inside it and drew only that room (map all black).
+	local cx, cy = ( mins.x + maxs.x ) / 2, ( mins.y + maxs.y ) / 2
+	local camZ
+	for z = skyZ + 256, 16000, 128 do
+		if bit.band( util.PointContents( Vector( cx, cy, z ) ), CONTENTS_SOLID ) ~= 0 then
+			camZ = z
+			break
+		end
+	end
+	camZ = camZ or math.max( skyZ + 1024, GetGlobalFloat( "LBR_SkyTop", 0 ) + 256 )
+	local origin = Vector( cx, cy, camZ )
 
 	LBR.MapRendering = true
 	render.PushRenderTarget( rt )

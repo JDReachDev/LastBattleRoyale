@@ -92,6 +92,7 @@ Collection: **[Last Battle Royale Supported Maps](https://steamcommunity.com/wor
 | `gm_valley` | Big map |
 | `rp_ineu_pass_v1e` | |
 | `rp_unioncity` | City |
+| `rp_unioncity_day` | Same as rp_unioncity, in daylight |
 | `gm_boreas` | |
 
 Any other map can be configured in game: join as admin, press `F8`, place the points and save —

@@ -2491,5 +2491,8 @@ MAPCONFIG = {
 	}
 }
 
+// same map in daylight: same layout, same config
+MAPCONFIG.rp_unioncity_day = table.Copy( MAPCONFIG.rp_unioncity )
+
 
 
