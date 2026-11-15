@@ -134,45 +134,94 @@ local function build()
 	// square view around the map area; the map rectangle is cut out of it when drawn
 	local half = math.max( maxs.x - mins.x, maxs.y - mins.y ) / 2
 	local skyZ = maxs.z
-	// above the sky (outside the map the engine draws everything, no visibility culling);
-	// the near plane starts just under the sky ceiling so the sky does not cover the map
-	// and above the outermost sky (a sky above the sky: between them it is inside a
-	// leaf of the map, drawn only from there: rp_ineu_pass_v1e almost all black)
-	// The camera must be in the void out of the map (solid): there the engine draws
-	// everything. Climbs from the sky ceiling to the first solid point. The outer sky
-	// from the server is only the fallback: on some maps (gm_rudmerge) the 3D skybox
-	// room sits right above the map and counts as a sky above the sky, the camera
-	// ended up inside it and drew only that room (map all black).
 	local cx, cy = ( mins.x + maxs.x ) / 2, ( mins.y + maxs.y ) / 2
-	local camZ
-	for z = skyZ + 256, 16000, 128 do
-		if bit.band( util.PointContents( Vector( cx, cy, z ) ), CONTENTS_SOLID ) ~= 0 then
-			camZ = z
-			break
-		end
-	end
-	camZ = camZ or math.max( skyZ + 1024, GetGlobalFloat( "LBR_SkyTop", 0 ) + 256 )
-	local origin = Vector( cx, cy, camZ )
 
+	// Where the camera goes. It must be above the sky (the near plane starts just
+	// under the sky ceiling, so the sky does not cover the map) and in the void out of
+	// the map (solid): there the engine draws everything. Inside a room of the map it
+	// draws only what is visible from that room, and the picture comes out black.
+	// Maps hide rooms above the sky (rp_ineu_pass_v1e: a second sky above the sky,
+	// gm_rudmerge: the 3D skybox room right above the map), so there is no single
+	// right height: every solid stretch of the column above the map center is a
+	// candidate, plus the outer sky found by the server, and each picture is checked.
+	local candidates, seen = {}, {}
+	local function add( z )
+		z = math.Clamp( math.floor( z ), skyZ + 64, 16300 )
+		if seen[z] then return end
+		seen[z] = true
+		candidates[#candidates + 1] = z
+	end
+	local wasSolid = false
+	for z = skyZ + 128, 16300, 64 do
+		local solid = bit.band( util.PointContents( Vector( cx, cy, z ) ), CONTENTS_SOLID ) ~= 0
+		if solid and not wasSolid then add( z + 32 ) end // start of a solid stretch
+		wasSolid = solid
+		if #candidates >= 4 then break end
+	end
+	add( math.max( skyZ + 1024, GetGlobalFloat( "LBR_SkyTop", 0 ) + 256 ) )
+	add( skyZ + 1024 )
+
+	// how much of the map area is drawn: share of sampled pixels that are not the
+	// clear color (an empty picture is all clear color)
+	local CLEAR = { 18, 22, 30 }
+	local function filled()
+		render.CapturePixels()
+		local n, hit = 0, 0
+		local SAMPLES = 24
+		for i = 0, SAMPLES - 1 do
+			local x = mins.x + ( maxs.x - mins.x ) * ( i + 0.5 ) / SAMPLES
+			local u = math.floor( ( x - ( cx - half ) ) / ( 2 * half ) * RT_SIZE )
+			for j = 0, SAMPLES - 1 do
+				local y = mins.y + ( maxs.y - mins.y ) * ( j + 0.5 ) / SAMPLES
+				local v = math.floor( ( ( cy + half ) - y ) / ( 2 * half ) * RT_SIZE )
+				local r, g, b = render.ReadPixel( math.Clamp( u, 0, RT_SIZE - 1 ), math.Clamp( v, 0, RT_SIZE - 1 ) )
+				n = n + 1
+				if math.abs( r - CLEAR[1] ) + math.abs( g - CLEAR[2] ) + math.abs( b - CLEAR[3] ) > 6 then hit = hit + 1 end
+			end
+		end
+		return hit / math.max( n, 1 )
+	end
+
+	local function shoot( camZ )
+		render.Clear( CLEAR[1], CLEAR[2], CLEAR[3], 255, true, true )
+		render.RenderView( {
+			origin = Vector( cx, cy, camZ ),
+			angles = Angle( 90, 90, 0 ), // looking down, north (+y) up, east (+x) right
+			x = 0, y = 0, w = RT_SIZE, h = RT_SIZE,
+			aspect = 1,
+			ortho = { left = -half, right = half, top = -half, bottom = half },
+			znear = camZ - skyZ + 24,
+			zfar = camZ - mins.z + 4000,
+			drawhud = false, drawviewmodel = false, drawmonitors = false,
+			dopostprocess = false, bloomtone = false,
+		} )
+	end
+
+	// first picture that shows most of the map wins, else the best one
 	LBR.MapRendering = true
 	render.PushRenderTarget( rt )
-	render.Clear( 18, 22, 30, 255, true, true )
-	render.RenderView( {
-		origin = origin,
-		angles = Angle( 90, 90, 0 ), // looking down, north (+y) up, east (+x) right
-		x = 0, y = 0, w = RT_SIZE, h = RT_SIZE,
-		aspect = 1,
-		ortho = { left = -half, right = half, top = -half, bottom = half },
-		znear = camZ - skyZ + 24,
-		zfar = camZ - mins.z + 4000,
-		drawhud = false, drawviewmodel = false, drawmonitors = false,
-		dopostprocess = false, bloomtone = false,
-	} )
+	local bestZ, bestFill, lastZ = nil, -1, nil
+	local tried = {}
+	for _, z in ipairs( candidates ) do
+		shoot( z )
+		lastZ = z
+		local f = filled()
+		tried[#tried + 1] = string.format( "%d=%d%%", z, f * 100 )
+		if f > bestFill then bestZ, bestFill = z, f end
+		if f >= 0.5 then break end
+	end
+	if bestZ and bestZ ~= lastZ then shoot( bestZ ) end
 	render.PopRenderTarget()
 	LBR.MapRendering = false
 
+	LBR.MapPictureInfo = string.format( "map picture: camera z %d, %d%% of the map drawn (sky %d, tried %s)",
+		bestZ or 0, math.max( bestFill, 0 ) * 100, skyZ, table.concat( tried, " " ) )
+	if bestFill < 0.5 then print( "[LBR] " .. LBR.MapPictureInfo ) end
+
 	builtSig = boundsSig( mins, maxs )
 end
+
+concommand.Add( "lbr_map_picture_info", function() print( "[LBR] " .. ( LBR.MapPictureInfo or "map picture not made yet (open the map with M)" ) ) end )
 
 // render outside the main view, right after a frame
 hook.Add( "PostRender", "LBR_MapBuild", function()
