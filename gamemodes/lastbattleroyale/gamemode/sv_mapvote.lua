@@ -15,6 +15,15 @@ local cvRounds = CreateConVar( "lbr_mapvote_rounds", "1", { FCVAR_ARCHIVE }, "Ma
 local cvTime   = CreateConVar( "lbr_mapvote_time", "20", { FCVAR_ARCHIVE }, "Seconds to vote" )
 local cvMaps   = CreateConVar( "lbr_mapvote_maps", "12", { FCVAR_ARCHIVE }, "Max maps in the vote (the current map is always one of them)" )
 
+// the default was 8 and archived options keep their saved value: a server that still
+// has the old default moves to 12, once (setting 8 again afterwards stays 8)
+local MIGRATED = "lastbattleroyale/mapvote_maps_12.txt"
+if not file.Exists( MIGRATED, "DATA" ) then
+	if cvMaps:GetInt() == 8 then RunConsoleCommand( "lbr_mapvote_maps", "12" ) end
+	file.CreateDir( "lastbattleroyale" )
+	file.Write( MIGRATED, "1" )
+end
+
 local STATUS_NONE, STATUS_BROKEN, STATUS_CUSTOM, STATUS_BUILTIN = 0, 1, 2, 3
 
 ------------------------------------------------------------------------
