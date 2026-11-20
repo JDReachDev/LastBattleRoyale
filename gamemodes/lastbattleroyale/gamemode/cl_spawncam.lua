@@ -59,7 +59,9 @@ end
 
 local WIND_VOLUME = 0.35 // the HL2 wind sounds at full volume are too loud
 
-// plays everywhere (no position) at a lower volume, surface.PlaySound has no volume
+// plays everywhere (no position) at a lower volume, surface.PlaySound has no volume.
+// The sounds are kept here: a CreateSound that is garbage collected stops playing
+local winds = {}
 local function playWind( snd )
 	local lp = LocalPlayer()
 	if not IsValid( lp ) then return end
@@ -67,6 +69,7 @@ local function playWind( snd )
 	if not s then return end
 	s:SetSoundLevel( 0 )
 	s:PlayEx( WIND_VOLUME, 100 )
+	winds[snd] = s
 end
 
 local function progress()
