@@ -79,7 +79,7 @@ end )
 
 // replay the intro where you stand (camera only, you are not frozen): lbr_spawn_intro_test [seconds]
 concommand.Add( "lbr_spawn_intro_test", function( _, _, args )
-	start( math.Clamp( tonumber( args[1] or "" ) or 4, 1, 10 ), false )
+	start( math.Clamp( tonumber( args[1] or "" ) or 6, 1, 10 ), false )
 end )
 
 local function stop()

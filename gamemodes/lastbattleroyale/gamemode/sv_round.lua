@@ -79,7 +79,7 @@ local function placeApart( pl, point, used )
 	used[#used + 1] = LBR.PlacePlayer( pl, point ) // nothing better: as before
 end
 
-local cvIntro = CreateConVar( "lbr_spawn_intro", "4", FCVAR_ARCHIVE, "Seconds of the camera coming down from the sky to the player at the start of the match (players can't move meanwhile), 0 = off" )
+local cvIntro = CreateConVar( "lbr_spawn_intro", "6", FCVAR_ARCHIVE, "Seconds of the camera coming down from the sky to the player at the start of the match (players can't move meanwhile), 0 = off" )
 
 // the client is done with the intro: the player can move
 util.AddNetworkString( "LBR_SpawnIntroDone" )
