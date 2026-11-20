@@ -11,7 +11,7 @@
 
 LBR = LBR or {}
 
-local MAX_HEIGHT = 6000  // highest start above the player (the sky is lower on most maps)
+local MAX_HEIGHT = 30000 // the start is the sky of the map (its upper limit), this is only a safety cap
 local PRE_HEIGHT = 140   // where the dive ends, above the head, before turning into the eyes
 
 local active, length = false, 4
@@ -30,12 +30,12 @@ local topZ // start height, found once the player is at his spawn point
 local function easeInOut( t ) return t < 0.5 and 4 * t * t * t or 1 - ( -2 * t + 2 ) ^ 3 / 2 end
 local function easeOut( t ) return 1 - ( 1 - t ) ^ 3 end
 
-// first sky above pos: the dive starts there (just under it). Roofs on the way are
-// passed through, the white flash at the end covers that
+// first sky above pos = the upper limit of the map: the dive starts just under it.
+// Roofs on the way are passed through, the white flash at the end covers that
 local function findTop( pos )
 	local start = pos
 	for _ = 1, 6 do
-		local tr = util.TraceLine( { start = start, endpos = start + Vector( 0, 0, 16384 ), mask = MASK_SOLID_BRUSHONLY } )
+		local tr = util.TraceLine( { start = start, endpos = start + Vector( 0, 0, 32768 ), mask = MASK_SOLID_BRUSHONLY } )
 		if tr.HitSky then return math.max( math.min( tr.HitPos.z - 48, pos.z + MAX_HEIGHT ), pos.z ) end
 		if not tr.Hit then break end
 		start = tr.HitPos + Vector( 0, 0, 8 )
