@@ -28,6 +28,7 @@ AddCSLuaFile( "cl_weaponselect.lua" )
 AddCSLuaFile( "cl_attachments.lua" )
 AddCSLuaFile( "cl_mapvote.lua" )
 AddCSLuaFile( "cl_map.lua" )
+AddCSLuaFile( "cl_spawncam.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )

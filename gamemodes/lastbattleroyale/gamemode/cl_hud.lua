@@ -619,6 +619,7 @@ hook.Add( "HUDPaint", "LBR_HUD", function()
 	local lp = LocalPlayer()
 	if not IsValid( lp ) then return end
 	if LBR.Editor and LBR.Editor.active then return end
+	if LBR.SpawnIntroActive and LBR.SpawnIntroActive() then return end // camera from the sky (cl_spawncam.lua)
 
 	local ply, spectating = viewTarget()
 	drawEffects( lp )

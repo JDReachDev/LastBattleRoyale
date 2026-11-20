@@ -50,6 +50,7 @@ New ConVars / commands:
 | `lbr_cull_vehicle_distance` | client | `8000` | Parked vehicles farther than this are not drawn; `0` = off |
 | `lbr_cull_stats` | command | — | Admin: print how much loot is being culled |
 | `lbr_start` | command | — | Admin: start the round now with the players already in, even below `lbr_min_players` or alone to test the map (also `!start` in chat or *START NOW* in the `TAB` scoreboard) |
+| `lbr_spawn_intro` | server | `4` | Seconds of the spawn intro: at the start of the match the camera starts in the sky above each player, dives down and turns into the first person view; players can't move meanwhile. `0` = off (max `10`) |
 | `lbr_mapvote` | server | `1` | Map vote at the end of the match. Only installed maps with a valid config (made with `F8` or built in) are in the vote; the current map is always one of them |
 | `lbr_mapvote_rounds` | server | `1` | Matches played on the same map before the vote |
 | `lbr_mapvote_time` | server | `20` | Seconds to vote |

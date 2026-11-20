@@ -16,6 +16,7 @@ include( "cl_weaponselect.lua" )
 include( "cl_attachments.lua" )
 include( "sh_hitmarker.lua" )
 include( "cl_mapvote.lua" )
+include( "cl_spawncam.lua" )
 include( "cl_map.lua" )
 
 TEAM_PLAYER = 1
@@ -132,9 +133,7 @@ net.Receive( "LST_PrepStart", function( )
 	
 end)
 
-net.Receive( "LST_RoundStart", function( )
-	print("Round has started")
-end)
+// LST_RoundStart: cl_spawncam.lua (camera from the sky to the eyes)
 
 net.Receive( "LST_ZoneSetup", function( )
 	candrawend = true

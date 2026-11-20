@@ -79,6 +79,8 @@ local function placeApart( pl, point, used )
 	used[#used + 1] = LBR.PlacePlayer( pl, point ) // nothing better: as before
 end
 
+local cvIntro = CreateConVar( "lbr_spawn_intro", "4", FCVAR_ARCHIVE, "Seconds of the camera coming down from the sky to the player at the start of the match (players can't move meanwhile), 0 = off" )
+
 // lbr_zone_speed is "radius removed every tick", converted to units per second
 function GetZoneSpeed()
 	return cvZoneSpeed:GetFloat()
@@ -307,7 +309,20 @@ function RoundRestart()
 				placeApart( pl, spawns[idx], used[idx] )
 			end
 		end
+		// spawn intro (cl_spawncam.lua): the camera comes down from the sky into the
+		// eyes of every player, who stays still until it ends
+		local intro = math.Clamp( cvIntro:GetFloat(), 0, 10 )
+		timer.Remove( "LBR_SpawnIntro" )
+		if intro > 0 then
+			for _, pl in ipairs( all ) do
+				if IsValid( pl ) and pl:Alive() then pl:Freeze( true ) end
+			end
+			timer.Create( "LBR_SpawnIntro", intro, 1, function()
+				for _, pl in ipairs( player.GetAll() ) do pl:Freeze( false ) end
+			end )
+		end
 		net.Start("LST_RoundStart")
+		net.WriteFloat( intro )
 		net.Broadcast()
 	end)
 end
