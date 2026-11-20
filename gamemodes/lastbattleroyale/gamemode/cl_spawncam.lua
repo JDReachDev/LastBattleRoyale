@@ -46,17 +46,27 @@ local function progress()
 	return math.Clamp( ( CurTime() - startTime ) / length, 0, 1 )
 end
 
-net.Receive( "LST_RoundStart", function()
-	local len = net.ReadFloat()
-	print( "Round has started" )
-	if not len or len <= 0 then return end
-	local lp = LocalPlayer()
-	if not IsValid( lp ) or not lp:Alive() or lp:Team() == TEAM_SPEC then return end
+local function start( len )
 	active, startTime, length, topZ = true, CurTime(), len, nil
 	surface.PlaySound( "ambient/wind/wind_snippet2.wav" )
 	timer.Create( "LBR_SpawnIntroWhoosh", len * 0.62, 1, function()
 		if active then surface.PlaySound( "ambient/wind/windgust.wav" ) end
 	end )
+end
+
+net.Receive( "LST_RoundStart", function()
+	local len = net.ReadFloat()
+	print( "Round has started" )
+	if not len or len <= 0 then return end
+	// no team / alive check here: the server sends this in the same tick it spawns the
+	// players, the client still has the lobby state (spectator) when it arrives. The
+	// server sends it only to the players it spawned
+	start( len )
+end )
+
+// replay the intro where you stand (camera only, you are not frozen): lbr_spawn_intro_test [seconds]
+concommand.Add( "lbr_spawn_intro_test", function( _, _, args )
+	start( math.Clamp( tonumber( args[1] or "" ) or 4, 1, 10 ) )
 end )
 
 local function stop()
@@ -67,7 +77,9 @@ end
 hook.Add( "CalcView", "LBR_SpawnIntro", function( ply, origin, angles, fov )
 	if not active then return end
 	local t = progress()
-	if t >= 1 or not ply:Alive() then stop() return end
+	if t >= 1 then stop() return end
+	// dead after the first moment (killed / slain by an admin): back to normal
+	if CurTime() - startTime > 0.75 and not ply:Alive() then stop() return end
 
 	local eye = ply:EyePos()
 	// the position of the player reaches the client a moment after the message:

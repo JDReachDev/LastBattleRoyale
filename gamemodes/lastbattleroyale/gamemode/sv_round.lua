@@ -323,7 +323,7 @@ function RoundRestart()
 		end
 		net.Start("LST_RoundStart")
 		net.WriteFloat( intro )
-		net.Broadcast()
+		net.Send( all )
 	end)
 end
 
