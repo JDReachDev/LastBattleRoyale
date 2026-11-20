@@ -81,6 +81,15 @@ end
 
 local cvIntro = CreateConVar( "lbr_spawn_intro", "4", FCVAR_ARCHIVE, "Seconds of the camera coming down from the sky to the player at the start of the match (players can't move meanwhile), 0 = off" )
 
+// the client is done with the intro: the player can move
+util.AddNetworkString( "LBR_SpawnIntroDone" )
+net.Receive( "LBR_SpawnIntroDone", function( _, pl )
+	if IsValid( pl ) and pl.LBR_IntroFrozen then
+		pl.LBR_IntroFrozen = nil
+		pl:Freeze( false )
+	end
+end )
+
 // lbr_zone_speed is "radius removed every tick", converted to units per second
 function GetZoneSpeed()
 	return cvZoneSpeed:GetFloat()
@@ -315,10 +324,20 @@ function RoundRestart()
 		timer.Remove( "LBR_SpawnIntro" )
 		if intro > 0 then
 			for _, pl in ipairs( all ) do
-				if IsValid( pl ) and pl:Alive() then pl:Freeze( true ) end
+				if IsValid( pl ) and pl:Alive() then
+					pl:Freeze( true )
+					pl.LBR_IntroFrozen = true
+				end
 			end
-			timer.Create( "LBR_SpawnIntro", intro, 1, function()
-				for _, pl in ipairs( player.GetAll() ) do pl:Freeze( false ) end
+			// each client says when its intro ended (it waits for smooth frames before
+			// the dive, so it can take a bit longer than intro): this is only the fallback
+			timer.Create( "LBR_SpawnIntro", intro + 5, 1, function()
+				for _, pl in ipairs( player.GetAll() ) do
+					if pl.LBR_IntroFrozen then
+						pl.LBR_IntroFrozen = nil
+						pl:Freeze( false )
+					end
+				end
 			end )
 		end
 		net.Start("LST_RoundStart")

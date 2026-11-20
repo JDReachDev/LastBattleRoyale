@@ -1,15 +1,30 @@
 // Spawn intro: when the match starts the camera begins high in the sky right above
 // the player, looking straight down, dives towards him and in the last moment turns
 // into his eyes (first person). Then the player takes control.
-// The server freezes the players for the same time (lbr_spawn_intro seconds, 0 = off)
-// and sends the length with LST_RoundStart.
+// The server freezes the players (lbr_spawn_intro seconds, 0 = off), sends the length
+// with LST_RoundStart and lets each player go when his client says the intro ended.
+//
+// The start of a match is heavy (map cleanup, loot, vehicles, weapon models loading):
+// the first frames come with long pauses. The clock of the intro is not CurTime: it
+// waits up in the sky until the frames are smooth again, then moves at most 1/30 s per
+// frame, so a pause slows it down instead of skipping a piece of it.
 
 LBR = LBR or {}
 
 local MAX_HEIGHT = 6000  // highest start above the player (the sky is lower on most maps)
 local PRE_HEIGHT = 140   // where the dive ends, above the head, before turning into the eyes
 
-local active, startTime, length = false, 0, 4
+local active, length = false, 4
+local elapsed = 0      // seconds of animation played
+local running = false  // false = waiting up high for smooth frames
+local waitStart, smooth = 0, 0
+local fromRound = false // started by the server (it waits for our "done")
+local whooshed = false
+
+local SMOOTH_FRAME = 0.05 // a frame shorter than this counts as smooth
+local SMOOTH_COUNT = 10   // smooth frames in a row before the dive starts
+local MAX_WAIT = 3        // start anyway after this (slow PC)
+local MAX_STEP = 1 / 30   // most animation time per frame
 local topZ // start height, found once the player is at his spawn point
 
 local function easeInOut( t ) return t < 0.5 and 4 * t * t * t or 1 - ( -2 * t + 2 ) ^ 3 / 2 end
@@ -43,15 +58,13 @@ function LBR.SpawnIntroActive()
 end
 
 local function progress()
-	return math.Clamp( ( CurTime() - startTime ) / length, 0, 1 )
+	return math.Clamp( elapsed / length, 0, 1 )
 end
 
-local function start( len )
-	active, startTime, length, topZ = true, CurTime(), len, nil
-	surface.PlaySound( "ambient/wind/wind_snippet2.wav" )
-	timer.Create( "LBR_SpawnIntroWhoosh", len * 0.62, 1, function()
-		if active then surface.PlaySound( "ambient/wind/windgust.wav" ) end
-	end )
+local function start( len, round )
+	active, length, topZ = true, len, nil
+	elapsed, running, waitStart, smooth = 0, false, RealTime(), 0
+	fromRound, whooshed = round, false
 end
 
 net.Receive( "LST_RoundStart", function()
@@ -61,30 +74,54 @@ net.Receive( "LST_RoundStart", function()
 	// no team / alive check here: the server sends this in the same tick it spawns the
 	// players, the client still has the lobby state (spectator) when it arrives. The
 	// server sends it only to the players it spawned
-	start( len )
+	start( len, true )
 end )
 
 // replay the intro where you stand (camera only, you are not frozen): lbr_spawn_intro_test [seconds]
 concommand.Add( "lbr_spawn_intro_test", function( _, _, args )
-	start( math.Clamp( tonumber( args[1] or "" ) or 4, 1, 10 ) )
+	start( math.Clamp( tonumber( args[1] or "" ) or 4, 1, 10 ), false )
 end )
 
 local function stop()
+	if not active then return end
 	active = false
-	timer.Remove( "LBR_SpawnIntroWhoosh" )
+	if fromRound then
+		net.Start( "LBR_SpawnIntroDone" )
+		net.SendToServer()
+	end
 end
+
+// the clock of the intro (once per frame)
+hook.Add( "Think", "LBR_SpawnIntro", function()
+	if not active then return end
+	local dt = RealFrameTime()
+	if not running then
+		smooth = dt < SMOOTH_FRAME and smooth + 1 or 0
+		if smooth >= SMOOTH_COUNT or RealTime() - waitStart > MAX_WAIT then
+			running = true
+			surface.PlaySound( "ambient/wind/wind_snippet2.wav" )
+		end
+		return
+	end
+	elapsed = elapsed + math.min( dt, MAX_STEP )
+	if not whooshed and progress() > 0.62 then
+		whooshed = true
+		surface.PlaySound( "ambient/wind/windgust.wav" )
+	end
+	if progress() >= 1 then stop() end
+end )
 
 hook.Add( "CalcView", "LBR_SpawnIntro", function( ply, origin, angles, fov )
 	if not active then return end
 	local t = progress()
 	if t >= 1 then stop() return end
-	// dead after the first moment (killed / slain by an admin): back to normal
-	if CurTime() - startTime > 0.75 and not ply:Alive() then stop() return end
+	// dead once the dive runs (killed / slain by an admin): back to normal
+	if running and not ply:Alive() then stop() return end
 
 	local eye = ply:EyePos()
 	// the position of the player reaches the client a moment after the message:
 	// the start height is picked after a few frames at the top
-	if not topZ or t < 0.05 then topZ = findTop( eye ) end
+	if not topZ or not running or t < 0.05 then topZ = findTop( eye ) end
 	local top = Vector( eye.x, eye.y, topZ )
 	local pre = eye + Vector( 0, 0, headroom( eye ) )
 	local yaw = angles.y
