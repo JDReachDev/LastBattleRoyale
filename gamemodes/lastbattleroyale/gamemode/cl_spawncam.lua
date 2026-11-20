@@ -104,7 +104,7 @@ hook.Add( "Think", "LBR_SpawnIntro", function()
 		return
 	end
 	elapsed = elapsed + math.min( dt, MAX_STEP )
-	if not whooshed and progress() > 0.62 then
+	if not whooshed and progress() > 0.08 then // the gust with the dive (it starts at 0.12)
 		whooshed = true
 		surface.PlaySound( "ambient/wind/windgust.wav" )
 	end
