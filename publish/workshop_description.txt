@@ -37,7 +37,7 @@ A complete Battle Royale gamemode for Garry's Mod: drop in, loot weapons, attach
 [*][b]Preparing[/b]: after a 30 s countdown everyone is spread around the map
 [*][b]Loot[/b]: no attacks for the first 30 s. Pick up with [b]E[/b], hold TAB to sort your inventory
 [*][b]Zone[/b]: after 1 minute the zone starts shrinking. Outside it you lose health: follow the timer or the map ([b]M[/b])
-[*][b]Win[/b]: the last player (or squad) alive wins, then back to the lobby or a map vote
+[*][b]Win[/b]: the last player (or squad) alive wins: the final kill in slow motion, the camera circles the winner, fireworks and the match stats. Then back to the lobby or a map vote
 [/olist]
 Kills and wins give EXP to your class: level up to unlock new classes. Dead players can spectate.
 

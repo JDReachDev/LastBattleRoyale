@@ -620,6 +620,7 @@ hook.Add( "HUDPaint", "LBR_HUD", function()
 	if not IsValid( lp ) then return end
 	if LBR.Editor and LBR.Editor.active then return end
 	if LBR.SpawnIntroActive and LBR.SpawnIntroActive() then return end // camera from the sky (cl_spawncam.lua)
+	if LBR.VictoryActive and LBR.VictoryActive() then return end // winner screen (cl_victory.lua)
 
 	local ply, spectating = viewTarget()
 	drawEffects( lp )

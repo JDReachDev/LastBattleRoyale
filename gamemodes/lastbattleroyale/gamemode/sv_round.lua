@@ -29,6 +29,10 @@ function GetState()
 end
 
 function SetState(num)
+	if num == STATE_LIVE and GetGlobalInt("state") ~= STATE_LIVE then
+		LBR = LBR or {}
+		LBR.RoundStartTime = CurTime() // match length on the victory screen
+	end
 	SetGlobalInt("state", num)
 	// the random events (supply drops, nuke) belong to a match: none after it ends
 	if num ~= STATE_LIVE then

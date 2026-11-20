@@ -29,6 +29,7 @@ AddCSLuaFile( "cl_attachments.lua" )
 AddCSLuaFile( "cl_mapvote.lua" )
 AddCSLuaFile( "cl_map.lua" )
 AddCSLuaFile( "cl_spawncam.lua" )
+AddCSLuaFile( "cl_victory.lua" )
 
 include( "shared.lua" )
 include( "config.lua" )
@@ -59,6 +60,7 @@ util.AddNetworkString( "LST_PrepStart" )
 util.AddNetworkString( "LST_RoundStart" )
 util.AddNetworkString( "LST_ActionStart" )
 util.AddNetworkString( "LST_RoundEnd" )
+util.AddNetworkString( "LBR_Victory" )
 util.AddNetworkString( "LST_ZoneSetup" )
 
 function IsInTeam(pl1, pl2)
@@ -383,6 +385,8 @@ end
 // everybody back to the lobby after a round
 function ReturnToLobby()
 	timer.Remove( "LBR_SpawnItems" )
+	timer.Remove( "LBR_VictorySlowmo" )
+	game.SetTimeScale( 1 )
 	StopZone()
 	SetGlobalFloat( "LBR_EventTime", 0 )
 	RegenerateSpawns()
@@ -390,16 +394,46 @@ function ReturnToLobby()
 	for _, v in ipairs(player.GetAll()) do
 		v.goingtobespec = false
 		v.goingtowait = true
+		v:GodDisable() // the winners of the last round
 		v:Spawn()
 	end
 	SetState(STATE_NONE)
 end
 
-local function EndRound()
+// victory screen (cl_victory.lua): who won, their kills, the exp of a solo winner and
+// how long the match lasted. The winners cannot be hurt any more and the last kill
+// is seen in slow motion
+local SLOWMO_SCALE, SLOWMO_REAL = 0.3, 1.5 // time scale, real seconds
+local function SendVictory( winners, exp )
+	local list = {}
+	for _, p in ipairs( winners or {} ) do
+		if IsValid( p ) and p:IsPlayer() then
+			list[#list + 1] = p
+			p:GodEnable()
+		end
+	end
+	net.Start( "LBR_Victory" )
+		net.WriteUInt( #list, 4 )
+		for _, p in ipairs( list ) do
+			net.WriteEntity( p )
+			net.WriteUInt( math.Clamp( p.roundkills or 0, 0, 255 ), 8 )
+		end
+		net.WriteUInt( math.Clamp( math.Round( exp or 0 ), 0, 65535 ), 16 )
+		net.WriteFloat( LBR.RoundStartTime and ( CurTime() - LBR.RoundStartTime ) or 0 )
+	net.Broadcast()
+	if #list > 0 then
+		game.SetTimeScale( SLOWMO_SCALE )
+		// timers run on game time: SLOWMO_REAL real seconds
+		timer.Create( "LBR_VictorySlowmo", SLOWMO_REAL * SLOWMO_SCALE, 1, function() game.SetTimeScale( 1 ) end )
+	end
+end
+
+local function EndRound( winners, exp )
 	net.Start("LST_RoundEnd")
 	net.Broadcast()
 	StopZone()
 	SetState(STATE_POST)
+	SendVictory( winners, exp )
 	SetGlobalFloat( "LBR_PhaseEnd", CurTime() + PostTime() )
 	timer.Create("timer_postround", PostTime(), 1, ReturnToLobby)
 	// map vote (sv_mapvote.lua): starts a few seconds after the winner screen and replaces the timer above
@@ -519,11 +553,14 @@ function playerdeath( victim, inflictor, attacker )
 			LBR.Chat( nil, victim:Nick() .. " died! " .. ply:Nick() .. " is the winner!", "good" )
 			ply:AddFrags(5)
 			local exp = math.Round( 30 * EXPScale() )
+			local won
 			if (ply.roundkills or 0) >= 5 then
+				won = exp * 4
 				ply:SetEXP( ply:GetEXP() + (exp * 4) )
 				ply:LevelUpdate()
 				ply:PlayerMsg(Color(255,255,0), "You have earned " .. (exp * 4) .. " exp for winning the round with bonus for 5 or more kills!")
 			else
+				won = exp * 2.5
 				ply:SetEXP(ply:GetEXP() + (exp * 2.5))
 				ply:LevelUpdate()
 				ply:PlayerMsg(Color(255,255,0), "You have earned " .. (exp * 2.5) .. " exp for winning the round!")
@@ -532,15 +569,15 @@ function playerdeath( victim, inflictor, attacker )
 			LBR.Notify( ply, "You won!", "good" )
 			victim.nextspawn = math.huge
 			SetGlobalString( "LBR_Winner", ply:Nick() )
-			EndRound()
+			EndRound( { ply }, won )
 		elseif num == 2 and IsInTeam(alive[1], alive[2]) then
 			LBR.Chat( nil, alive[1]:Nick() .. " and " .. alive[2]:Nick() .. " won!", "good" )
 			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. " & " .. alive[2]:Nick() )
-			EndRound()
+			EndRound( { alive[1], alive[2] } )
 		elseif num == 3 and IsInTeam3(alive[1], alive[2], alive[3]) then
 			LBR.Chat( nil, alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " and " .. alive[3]:Nick() .. " won!", "good" )
 			SetGlobalString( "LBR_Winner", alive[1]:Nick() .. ", " .. alive[2]:Nick() .. " & " .. alive[3]:Nick() )
-			EndRound()
+			EndRound( { alive[1], alive[2], alive[3] } )
 		elseif num == 0 then
 			// nobody left (a round started alone to test, or the last ones died together)
 			LBR.Chat( nil, victim:Nick() .. " died! Nobody is left, round over." )
@@ -627,9 +664,9 @@ function deaththink( ply )
 end
 hook.Add("PlayerDeathThink", "playerdeaththinkhook", deaththink)
 
-function ResetGame()
+function ResetGame( winners )
 	print("reseting game")
-	EndRound()
+	EndRound( winners )
 end
 
 function GM:PlayerDisconnected( ply )
@@ -658,13 +695,15 @@ function GM:PlayerDisconnected( ply )
 		end
 	end
 	if pls == 1 then
+		local winners = {}
 		for _, winner in ipairs(team.GetPlayers(TEAM_CONT)) do
 			if winner != ply then
 				LBR.Chat( winner, ply:Nick() .. " disconnected, " .. winner:Nick() .. " won!", "good" )
 				SetGlobalString( "LBR_Winner", winner:Nick() )
+				winners[#winners + 1] = winner
 			end
 		end
-		ResetGame()
+		ResetGame( winners )
 	elseif pls == 0 then
 		ResetGame()
 	end

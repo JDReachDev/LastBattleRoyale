@@ -17,6 +17,7 @@ include( "cl_attachments.lua" )
 include( "sh_hitmarker.lua" )
 include( "cl_mapvote.lua" )
 include( "cl_spawncam.lua" )
+include( "cl_victory.lua" ) // winner screen and camera
 include( "cl_map.lua" )
 
 TEAM_PLAYER = 1
