@@ -57,6 +57,18 @@ function LBR.SpawnIntroActive()
 	return active
 end
 
+local WIND_VOLUME = 0.35 // the HL2 wind sounds at full volume are too loud
+
+// plays everywhere (no position) at a lower volume, surface.PlaySound has no volume
+local function playWind( snd )
+	local lp = LocalPlayer()
+	if not IsValid( lp ) then return end
+	local s = CreateSound( lp, snd )
+	if not s then return end
+	s:SetSoundLevel( 0 )
+	s:PlayEx( WIND_VOLUME, 100 )
+end
+
 local function progress()
 	return math.Clamp( elapsed / length, 0, 1 )
 end
@@ -99,14 +111,14 @@ hook.Add( "Think", "LBR_SpawnIntro", function()
 		smooth = dt < SMOOTH_FRAME and smooth + 1 or 0
 		if smooth >= SMOOTH_COUNT or RealTime() - waitStart > MAX_WAIT then
 			running = true
-			surface.PlaySound( "ambient/wind/wind_snippet2.wav" )
+			playWind( "ambient/wind/wind_snippet2.wav" )
 		end
 		return
 	end
 	elapsed = elapsed + math.min( dt, MAX_STEP )
 	if not whooshed and progress() > 0.08 then // the gust with the dive (it starts at 0.12)
 		whooshed = true
-		surface.PlaySound( "ambient/wind/windgust.wav" )
+		playWind( "ambient/wind/windgust.wav" )
 	end
 	if progress() >= 1 then stop() end
 end )
